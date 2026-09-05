@@ -1,135 +1,140 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { createFileRoute } from "@tanstack/react-router";
+import { Inbox } from "lucide-react";
+import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
-import { EstadoTareaBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
-import { desde, formatoEuros } from "@/lib/nex/labels";
-import { useNex } from "@/lib/nex/store";
-import type { Prioridad } from "@/lib/nex/types";
+import { Cargando, EstadoOrdenBadge, EstadoTareaBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
+import { Boton, Selector } from "@/components/nex/campos";
+import type { EstadoTarea } from "@/lib/nex/db-types";
+import { ETIQUETA_ESTADO_TAREA, desde, formatoDinero } from "@/lib/nex/labels";
+import { useAgentes, useAjustes, useOrdenes, useProyectos, useTareas } from "@/lib/nex/queries/datos";
+import { useMoverTarea } from "@/lib/nex/queries/mutaciones";
+import { useCancelarOrden, useMoverOrden } from "@/lib/nex/queries/ordenes";
 
 export const Route = createFileRoute("/cola")({
   head: () => ({
     meta: [
       { title: "Cola de trabajo · NexDeveloper" },
-      { name: "description", content: "Todas las tareas activas de todos los proyectos, con control de prioridad." },
+      { name: "description", content: "Todas las tareas y órdenes en curso, ordenadas por prioridad." },
       { property: "og:title", content: "Cola de trabajo · NexDeveloper" },
-      { property: "og:description", content: "Tareas activas de todos los proyectos y carga de cada agente." },
+      { property: "og:description", content: "Todas las tareas y órdenes en curso, ordenadas por prioridad." },
     ],
   }),
   component: Cola,
 });
 
+const PESO = { critica: 0, alta: 1, media: 2, baja: 3 } as const;
+
 function Cola() {
-  const nex = useNex();
-  const activas = nex.tareas.filter((t) => t.estado !== "completada");
-  const nombreProyecto = (id: string) => nex.proyectos.find((p) => p.id === id)?.nombre ?? "Sin clasificar";
+  const { data: tareas = [], isPending } = useTareas();
+  const { data: proyectos = [] } = useProyectos();
+  const { data: agentes = [] } = useAgentes();
+  const { data: ordenes = [] } = useOrdenes();
+  const { data: ajustes } = useAjustes();
+  const moneda = ajustes?.moneda ?? "EUR";
+  const mover = useMoverTarea();
+  const moverOrden = useMoverOrden();
+  const cancelar = useCancelarOrden();
+
+  const [estado, setEstado] = React.useState<EstadoTarea | "activas">("activas");
+
+  const nombreProyecto = (id: string | null) => proyectos.find((p) => p.id === id)?.nombre ?? "Sin clasificar";
+  const nombreAgente = (id: string | null) => agentes.find((a) => a.id === id)?.nombre ?? "Sin asignar";
+
+  const visibles = tareas
+    .filter((t) => (estado === "activas" ? t.estado !== "completada" && t.estado !== "cancelada" : t.estado === estado))
+    .sort((a, b) => PESO[a.prioridad] - PESO[b.prioridad]);
+
+  const sinClasificar = ordenes.filter((o) => !o.proyecto_id || o.pendiente_confirmar_proyecto);
 
   return (
     <>
-      <Encabezado titulo="Cola de trabajo" descripcion="Qué se está haciendo ahora mismo y quién lo está haciendo." />
+      <Encabezado
+        titulo="Cola de trabajo"
+        descripcion="Qué se está haciendo ahora mismo en todos los proyectos."
+        acciones={
+          <Selector
+            etiqueta="Ver"
+            valor={estado}
+            onChange={(v) => setEstado(v as EstadoTarea | "activas")}
+            opciones={[
+              { valor: "activas", texto: "Activas" },
+              ...Object.entries(ETIQUETA_ESTADO_TAREA).map(([valor, texto]) => ({ valor, texto })),
+            ]}
+          />
+        }
+      />
 
-      <section className="panel mb-6 p-4">
-        <h2 className="font-display text-sm font-semibold">Carga de agentes</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {nex.agentes.map((a) => (
-            <div key={a.id} className="rounded-lg border border-border bg-surface p-3">
-              <div className="flex items-center justify-between text-sm">
-                <span>{a.nombre}</span>
-                <span className="text-xs text-muted-foreground">
-                  {a.tareasActivas}/{a.capacidad} tareas
-                </span>
-              </div>
-              <Progreso className="mt-2" valor={(a.tareasActivas / a.capacidad) * 100} />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div className="panel overflow-x-auto">
-        <table className="w-full min-w-[62rem] text-sm">
-          <thead className="bg-surface-2 text-left text-xs text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Tarea</th>
-              <th className="px-4 py-3 font-medium">Proyecto</th>
-              <th className="px-4 py-3 font-medium">Responsable</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
-              <th className="px-4 py-3 font-medium">Progreso</th>
-              <th className="px-4 py-3 font-medium">Última actividad</th>
-              <th className="px-4 py-3 font-medium">Coste</th>
-              <th className="px-4 py-3 font-medium">Prioridad</th>
-              <th className="px-4 py-3 font-medium">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {activas.map((t) => (
-              <tr key={t.id} className="hover:bg-surface-2/60">
-                <td className="px-4 py-3">{t.titulo}</td>
-                <td className="px-4 py-3">
-                  <Link to="/proyectos/$proyectoId" params={{ proyectoId: t.proyectoId }} className="hover:text-primary">
-                    {nombreProyecto(t.proyectoId)}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {nex.agentes.find((a) => a.id === t.agenteId)?.nombre ?? "Sin asignar"}
-                </td>
-                <td className="px-4 py-3">
-                  <EstadoTareaBadge estado={t.estado} />
-                </td>
-                <td className="px-4 py-3 w-32">
-                  <Progreso valor={t.progreso} />
-                  <span className="text-xs text-muted-foreground">{t.progreso}%</span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{desde(t.ultimaActividad)}</td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {formatoEuros(t.costeConsumido)} / {formatoEuros(t.costeEstimado)}
-                </td>
-                <td className="px-4 py-3">
-                  <select
-                    value={t.prioridad}
-                    onChange={(e) => nex.cambiarPrioridadTarea(t.id, e.target.value as Prioridad)}
-                    className="rounded-md border border-input bg-surface px-2 py-1 text-xs"
-                  >
-                    <option value="baja">Baja</option>
-                    <option value="media">Media</option>
-                    <option value="alta">Alta</option>
-                    <option value="critica">Crítica</option>
-                  </select>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    <Accion texto="Pausar" onClick={() => { nex.cambiarEstadoTarea(t.id, "pendiente"); toast.info("Tarea pausada"); }} />
-                    <Accion texto="Revisar" onClick={() => { nex.cambiarEstadoTarea(t.id, "esperando_revision"); toast.info("Enviada a revisión"); }} />
-                    <Accion texto="Cancelar" onClick={() => { nex.cambiarEstadoTarea(t.id, "bloqueada"); toast.warning("Tarea cancelada y bloqueada"); }} />
-                  </div>
-                </td>
-              </tr>
+      {sinClasificar.length > 0 ? (
+        <section className="panel mb-6 p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
+            <Inbox className="size-4 text-warning" /> Sin clasificar
+          </h2>
+          <ul className="mt-3 space-y-2">
+            {sinClasificar.map((o) => (
+              <li key={o.id} className="rounded-lg border border-border bg-surface p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-foreground">{o.texto.slice(0, 120)}</p>
+                  <EstadoOrdenBadge estado={o.estado} />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Selector
+                    etiqueta="Asignar a"
+                    valor={o.proyecto_id ?? ""}
+                    onChange={(v) => moverOrden.mutate({ orden: o, proyectoId: v || null })}
+                    opciones={[
+                      { valor: "", texto: "Sin clasificar" },
+                      ...proyectos.map((p) => ({ valor: p.id, texto: p.nombre })),
+                    ]}
+                  />
+                  <Boton variante="peligro" onClick={() => cancelar.mutate(o.id)} className="px-2.5 py-1 text-xs">
+                    Cancelar orden
+                  </Boton>
+                </div>
+              </li>
             ))}
-            {activas.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
-                  No hay tareas activas.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          </ul>
+        </section>
+      ) : null}
 
-      <p className="mt-4 text-xs text-muted-foreground">
-        <PrioridadBadge prioridad="critica" /> Las tareas críticas se atienden antes que el resto de la cola.
-      </p>
+      {isPending ? (
+        <Cargando />
+      ) : (
+        <div className="space-y-3">
+          {visibles.map((t) => (
+            <article key={t.id} className="panel p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">{t.titulo}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {nombreProyecto(t.proyecto_id)} · {nombreAgente(t.agente_id)} · {desde(t.ultima_actividad)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <EstadoTareaBadge estado={t.estado} />
+                  <PrioridadBadge prioridad={t.prioridad} />
+                </div>
+              </div>
+              <Progreso className="mt-3" valor={Number(t.progreso)} />
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>
+                  {Number(t.horas_consumidas).toFixed(1)} / {Number(t.estimacion_horas).toFixed(1)} h ·{" "}
+                  {formatoDinero(Number(t.coste_consumido), moneda)} de {formatoDinero(Number(t.coste_estimado), moneda)}
+                </span>
+                <Selector
+                  etiqueta="Mover a"
+                  valor={t.proyecto_id}
+                  onChange={(v) =>
+                    mover.mutate({ id: t.id, proyectoId: v, origenId: t.proyecto_id, titulo: t.titulo })
+                  }
+                  opciones={proyectos.map((p) => ({ valor: p.id, texto: p.nombre }))}
+                />
+              </div>
+            </article>
+          ))}
+          {visibles.length === 0 && <p className="panel p-6 text-sm text-muted-foreground">No hay tareas aquí.</p>}
+        </div>
+      )}
     </>
-  );
-}
-
-function Accion({ texto, onClick }: { texto: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
-    >
-      {texto}
-    </button>
   );
 }

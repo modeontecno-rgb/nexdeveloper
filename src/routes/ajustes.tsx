@@ -1,158 +1,213 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Database, Trash2 } from "lucide-react";
+import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
-import { useConfig } from "@/lib/nex/config";
-import { useNex } from "@/lib/nex/store";
+import { Cargando } from "@/components/nex/badges";
+import { Boton, Campo, claseCampo } from "@/components/nex/campos";
+import { useAuth } from "@/lib/nex/auth";
+import { borrarDatosDemostracion, cargarDatosDemostracion } from "@/lib/nex/demo";
+import { useAjustes, usePerfil } from "@/lib/nex/queries/datos";
+import { useGuardarAjustes } from "@/lib/nex/queries/mutaciones";
 
 export const Route = createFileRoute("/ajustes")({
   head: () => ({
     meta: [
       { title: "Ajustes · NexDeveloper" },
-      { name: "description", content: "Datos de la organización, presupuestos, umbrales de aprobación y bandeja sin clasificar." },
+      { name: "description", content: "Umbrales de aprobación, moneda, reorganización automática y datos de prueba." },
       { property: "og:title", content: "Ajustes · NexDeveloper" },
-      { property: "og:description", content: "Configura presupuestos, umbrales de aprobación y organización de tareas." },
+      {
+        property: "og:description",
+        content: "Umbrales de aprobación, moneda, reorganización automática y datos de prueba.",
+      },
     ],
   }),
   component: Ajustes,
 });
 
 function Ajustes() {
-  const nex = useNex();
-  const { config, actualizar, guardar: persistir } = useConfig();
-  const setConfig = (valor: typeof config) => actualizar(valor);
+  const { data: ajustes, isPending, refetch } = useAjustes();
+  const { data: perfil } = usePerfil();
+  const { usuario } = useAuth();
+  const guardar = useGuardarAjustes();
+  const [trabajando, setTrabajando] = React.useState(false);
 
-  const guardar = () => {
-    persistir(config);
-    toast.success("Ajustes guardados");
+  const [formulario, setFormulario] = React.useState({
+    umbral_aprobacion_eur: 150,
+    aprobar_si_prioridad_critica: true,
+    aprobar_si_riesgo_alto: true,
+    umbral_confianza_reorganizacion: 80,
+    reorganizacion_automatica: true,
+    mesa_expertos_solo_importantes: true,
+    moneda: "EUR",
+  });
+
+  React.useEffect(() => {
+    if (!ajustes) return;
+    setFormulario({
+      umbral_aprobacion_eur: Number(ajustes.umbral_aprobacion_eur),
+      aprobar_si_prioridad_critica: ajustes.aprobar_si_prioridad_critica,
+      aprobar_si_riesgo_alto: ajustes.aprobar_si_riesgo_alto,
+      umbral_confianza_reorganizacion: Number(ajustes.umbral_confianza_reorganizacion),
+      reorganizacion_automatica: ajustes.reorganizacion_automatica,
+      mesa_expertos_solo_importantes: ajustes.mesa_expertos_solo_importantes,
+      moneda: ajustes.moneda,
+    });
+  }, [ajustes]);
+
+  if (isPending) return <Cargando />;
+
+  const conDemo = async (accion: () => Promise<unknown>, ok: string) => {
+    setTrabajando(true);
+    try {
+      await accion();
+      toast.success(ok);
+      window.location.reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se ha podido completar la operación.");
+    } finally {
+      setTrabajando(false);
+    }
   };
-
-  const sinClasificar = nex.tareas.filter((t) => !nex.proyectos.some((p) => p.id === t.proyectoId));
 
   return (
     <>
-      <Encabezado titulo="Ajustes" descripcion="Todo se configura aquí dentro, sin salir de la aplicación." />
+      <Encabezado titulo="Ajustes" descripcion="Todo se configura aquí dentro, sin tocar la base de datos." />
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <section className="panel p-4">
-          <h2 className="font-display text-sm font-semibold">Organización y presupuesto</h2>
-          <div className="mt-3 space-y-3">
-            <Texto etiqueta="Nombre de la organización" valor={config.organizacion} onChange={(v) => setConfig({ ...config, organizacion: v })} />
-            <Texto etiqueta="Moneda" valor={config.moneda} onChange={(v) => setConfig({ ...config, moneda: v })} />
-            <Numero
-              etiqueta="Aprobación obligatoria a partir de (€)"
-              valor={config.umbralAprobacion}
-              onChange={(v) => setConfig({ ...config, umbralAprobacion: v })}
-            />
-            <Numero
-              etiqueta="Máximo de tareas en paralelo por agente"
-              valor={config.tareasParalelas}
-              onChange={(v) => setConfig({ ...config, tareasParalelas: v })}
-            />
-          </div>
-        </section>
-
-        <section className="panel p-4">
-          <h2 className="font-display text-sm font-semibold">Organización inteligente</h2>
-          <label className="mt-3 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={config.reorganizacionAutomatica}
-              onChange={(e) => setConfig({ ...config, reorganizacionAutomatica: e.target.checked })}
-              className="size-4 accent-primary"
-            />
-            Recolocar automáticamente cuando el proyecto correcto sea evidente
-          </label>
-          <div className="mt-3">
-            <Numero
-              etiqueta="Confianza mínima para mover sin preguntar (%)"
-              valor={config.confianzaMinima}
-              onChange={(v) => setConfig({ ...config, confianzaMinima: v })}
-            />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Por debajo de esa confianza no se mueve nada: se avisa y se pide confirmación. Todo traslado queda
-            registrado con su origen.
-          </p>
-
-          <h3 className="mt-5 font-display text-sm font-semibold">Bandeja «Sin clasificar»</h3>
-          {sinClasificar.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">No hay elementos sin asignación segura.</p>
-          ) : (
-            <ul className="mt-2 space-y-2">
-              {sinClasificar.map((t) => (
-                <li key={t.id} className="rounded-lg border border-border bg-surface px-3 py-2 text-sm">
-                  {t.titulo}
-                  <select
-                    className="ml-2 rounded-md border border-input bg-surface px-2 py-1 text-xs"
-                    defaultValue=""
-                    onChange={(e) => e.target.value && nex.moverTarea(t.id, e.target.value)}
-                  >
-                    <option value="">Mover a…</option>
-                    {nex.proyectos.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="panel p-4 xl:col-span-2">
-          <h2 className="font-display text-sm font-semibold">Datos y conexiones</h2>
+        <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Tu cuenta</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ahora mismo la aplicación funciona con datos de demostración guardados en este navegador. Para trabajar con
-            tu base de datos propia y con GitHub hacen falta dos autorizaciones que solo puedes dar tú desde el propio
-            editor del proyecto: enlazar tu cuenta de base de datos y autorizar GitHub para crear el repositorio privado
-            «nexdeveloper». Después, esta pantalla permitirá gestionar el resto de parámetros sin salir de aquí.
+            {perfil?.nombre_completo ?? "Sin nombre"} · {perfil?.email ?? usuario?.email ?? "—"}
+          </p>
+        </section>
+
+        <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Aprobaciones</h2>
+          <div className="mt-4 space-y-4">
+            <Campo etiqueta="Pedir aprobación por encima de (importe)">
+              <input
+                type="number"
+                min={0}
+                step={10}
+                value={formulario.umbral_aprobacion_eur}
+                onChange={(e) =>
+                  setFormulario((f) => ({ ...f, umbral_aprobacion_eur: Number(e.target.value) || 0 }))
+                }
+                className={claseCampo}
+              />
+            </Campo>
+            <Interruptor
+              etiqueta="Pedir aprobación siempre que la prioridad sea crítica"
+              valor={formulario.aprobar_si_prioridad_critica}
+              onChange={(v) => setFormulario((f) => ({ ...f, aprobar_si_prioridad_critica: v }))}
+            />
+            <Interruptor
+              etiqueta="Pedir aprobación siempre que el riesgo sea alto"
+              valor={formulario.aprobar_si_riesgo_alto}
+              onChange={(v) => setFormulario((f) => ({ ...f, aprobar_si_riesgo_alto: v }))}
+            />
+            <Interruptor
+              etiqueta="Consultar a varios agentes solo en decisiones importantes"
+              valor={formulario.mesa_expertos_solo_importantes}
+              onChange={(v) => setFormulario((f) => ({ ...f, mesa_expertos_solo_importantes: v }))}
+            />
+          </div>
+        </section>
+
+        <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Organización automática</h2>
+          <div className="mt-4 space-y-4">
+            <Interruptor
+              etiqueta="Colocar cada orden en su proyecto automáticamente"
+              valor={formulario.reorganizacion_automatica}
+              onChange={(v) => setFormulario((f) => ({ ...f, reorganizacion_automatica: v }))}
+            />
+            <Campo
+              etiqueta="Confianza mínima para mover algo sin preguntar (%)"
+              pista="Por debajo de este valor te preguntaremos antes de cambiar una orden de proyecto."
+            >
+              <input
+                type="number"
+                min={50}
+                max={100}
+                value={formulario.umbral_confianza_reorganizacion}
+                onChange={(e) =>
+                  setFormulario((f) => ({ ...f, umbral_confianza_reorganizacion: Number(e.target.value) || 0 }))
+                }
+                className={claseCampo}
+              />
+            </Campo>
+            <Campo etiqueta="Moneda">
+              <select
+                value={formulario.moneda}
+                onChange={(e) => setFormulario((f) => ({ ...f, moneda: e.target.value }))}
+                className={claseCampo}
+              >
+                <option value="EUR">Euro (EUR)</option>
+                <option value="USD">Dólar (USD)</option>
+                <option value="GBP">Libra (GBP)</option>
+              </select>
+            </Campo>
+          </div>
+        </section>
+
+        <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Datos de demostración</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Carga ocho proyectos con tareas, agentes y actividad para ver la aplicación en funcionamiento. Puedes
+            borrarlos cuando quieras: solo se eliminan los datos de ejemplo.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" onClick={guardar} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-              Guardar ajustes
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                nex.reiniciarDemo();
-                toast.info("Datos de demostración restaurados");
-              }}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-2"
+            <Boton
+              variante="suave"
+              disabled={trabajando}
+              onClick={() => void conDemo(cargarDatosDemostracion, "Datos de demostración cargados.")}
             >
-              Restaurar datos de demostración
-            </button>
+              <Database className="size-4" /> Cargar datos de demostración
+            </Boton>
+            <Boton
+              variante="peligro"
+              disabled={trabajando}
+              onClick={() => void conDemo(borrarDatosDemostracion, "Datos de demostración borrados.")}
+            >
+              <Trash2 className="size-4" /> Borrar datos de demostración
+            </Boton>
           </div>
         </section>
+      </div>
+
+      <div className="mt-6">
+        <Boton
+          disabled={guardar.isPending}
+          onClick={() => guardar.mutate(formulario, { onSuccess: () => void refetch() })}
+        >
+          Guardar ajustes
+        </Boton>
       </div>
     </>
   );
 }
 
-function Texto({ etiqueta, valor, onChange }: { etiqueta: string; valor: string; onChange: (v: string) => void }) {
+function Interruptor({
+  etiqueta,
+  valor,
+  onChange,
+}: {
+  etiqueta: string;
+  valor: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
-    <label className="block text-xs text-muted-foreground">
-      {etiqueta}
+    <label className="flex items-start gap-3 text-sm">
       <input
-        value={valor}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm text-foreground"
+        type="checkbox"
+        checked={valor}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 size-4 rounded border-input accent-primary"
       />
-    </label>
-  );
-}
-
-function Numero({ etiqueta, valor, onChange }: { etiqueta: string; valor: number; onChange: (v: number) => void }) {
-  return (
-    <label className="block text-xs text-muted-foreground">
-      {etiqueta}
-      <input
-        type="number"
-        value={valor}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-        className="mt-1 w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm text-foreground"
-      />
+      <span className="text-muted-foreground">{etiqueta}</span>
     </label>
   );
 }

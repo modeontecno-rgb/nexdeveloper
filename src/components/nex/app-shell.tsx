@@ -1,22 +1,25 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  Activity,
   Boxes,
   Cpu,
-  Gauge,
   LayoutDashboard,
   ListTodo,
+  LogOut,
+  Menu,
   Moon,
   Plug,
   Settings,
-  Sparkle,
   ShieldCheck,
-  Activity,
-  Menu,
+  Sparkle,
   Sun,
   X,
 } from "lucide-react";
 import * as React from "react";
 
+import { PieMarca } from "@/components/nex/pie-marca";
+import { useAuth } from "@/lib/nex/auth";
+import { usePerfil } from "@/lib/nex/queries/datos";
 import { cn } from "@/lib/utils";
 
 const NAVEGACION = [
@@ -34,6 +37,8 @@ const NAVEGACION = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [abierto, setAbierto] = React.useState(false);
   const ruta = useRouterState({ select: (s) => s.location.pathname });
+  const { usuario, salir } = useAuth();
+  const { data: perfil } = usePerfil();
 
   React.useEffect(() => {
     setAbierto(false);
@@ -55,8 +60,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <aside
         className={cn(
-          "z-20 border-r border-sidebar-border bg-sidebar lg:sticky lg:top-0 lg:h-screen lg:block",
-          abierto ? "block" : "hidden",
+          "z-20 flex flex-col border-r border-sidebar-border bg-sidebar lg:sticky lg:top-0 lg:h-screen lg:flex",
+          abierto ? "flex" : "hidden",
         )}
       >
         <div className="hidden px-5 py-6 lg:block">
@@ -82,16 +87,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="mx-3 mt-4 rounded-lg border border-sidebar-border bg-surface p-3 text-xs text-muted-foreground">
-          <p className="flex items-center gap-2 font-medium text-foreground">
-            <Gauge className="size-3.5 text-primary" /> Datos de demostración
-          </p>
-          <p className="mt-1 leading-relaxed">
-            Se usarán tus datos reales en cuanto enlaces tu base de datos propia.
-          </p>
-        </div>
-        <div className="p-3">
+
+        <div className="mt-auto space-y-3 p-3">
           <SelectorTema />
+          <div className="rounded-lg border border-sidebar-border bg-surface p-3">
+            <p className="truncate text-xs font-medium text-foreground">
+              {perfil?.nombre_completo || usuario?.email || "Sesión iniciada"}
+            </p>
+            <button
+              type="button"
+              onClick={() => void salir()}
+              className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-destructive"
+            >
+              <LogOut className="size-3.5" /> Cerrar sesión
+            </button>
+          </div>
+          <PieMarca />
         </div>
       </aside>
 
@@ -131,9 +142,7 @@ function SelectorTema() {
         aria-pressed={!oscuro}
         className={cn(
           "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-          !oscuro
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-muted-foreground hover:text-foreground",
+          !oscuro ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Sun className="size-3.5" /> Claro
@@ -144,9 +153,7 @@ function SelectorTema() {
         aria-pressed={oscuro}
         className={cn(
           "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-          oscuro
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-muted-foreground hover:text-foreground",
+          oscuro ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Moon className="size-3.5" /> Oscuro
