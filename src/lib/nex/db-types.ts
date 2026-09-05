@@ -272,6 +272,16 @@ export type CredencialRefRow = {
   notas: string | null
 }
 
+export type ResultadoVerificacion = "correcto" | "error" | "sin_verificar"
+
+export type PosicionPanel = {
+  x: number
+  y: number
+  ancho: number
+  alto: number
+  anclado: boolean
+}
+
 export type PreviewRow = {
   id: string
   user_id: string
@@ -279,7 +289,87 @@ export type PreviewRow = {
   titulo: string
   url: string
   entorno: EntornoPreview
+  es_principal: boolean
+  ultima_verificacion: string | null
+  resultado_verificacion: ResultadoVerificacion
+  detalle_verificacion: string | null
+  captura_path: string | null
+  posicion: Json | null
 }
+
+export type TipoAccion =
+  | "supabase_sql"
+  | "supabase_migracion"
+  | "supabase_listar_tablas"
+  | "supabase_secreto"
+  | "github_crear_repo"
+  | "github_subir_archivo"
+  | "github_crear_issue"
+  | "github_listar_ramas"
+  | "http_generica"
+
+export type EstadoAccion =
+  | "borrador"
+  | "pendiente_aprobacion"
+  | "aprobada"
+  | "ejecutando"
+  | "completada"
+  | "error"
+  | "cancelada"
+
+export type AccionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  tarea_id: string | null
+  integracion_id: string | null
+  tipo: TipoAccion
+  titulo: string
+  parametros: Json | null
+  requiere_aprobacion: boolean
+  estado: EstadoAccion
+  resultado: Json | null
+  error: string | null
+  aprobada_el: string | null
+  aprobada_por: string | null
+  ejecutada_el: string | null
+  creado_el: string
+}
+
+export type PlantillaAccionRow = {
+  id: string
+  user_id: string
+  tipo: TipoAccion
+  nombre: string
+  descripcion: string | null
+  parametros_por_defecto: Json | null
+  requiere_aprobacion: boolean
+  orden: number
+}
+
+export type TareaAtencionRow = {
+  id: string
+  proyecto_id: string
+  proyecto_nombre: string | null
+  agente_nombre: string | null
+  titulo: string
+  descripcion: string | null
+  estado: EstadoTarea
+  prioridad: Prioridad
+  agente_id: string | null
+  requiere_atencion: boolean
+  instrucciones: string | null
+  motivo_atencion: string | null
+  atendida_el: string | null
+  bloque: "requiere_atencion" | "desatendida"
+  estimacion_horas: number
+  horas_consumidas: number
+  coste_estimado: number
+  coste_consumido: number
+  progreso: number
+  ultima_actividad: string
+}
+
 
 export type ArchivoRow = {
   id: string
