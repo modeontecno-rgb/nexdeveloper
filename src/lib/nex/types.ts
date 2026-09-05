@@ -47,8 +47,8 @@ export interface Tarea {
   costeEstimado: number;
   costeConsumido: number;
   progreso: number; // 0-100
-  completadaPor?: string;
-  completadaEl?: string;
+  completadaPor?: string | undefined;
+  completadaEl?: string | undefined;
   ultimaActividad: string;
 }
 
@@ -56,7 +56,7 @@ export interface Mensaje {
   id: string;
   proyectoId: string;
   autor: "usuario" | "sistema" | "agente";
-  agenteId?: string;
+  agenteId?: string | undefined;
   texto: string;
   fecha: string;
 }
@@ -85,7 +85,7 @@ export interface Proyecto {
   prioridad: Prioridad;
   presupuesto: number;
   consumido: number;
-  repositorio?: string;
+  repositorio?: string | undefined;
   agentes: string[];
   alertas: string[];
   actualizadoEl: string;

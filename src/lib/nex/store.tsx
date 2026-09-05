@@ -64,7 +64,7 @@ interface Contexto extends Estado {
     estimacionHoras: number;
     prioridad: Prioridad;
   }) => void;
-  crearProyecto: (input: { nombre: string; descripcion: string; repositorio?: string }) => string;
+  crearProyecto: (input: { nombre: string; descripcion: string; repositorio?: string | undefined }) => string;
   reiniciarDemo: () => void;
 }
 
