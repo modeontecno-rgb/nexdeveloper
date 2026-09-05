@@ -16,6 +16,7 @@ import {
   useTareas,
 } from "@/lib/nex/queries/datos";
 import { supabase } from "@/lib/nex/supabase";
+import { VERSION_APP } from "@/lib/nex/version";
 
 export const Route = createFileRoute("/estado")({
   head: () => ({
