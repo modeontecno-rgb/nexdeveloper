@@ -6,7 +6,7 @@ import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando } from "@/components/nex/badges";
 import { ETIQUETA_TAREA_IA } from "@/lib/nex/enrutado";
 import { formatoDinero } from "@/lib/nex/labels";
-import { useAgentes, useAjustes } from "@/lib/nex/queries/datos";
+import { useAjustes } from "@/lib/nex/queries/datos";
 import { useExpertos } from "@/lib/nex/queries/expertos";
 import { useConsumosIa, useModelosIa, useProveedoresIa } from "@/lib/nex/queries/proveedores";
 
@@ -78,7 +78,7 @@ function Referencia() {
       mapa.set(clave, fila);
     }
     return [...mapa.values()].sort((a, b) => b.usos - a.usos);
-  }, [consumos, modelos, proveedores, agentes]);
+  }, [consumos, modelos, proveedores, expertos]);
 
   const mejor = React.useMemo(() => {
     const candidatas = filas.filter((f) => f.usos >= 3);

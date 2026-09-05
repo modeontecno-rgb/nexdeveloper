@@ -1,5 +1,14 @@
 # Historial de cambios
 
+## 0.6.0 — 5 de septiembre de 2026
+
+- Nueva pantalla «Expertos»: los tuyos, los encontrados en la red y los sugeridos, con buscador, filtros, valoración y contador de usos.
+- Ficha de cada experto con todos sus datos editables, modelo aconsejado y botón «Usar en este proyecto», que abre una conversación nueva ya preparada.
+- El selector de experto de las conversaciones agrupa por origen y solo muestra los adoptados.
+- Barrido semanal de la red los lunes por la mañana: los hallazgos aparecen en «Requiere tu atención» para adoptarlos o descartarlos.
+- Al adoptar un experto encontrado en la red, su ficha se publica en tu repositorio privado de GitHub.
+- Estado del sistema: semáforos nuevos para el directorio de expertos, el barrido y la publicación.
+
 ## 0.5.0 — 5 de septiembre de 2026
 
 - Catálogo de proveedores completo: se añade Canva y el modelo de imagen Nano Banana de Google; Anthropic, Google, Groq, ElevenLabs, fal y Canva vienen encendidos.
