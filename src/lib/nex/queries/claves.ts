@@ -29,6 +29,9 @@ export const claves = {
   controlesCalidad: ["controles_calidad"] as const,
   ejecucionesCalidad: ["ejecuciones_calidad"] as const,
   resultadosCalidad: ["resultados_calidad"] as const,
+  repositorios: ["repositorios"] as const,
+  repositorioSubidas: ["repositorio_subidas"] as const,
+  repositoriosGithub: ["repositorios_github"] as const,
 };
 
 
