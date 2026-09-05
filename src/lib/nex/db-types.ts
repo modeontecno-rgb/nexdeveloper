@@ -201,7 +201,12 @@ export type TareaRow = {
   ultima_actividad: string
   proyecto_origen_id: string | null
   orden: number
+  requiere_atencion: boolean
+  instrucciones: string | null
+  motivo_atencion: string | null
+  atendida_el: string | null
 }
+
 
 export type EstimacionRow = {
   id: string
