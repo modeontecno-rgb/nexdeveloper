@@ -16,6 +16,10 @@ export const claves = {
   integraciones: ["integraciones"] as const,
   credenciales: ["credenciales_ref"] as const,
   presupuestos: ["presupuestos"] as const,
+  acciones: ["acciones"] as const,
+  plantillasAccion: ["plantillas_accion"] as const,
+  tareasAtencion: ["v_tareas_atencion"] as const,
+  integracionProyectos: ["integracion_proyectos"] as const,
 };
 
 export function errorLegible(error: { message?: string } | null | undefined, contexto: string) {

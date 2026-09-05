@@ -492,6 +492,8 @@ export type Database = {
       prioridad: Prioridad
       modo_ejecucion: ModoEjecucion
       rol_agente: RolAgente
+      tipo_accion: TipoAccion
+      estado_accion: EstadoAccion
     }
     CompositeTypes: { [_ in never]: never }
   }
