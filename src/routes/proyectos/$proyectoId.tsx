@@ -118,9 +118,16 @@ function DetalleProyecto() {
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_22rem]">
         <div className="panel flex max-h-[34rem] flex-col">
-          <h2 className="border-b border-border px-4 py-3 font-display text-sm font-semibold">
-            Conversación del proyecto
-          </h2>
+          <div className="space-y-2 border-b border-border px-4 py-3">
+            <h2 className="font-display text-sm font-semibold">Conversación del proyecto</h2>
+            <BandaGeneracion
+              proveedorId={chat?.proveedor_id}
+              modeloId={chat?.modelo_id}
+              expertoId={chat?.experto_id}
+              chatId={chat?.id}
+              moneda={moneda}
+            />
+          </div>
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
             {mensajes.map((m) => (
               <div
