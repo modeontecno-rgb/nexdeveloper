@@ -1,5 +1,5 @@
 import { formatoDinero } from "@/lib/nex/labels";
-import { useAgentes } from "@/lib/nex/queries/datos";
+import { useExpertos } from "@/lib/nex/queries/expertos";
 import { useConsumosIa, useModelosIa, useProveedoresIa } from "@/lib/nex/queries/proveedores";
 
 /** Banda discreta que indica con qué IA, modelo y experto se generó algo. */
@@ -20,12 +20,12 @@ export function BandaGeneracion({
 }) {
   const { data: proveedores = [] } = useProveedoresIa();
   const { data: modelos = [] } = useModelosIa();
-  const { data: agentes = [] } = useAgentes();
+  const { data: expertos = [] } = useExpertos();
   const { data: consumos = [] } = useConsumosIa();
 
   const proveedor = proveedores.find((p) => p.id === proveedorId);
   const modelo = modelos.find((m) => m.id === modeloId);
-  const experto = agentes.find((a) => a.id === expertoId);
+  const experto = expertos.find((e) => e.id === expertoId);
 
   const propios = consumos.filter(
     (c) => (chatId && c.chat_id === chatId) || (tareaId && c.tarea_id === tareaId),

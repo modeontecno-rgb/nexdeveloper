@@ -68,6 +68,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionProveedor,
         rendimiento,
         funcionCanva,
+        expertos,
+        funcionBarrer,
+        funcionPublicar,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -78,6 +81,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarFuncion("probar-proveedor"),
         verificarTabla("v_rendimiento_modelos"),
         verificarFuncion("canva-oauth"),
+        verificarTabla("expertos"),
+        verificarFuncion("barrer-expertos"),
+        verificarFuncion("publicar-experto"),
       ]);
       return {
         acciones,
@@ -89,6 +95,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionProveedor,
         rendimiento,
         funcionCanva,
+        expertos,
+        funcionBarrer,
+        funcionPublicar,
       };
     },
   });
@@ -226,6 +235,33 @@ function EstadoSistema() {
         : verificaciones.data?.funcionCanva
           ? "Disponible"
           : "No encontrada",
+    },
+    {
+      nombre: "Directorio de expertos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.expertos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.expertos
+          ? "Responde correctamente"
+          : "Falta la tabla expertos (migración 006)",
+    },
+    {
+      nombre: "Barrido semanal de la red",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionBarrer ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionBarrer
+          ? "Disponible; programado los lunes a las 07:00"
+          : "Falta la función barrer-expertos",
+    },
+    {
+      nombre: "Publicación de expertos en GitHub",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionPublicar ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionPublicar
+          ? "Disponible"
+          : "Falta la función publicar-experto",
     },
     {
       nombre: "Versión de la aplicación",
