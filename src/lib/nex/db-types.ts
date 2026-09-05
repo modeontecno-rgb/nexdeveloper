@@ -53,6 +53,65 @@ export type EntornoPreview = "desarrollo" | "pruebas" | "produccion"
 export type Disponibilidad = "disponible" | "ocupado" | "sin_configurar"
 export type TemaPerfil = "claro" | "oscuro" | "sistema"
 export type OrigenExperto = "propio" | "red" | "sugerido"
+export type MomentoControl = "antes" | "despues" | "continuo"
+export type OrigenEjecucionCalidad = "github_actions" | "manual" | "revision_orden"
+export type EstadoEjecucionCalidad = "en_cola" | "ejecutando" | "verde" | "ambar" | "rojo" | "error"
+export type ResultadoControl = "ok" | "aviso" | "fallo" | "omitido"
+export type SemaforoCalidad = "verde" | "ambar" | "rojo" | "sin_datos"
+export type GravedadHallazgo = "bloquea" | "aviso"
+
+export type ControlCalidadRow = {
+  id: string
+  codigo: string
+  nombre: string
+  descripcion: string
+  herramienta: string
+  que_evita: string
+  momento: MomentoControl
+  bloqueante: boolean
+  orden: number
+}
+
+export type EjecucionCalidadRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  version: string
+  origen: OrigenEjecucionCalidad
+  run_id_github: number | null
+  url_run: string | null
+  estado: EstadoEjecucionCalidad
+  iniciada_el: string
+  terminada_el: string | null
+  duracion_seg: number | null
+  resumen: Json | null
+  creado_el: string
+}
+
+export type ResultadoCalidadRow = {
+  id: string
+  ejecucion_id: string
+  control_codigo: string
+  resultado: ResultadoControl
+  detalle: string
+  metrica: Json | null
+  url_detalle: string | null
+}
+
+export type Hallazgo = {
+  codigo: string
+  gravedad: GravedadHallazgo
+  mensaje: string
+}
+
+export type RevisionOrdenRow = {
+  id: string
+  user_id: string
+  orden_id: string
+  aprobada: boolean
+  hallazgos: Hallazgo[]
+  revisada_el: string
+}
 export type EstadoExperto = "propuesto" | "adoptado" | "descartado"
 
 export type ExpertoRow = {
@@ -131,6 +190,8 @@ export type ProyectoRow = {
   color: string | null
   es_favorito: boolean
   orden: number
+  semaforo_calidad: SemaforoCalidad
+  ultima_ejecucion_calidad_id: string | null
   resumen_automatico: string | null
   resumen_actualizado_el: string | null
   creado_el: string
@@ -194,6 +255,8 @@ export type OrdenRow = {
   riesgo: Riesgo
   calidad_prevista: number
   requiere_aprobacion: boolean
+  revision_id: string | null
+  bloqueada_por_revision: boolean
   motivo_aprobacion: string | null
   resuelta_el: string | null
   resuelta_por: string | null
@@ -606,6 +669,16 @@ export type Database = {
       politica_enrutado: Tabla<PoliticaEnrutadoRow, Partial<SinUsuario<PoliticaEnrutadoRow>> & { tarea: string }>
       consumos_ia: Tabla<ConsumoIaRow>
       expertos: Tabla<ExpertoRow, Partial<SinUsuario<ExpertoRow>> & { slug: string; nombre: string }>
+      controles_calidad: Tabla<ControlCalidadRow, Partial<ControlCalidadRow> & { codigo: string; nombre: string }>
+      ejecuciones_calidad: Tabla<
+        EjecucionCalidadRow,
+        Partial<SinUsuario<EjecucionCalidadRow>> & { proyecto_id: string }
+      >
+      resultados_calidad: Tabla<
+        ResultadoCalidadRow,
+        Partial<ResultadoCalidadRow> & { ejecucion_id: string; control_codigo: string }
+      >
+      revisiones_orden: Tabla<RevisionOrdenRow, Partial<SinUsuario<RevisionOrdenRow>> & { orden_id: string }>
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
@@ -636,6 +709,10 @@ export type Database = {
         Args: Record<string, never>
         Returns: number
       }
+      revisar_orden: {
+        Args: { p_orden_id: string }
+        Returns: { aprobada: boolean; hallazgos: Hallazgo[]; revision_id: string }
+      }
     }
     Enums: {
       estado_proyecto: EstadoProyecto
@@ -648,6 +725,11 @@ export type Database = {
       origen_experto: OrigenExperto
       estado_experto: EstadoExperto
       estado_accion: EstadoAccion
+      momento_control: MomentoControl
+      origen_ejecucion_calidad: OrigenEjecucionCalidad
+      estado_ejecucion_calidad: EstadoEjecucionCalidad
+      resultado_control: ResultadoControl
+      semaforo_calidad: SemaforoCalidad
     }
     CompositeTypes: { [_ in never]: never }
   }
