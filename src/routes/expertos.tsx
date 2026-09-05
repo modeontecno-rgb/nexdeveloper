@@ -211,7 +211,7 @@ function Expertos() {
       <Dialogo
         abierto={Boolean(ficha)}
         titulo={ficha?.nombre ?? "Experto"}
-        descripcion={ficha ? ETIQUETA_ORIGEN[ficha.origen] : undefined}
+        {...(ficha ? { descripcion: ETIQUETA_ORIGEN[ficha.origen] } : {})}
         onCerrar={() => setFichaId(null)}
       >
         {ficha ? (
