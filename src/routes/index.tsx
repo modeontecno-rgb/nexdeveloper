@@ -3,10 +3,17 @@ import { AlertTriangle, ArrowRight, CircleDot } from "lucide-react";
 import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
-import { EstadoProyectoBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
-import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_PRIORIDAD, formatoEuros, desde } from "@/lib/nex/labels";
-import { useNex } from "@/lib/nex/store";
-import type { EstadoProyecto, Prioridad } from "@/lib/nex/types";
+import { Cargando, EstadoProyectoBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
+import { Selector } from "@/components/nex/campos";
+import type { EstadoProyecto, Prioridad } from "@/lib/nex/db-types";
+import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_PRIORIDAD, desde, formatoDinero } from "@/lib/nex/labels";
+import {
+  useAjustes,
+  useAlertas,
+  useCargaAgentes,
+  useProyectos,
+  useResumenProyectos,
+} from "@/lib/nex/queries/datos";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,23 +34,32 @@ export const Route = createFileRoute("/")({
 });
 
 function Inicio() {
-  const { proyectos, tareas, agentes, alertas } = useNex();
+  const { data: proyectos = [], isPending } = useProyectos();
+  const { data: resumenes = [] } = useResumenProyectos();
+  const { data: alertas = [] } = useAlertas();
+  const { data: carga = [] } = useCargaAgentes();
+  const { data: ajustes } = useAjustes();
+  const moneda = ajustes?.moneda ?? "EUR";
+
   const [estado, setEstado] = React.useState<EstadoProyecto | "todos">("todos");
   const [prioridad, setPrioridad] = React.useState<Prioridad | "todas">("todas");
-  const [agente, setAgente] = React.useState<string>("todos");
   const [costeMin, setCosteMin] = React.useState(0);
 
-  const filtrados = proyectos.filter(
-    (p) =>
+  const porProyecto = new Map(resumenes.map((r) => [r.proyecto_id, r]));
+
+  const filtrados = proyectos.filter((p) => {
+    const r = porProyecto.get(p.id);
+    return (
       (estado === "todos" || p.estado === estado) &&
       (prioridad === "todas" || p.prioridad === prioridad) &&
-      (agente === "todos" || p.agentes.includes(agente)) &&
-      p.consumido >= costeMin,
-  );
+      (r?.coste_consumido ?? 0) >= costeMin
+    );
+  });
 
-  const totalPresupuesto = proyectos.reduce((s, p) => s + p.presupuesto, 0);
-  const totalConsumido = proyectos.reduce((s, p) => s + p.consumido, 0);
-  const activas = tareas.filter((t) => t.estado === "ejecutando").length;
+  const totalEstimado = resumenes.reduce((s, r) => s + Number(r.coste_estimado ?? 0), 0);
+  const totalConsumido = resumenes.reduce((s, r) => s + Number(r.coste_consumido ?? 0), 0);
+  const ejecutando = resumenes.reduce((s, r) => s + Number(r.ejecutando ?? 0), 0);
+  const totalTareas = resumenes.reduce((s, r) => s + Number(r.total_tareas ?? 0), 0);
 
   return (
     <>
@@ -62,12 +78,12 @@ function Inicio() {
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metrica titulo="Proyectos" valor={String(proyectos.length)} pie={`${filtrados.length} visibles`} />
-        <Metrica titulo="Tareas en ejecución" valor={String(activas)} pie={`${tareas.length} tareas en total`} />
-        <Metrica titulo="Presupuesto" valor={formatoEuros(totalPresupuesto)} pie="Suma de todos los proyectos" />
+        <Metrica titulo="Tareas en ejecución" valor={String(ejecutando)} pie={`${totalTareas} tareas en total`} />
+        <Metrica titulo="Coste estimado" valor={formatoDinero(totalEstimado, moneda)} pie="Suma de los planes de trabajo" />
         <Metrica
           titulo="Consumido"
-          valor={formatoEuros(totalConsumido)}
-          pie={`${Math.round((totalConsumido / Math.max(1, totalPresupuesto)) * 100)}% del presupuesto`}
+          valor={formatoDinero(totalConsumido, moneda)}
+          pie={`${Math.round((totalConsumido / Math.max(1, totalEstimado)) * 100)}% de lo estimado`}
         />
       </section>
 
@@ -92,15 +108,6 @@ function Inicio() {
                 ...Object.entries(ETIQUETA_PRIORIDAD).map(([valor, texto]) => ({ valor, texto })),
               ]}
             />
-            <Selector
-              etiqueta="Agente"
-              valor={agente}
-              onChange={setAgente}
-              opciones={[
-                { valor: "todos", texto: "Todos" },
-                ...agentes.map((a) => ({ valor: a.id, texto: a.nombre })),
-              ]}
-            />
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               Coste mínimo
               <input
@@ -114,52 +121,52 @@ function Inicio() {
             </label>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            {filtrados.map((p) => {
-              const tareasP = tareas.filter((t) => t.proyectoId === p.id);
-              const completadas = tareasP.filter((t) => t.estado === "completada").length;
-              return (
-                <Link
-                  key={p.id}
-                  to="/proyectos/$proyectoId"
-                  params={{ proyectoId: p.id }}
-                  className="panel block p-4 transition hover:border-primary/40"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-display text-base font-semibold">{p.nombre}</h3>
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.descripcion}</p>
+          {isPending ? (
+            <Cargando />
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {filtrados.map((p) => {
+                const r = porProyecto.get(p.id);
+                const completadas = Number(r?.completadas ?? 0);
+                const total = Number(r?.total_tareas ?? 0);
+                return (
+                  <Link
+                    key={p.id}
+                    to="/proyectos/$proyectoId"
+                    params={{ proyectoId: p.id }}
+                    className="panel block p-4 transition hover:border-primary/40"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-display text-base font-semibold">{p.nombre}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.descripcion}</p>
+                      </div>
+                      <PrioridadBadge prioridad={p.prioridad} />
                     </div>
-                    <PrioridadBadge prioridad={p.prioridad} />
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <EstadoProyectoBadge estado={p.estado} />
-                    <span className="text-xs text-muted-foreground">actualizado {desde(p.actualizadoEl)}</span>
-                  </div>
-                  <div className="mt-4">
-                    <Progreso valor={tareasP.length ? (completadas / tareasP.length) * 100 : 0} />
-                    <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                      <span>
-                        {completadas}/{tareasP.length} tareas
-                      </span>
-                      <span>
-                        {formatoEuros(p.consumido)} / {formatoEuros(p.presupuesto)}
-                      </span>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <EstadoProyectoBadge estado={p.estado} />
+                      <span className="text-xs text-muted-foreground">actualizado {desde(p.actualizado_el)}</span>
                     </div>
-                  </div>
-                  {p.alertas.length > 0 && (
-                    <p className="mt-3 flex items-start gap-2 text-xs text-warning">
-                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                      {p.alertas[0]}
-                    </p>
-                  )}
-                </Link>
-              );
-            })}
-            {filtrados.length === 0 && (
-              <p className="panel p-6 text-sm text-muted-foreground">Ningún proyecto cumple estos filtros.</p>
-            )}
-          </div>
+                    <div className="mt-4">
+                      <Progreso valor={total ? (completadas / total) * 100 : 0} />
+                      <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                        <span>
+                          {completadas}/{total} tareas
+                        </span>
+                        <span>
+                          {formatoDinero(Number(r?.coste_consumido ?? 0), moneda)} /{" "}
+                          {formatoDinero(Number(r?.coste_estimado ?? 0), moneda)}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+              {filtrados.length === 0 && (
+                <p className="panel p-6 text-sm text-muted-foreground">Ningún proyecto cumple estos filtros.</p>
+              )}
+            </div>
+          )}
         </div>
 
         <aside className="space-y-4">
@@ -168,36 +175,43 @@ function Inicio() {
             <ul className="mt-3 space-y-3">
               {alertas.map((a) => (
                 <li key={a.id} className="rounded-lg border border-border bg-surface p-3 text-sm">
-                  <p className="text-foreground">{a.texto}</p>
+                  <p className="flex items-start gap-2 text-foreground">
+                    {a.nivel === "critico" ? (
+                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+                    ) : null}
+                    {a.texto}
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {a.requiereDecision ? "Requiere tu decisión" : "Informativo"}
+                    {a.requiere_decision ? "Requiere tu decisión" : "Informativo"}
                   </p>
                 </li>
               ))}
+              {alertas.length === 0 && <li className="text-sm text-muted-foreground">Sin alertas abiertas.</li>}
             </ul>
           </div>
 
           <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Capacidad de agentes</h2>
             <ul className="mt-3 space-y-3">
-              {agentes.map((a) => (
-                <li key={a.id}>
+              {carga.map((a) => (
+                <li key={a.agente_id}>
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
                       <CircleDot
                         className={
-                          a.tareasActivas >= a.capacidad ? "size-3.5 text-destructive" : "size-3.5 text-success"
+                          a.tareas_activas >= a.capacidad ? "size-3.5 text-destructive" : "size-3.5 text-success"
                         }
                       />
                       {a.nombre}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {a.tareasActivas}/{a.capacidad}
+                      {a.tareas_activas}/{a.capacidad}
                     </span>
                   </div>
-                  <Progreso className="mt-1.5" valor={(a.tareasActivas / a.capacidad) * 100} />
+                  <Progreso className="mt-1.5" valor={(a.tareas_activas / Math.max(1, a.capacidad)) * 100} />
                 </li>
               ))}
+              {carga.length === 0 && <li className="text-sm text-muted-foreground">Sin agentes cargados.</li>}
             </ul>
           </div>
         </aside>
@@ -213,34 +227,5 @@ function Metrica({ titulo, valor, pie }: { titulo: string; valor: string; pie: s
       <p className="mt-1 font-display text-2xl font-semibold">{valor}</p>
       <p className="mt-1 text-xs text-muted-foreground">{pie}</p>
     </div>
-  );
-}
-
-export function Selector({
-  etiqueta,
-  valor,
-  onChange,
-  opciones,
-}: {
-  etiqueta: string;
-  valor: string;
-  onChange: (v: string) => void;
-  opciones: { valor: string; texto: string }[];
-}) {
-  return (
-    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-      {etiqueta}
-      <select
-        value={valor}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-input bg-surface px-2 py-1.5 text-sm text-foreground"
-      >
-        {opciones.map((o) => (
-          <option key={o.valor} value={o.valor}>
-            {o.texto}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

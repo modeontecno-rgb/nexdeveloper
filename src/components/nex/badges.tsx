@@ -1,6 +1,11 @@
 import { cn } from "@/lib/utils";
-import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_ESTADO_TAREA, ETIQUETA_PRIORIDAD } from "@/lib/nex/labels";
-import type { EstadoProyecto, EstadoTarea, Prioridad } from "@/lib/nex/types";
+import {
+  ETIQUETA_ESTADO_ORDEN,
+  ETIQUETA_ESTADO_PROYECTO,
+  ETIQUETA_ESTADO_TAREA,
+  ETIQUETA_PRIORIDAD,
+} from "@/lib/nex/labels";
+import type { EstadoOrden, EstadoProyecto, EstadoTarea, Prioridad } from "@/lib/nex/db-types";
 
 const base =
   "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap";
@@ -31,6 +36,19 @@ const tonoEstadoTarea: Record<EstadoTarea, keyof typeof tonos> = {
   esperando_revision: "aviso",
   bloqueada: "peligro",
   completada: "exito",
+  cancelada: "neutro",
+  pausada: "aviso",
+};
+
+const tonoEstadoOrden: Record<EstadoOrden, keyof typeof tonos> = {
+  borrador: "neutro",
+  pendiente_aprobacion: "aviso",
+  aprobada: "exito",
+  rechazada: "peligro",
+  en_cola: "info",
+  ejecutando: "activo",
+  completada: "exito",
+  cancelada: "neutro",
 };
 
 const tonoPrioridad: Record<Prioridad, keyof typeof tonos> = {
@@ -48,6 +66,10 @@ export function EstadoTareaBadge({ estado }: { estado: EstadoTarea }) {
   return <span className={cn(base, tonos[tonoEstadoTarea[estado]])}>{ETIQUETA_ESTADO_TAREA[estado]}</span>;
 }
 
+export function EstadoOrdenBadge({ estado }: { estado: EstadoOrden }) {
+  return <span className={cn(base, tonos[tonoEstadoOrden[estado]])}>{ETIQUETA_ESTADO_ORDEN[estado]}</span>;
+}
+
 export function PrioridadBadge({ prioridad }: { prioridad: Prioridad }) {
   return <span className={cn(base, tonos[tonoPrioridad[prioridad]])}>{ETIQUETA_PRIORIDAD[prioridad]}</span>;
 }
@@ -56,9 +78,13 @@ export function Progreso({ valor, className }: { valor: number; className?: stri
   return (
     <div className={cn("h-1.5 w-full overflow-hidden rounded-full bg-muted", className)}>
       <div
-        className="h-full rounded-full bg-primary transition-all"
-        style={{ width: `${Math.min(100, Math.max(0, valor))}%` }}
+        className="h-full rounded-full bg-primary transition-[width]"
+        style={{ width: `${Math.max(0, Math.min(100, valor))}%` }}
       />
     </div>
   );
+}
+
+export function Cargando({ texto = "Cargando datos..." }: { texto?: string }) {
+  return <p className="panel p-6 text-sm text-muted-foreground">{texto}</p>;
 }

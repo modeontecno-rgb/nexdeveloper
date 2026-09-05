@@ -1,8 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ClipboardCopy } from "lucide-react";
+import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
-import { useNex } from "@/lib/nex/store";
+import { Boton } from "@/components/nex/campos";
+import { useAuth } from "@/lib/nex/auth";
+import {
+  useAgentes,
+  useAlertas,
+  useCredenciales,
+  useIntegraciones,
+  useProyectos,
+  useTareas,
+} from "@/lib/nex/queries/datos";
 
 export const Route = createFileRoute("/estado")({
   head: () => ({
@@ -10,7 +21,7 @@ export const Route = createFileRoute("/estado")({
       { title: "Estado del sistema · NexDeveloper" },
       { name: "description", content: "Semáforos de cada pieza del sistema e informe de estado en texto plano." },
       { property: "og:title", content: "Estado del sistema · NexDeveloper" },
-      { property: "og:description", content: "Semáforos de cada pieza del sistema e informe copiable." },
+      { property: "og:description", content: "Semáforos de cada pieza del sistema e informe de estado en texto plano." },
     ],
   }),
   component: EstadoSistema,
@@ -19,111 +30,122 @@ export const Route = createFileRoute("/estado")({
 type Nivel = "ok" | "aviso" | "error";
 
 function EstadoSistema() {
-  const { integraciones, tareas, origenDatos } = useNex();
+  const { sesion } = useAuth();
+  const proyectos = useProyectos();
+  const tareas = useTareas();
+  const agentes = useAgentes();
+  const integraciones = useIntegraciones();
+  const credenciales = useCredenciales();
+  const alertas = useAlertas();
 
   const piezas: { nombre: string; nivel: Nivel; detalle: string }[] = [
     {
-      nombre: "Base de datos propia",
-      nivel: "error",
-      detalle: "Sin enlazar. Se muestran datos de demostración guardados en este navegador.",
+      nombre: "Acceso y sesión",
+      nivel: sesion ? "ok" : "error",
+      detalle: sesion ? "Sesión válida" : "Sin sesión activa",
     },
     {
-      nombre: "Origen de datos activo",
-      nivel: origenDatos === "demostracion" ? "aviso" : "ok",
-      detalle: origenDatos === "demostracion" ? "Datos de demostración" : "Datos reales",
+      nombre: "Base de datos",
+      nivel: proyectos.isError ? "error" : proyectos.isPending ? "aviso" : "ok",
+      detalle: proyectos.isError
+        ? "No responde"
+        : `${proyectos.data?.length ?? 0} proyectos, ${tareas.data?.length ?? 0} tareas`,
     },
     {
-      nombre: "Almacenamiento de archivos",
-      nivel: "error",
-      detalle: "Disponible al enlazar la base de datos propia.",
+      nombre: "Datos en tiempo real",
+      nivel: sesion ? "ok" : "aviso",
+      detalle: sesion ? "Suscripción activa" : "Inactiva sin sesión",
     },
     {
-      nombre: "Actualización en tiempo real",
-      nivel: "error",
-      detalle: "Disponible al enlazar la base de datos propia.",
+      nombre: "Catálogo de agentes",
+      nivel: (agentes.data?.length ?? 0) === 0 ? "aviso" : "ok",
+      detalle: `${agentes.data?.filter((a) => a.conectado).length ?? 0} conectados de ${agentes.data?.length ?? 0}`,
     },
     {
-      nombre: "Repositorio de código",
-      nivel: "aviso",
-      detalle: "Pendiente de autorizar GitHub y crear el repositorio privado «nexdeveloper».",
+      nombre: "Integraciones",
+      nivel: (integraciones.data?.filter((i) => i.conectada).length ?? 0) === 0 ? "aviso" : "ok",
+      detalle: `${integraciones.data?.filter((i) => i.conectada).length ?? 0} conectadas de ${integraciones.data?.length ?? 0}`,
     },
     {
-      nombre: "Adaptadores de agentes",
-      nivel: "aviso",
-      detalle: "Preparados y simulados. Ninguna API real conectada.",
+      nombre: "Credenciales",
+      nivel: (credenciales.data?.some((c) => !c.configurado) ?? false) ? "aviso" : "ok",
+      detalle: `${credenciales.data?.filter((c) => c.configurado).length ?? 0} configuradas de ${credenciales.data?.length ?? 0}`,
     },
     {
-      nombre: "Cola de trabajo",
-      nivel: "ok",
-      detalle: `${tareas.filter((t) => t.estado !== "completada").length} tareas activas.`,
-    },
-    {
-      nombre: "Secretos",
-      nivel: integraciones.some((i) => i.secretos.some((s) => s.configurado)) ? "ok" : "aviso",
-      detalle: "Gestionados por referencia, nunca en texto plano.",
+      nombre: "Alertas abiertas",
+      nivel: (alertas.data?.some((a) => a.nivel === "critico") ?? false)
+        ? "error"
+        : (alertas.data?.length ?? 0) > 0
+          ? "aviso"
+          : "ok",
+      detalle: `${alertas.data?.length ?? 0} sin resolver`,
     },
   ];
 
-  const informe = [
-    "INFORME DE ESTADO — NexDeveloper",
-    new Date().toLocaleString("es-ES"),
-    "",
-    ...piezas.map((p) => `- ${p.nombre}: ${p.nivel.toUpperCase()} — ${p.detalle}`),
-    "",
-    "Secretos:",
-    ...integraciones.flatMap((i) =>
-      i.secretos.map((s) => `- ${i.nombre} / ${s.referencia}: ${s.configurado ? "configurada" : "sin configurar"}`),
-    ),
-  ].join("\n");
+  const copiar = async () => {
+    const informe = [
+      "Informe de estado de NexDeveloper",
+      new Date().toLocaleString("es-ES"),
+      "",
+      ...piezas.map((p) => `- ${p.nombre}: ${etiquetaNivel(p.nivel)} (${p.detalle})`),
+      "",
+      "Nota: este informe nunca incluye contraseñas ni claves.",
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(informe);
+      toast.success("Informe copiado al portapapeles.");
+    } catch {
+      toast.error("Tu navegador no ha permitido copiar el informe.");
+    }
+  };
 
   return (
     <>
       <Encabezado
         titulo="Estado del sistema"
-        descripcion="Qué funciona, qué falta por configurar y qué está simulado."
+        descripcion="Un semáforo por cada pieza. El informe no contiene nunca contraseñas ni claves."
         acciones={
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(informe);
-                toast.success("Informe copiado");
-              } catch {
-                toast.error("No se ha podido copiar el informe");
-              }
-            }}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-          >
-            Copiar informe
-          </button>
+          <Boton variante="suave" onClick={() => void copiar()}>
+            <ClipboardCopy className="size-4" /> Copiar informe
+          </Boton>
         }
       />
 
       <div className="grid gap-3 md:grid-cols-2">
         {piezas.map((p) => (
-          <div key={p.nombre} className="panel flex items-start gap-3 p-4">
-            <span
-              className={
-                p.nivel === "ok"
-                  ? "mt-1 size-2.5 shrink-0 rounded-full bg-success"
-                  : p.nivel === "aviso"
-                    ? "mt-1 size-2.5 shrink-0 rounded-full bg-warning"
-                    : "mt-1 size-2.5 shrink-0 rounded-full bg-destructive"
-              }
-            />
+          <article key={p.nombre} className="panel flex items-center justify-between gap-3 p-4">
             <div>
-              <p className="text-sm font-medium">{p.nombre}</p>
-              <p className="text-xs text-muted-foreground">{p.detalle}</p>
+              <h2 className="text-sm font-medium text-foreground">{p.nombre}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">{p.detalle}</p>
             </div>
-          </div>
+            <span className="flex items-center gap-2 text-xs">
+              <span
+                className={
+                  p.nivel === "ok"
+                    ? "size-2.5 rounded-full bg-success"
+                    : p.nivel === "aviso"
+                      ? "size-2.5 rounded-full bg-warning"
+                      : "size-2.5 rounded-full bg-destructive"
+                }
+              />
+              {etiquetaNivel(p.nivel)}
+            </span>
+          </article>
         ))}
       </div>
 
-      <div className="panel mt-6 p-4">
-        <h2 className="font-display text-sm font-semibold">Informe en texto plano</h2>
-        <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-surface p-3 text-xs">{informe}</pre>
-        <p className="mt-2 text-xs text-muted-foreground">El informe nunca incluye contraseñas ni claves.</p>
-      </div>
+      <section className="panel mt-6 p-5">
+        <h2 className="font-display text-sm font-semibold">Cambios que no se pueden hacer desde aquí</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Crear tablas o columnas nuevas, activar extensiones de la base de datos y publicar funciones de servidor son
+          las únicas tareas que hay que hacer fuera de la aplicación. Todo lo demás (umbrales, claves, plantillas,
+          moneda) se configura en Ajustes.
+        </p>
+      </section>
     </>
   );
+}
+
+function etiquetaNivel(nivel: Nivel) {
+  return nivel === "ok" ? "Correcto" : nivel === "aviso" ? "Atención" : "Fallo";
 }

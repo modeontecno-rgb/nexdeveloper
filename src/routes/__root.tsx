@@ -1,20 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AppShell } from "@/components/nex/app-shell";
-import { ProveedorConfig } from "@/lib/nex/config";
-import { ProveedorNex } from "@/lib/nex/store";
+import { Puerta } from "@/components/nex/puerta";
+import { ProveedorAuth } from "@/lib/nex/auth";
 import { Toaster } from "@/components/ui/sonner";
+
 
 function NotFoundComponent() {
   return (
@@ -133,15 +133,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ProveedorNex>
-        <ProveedorConfig>
-        <AppShell>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-        </AppShell>
+      <ProveedorAuth>
+        {/* Puerta contiene el <Outlet /> donde se dibujan las rutas hijas. */}
+        <Puerta />
         <Toaster position="top-right" richColors />
-        </ProveedorConfig>
-      </ProveedorNex>
+      </ProveedorAuth>
     </QueryClientProvider>
   );
+
 }

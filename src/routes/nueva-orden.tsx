@@ -1,228 +1,237 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Sparkle, Wand2 } from "lucide-react";
 import * as React from "react";
-import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
-import { ETIQUETA_MODO } from "@/lib/nex/labels";
-import { formatoEuros } from "@/lib/nex/labels";
-import { useConfig } from "@/lib/nex/config";
-import { useNex } from "@/lib/nex/store";
-import type { ModoEjecucion, Prioridad } from "@/lib/nex/types";
+import { Boton, Campo, claseCampo } from "@/components/nex/campos";
+import type { ModoEjecucion, Prioridad } from "@/lib/nex/db-types";
+import { estimar } from "@/lib/nex/estimacion";
+import { ETIQUETA_MODO, ETIQUETA_PRIORIDAD, formatoDinero } from "@/lib/nex/labels";
+import { useAgentes, useAjustes, useChats, useProyectos } from "@/lib/nex/queries/datos";
+import { sugerirProyecto, useCrearOrden, type Sugerencia } from "@/lib/nex/queries/ordenes";
 
 export const Route = createFileRoute("/nueva-orden")({
   head: () => ({
     meta: [
       { title: "Nueva orden · NexDeveloper" },
-      { name: "description", content: "Escribe una orden, elige proyecto y recibe la recomendación de agente." },
+      { name: "description", content: "Escribe una orden en lenguaje natural y elige coste, calidad y agentes." },
       { property: "og:title", content: "Nueva orden · NexDeveloper" },
-      { property: "og:description", content: "Escribe una orden y recibe la recomendación de agente." },
+      {
+        property: "og:description",
+        content: "Escribe una orden en lenguaje natural y elige coste, calidad y agentes.",
+      },
     ],
   }),
-  component: NuevaOrden,
+  component: NuevaOrdenPantalla,
 });
 
-const PALABRAS: Record<string, string[]> = {
-  claude: ["arquitectura", "código", "refactor", "revisión", "seguridad", "base de datos"],
-  chatgpt: ["plan", "texto", "redactar", "análisis", "documentación"],
-  gemini: ["informe", "datos", "pdf", "documento", "excel"],
-  lovable: ["pantalla", "web", "interfaz", "página", "formulario"],
-  canva: ["diseño", "plantilla", "marca", "cartel"],
-  "nano-banana": ["imagen", "foto", "ilustración", "banner"],
-};
+const MODOS: ModoEjecucion[] = ["economico", "equilibrado", "maxima_calidad"];
 
-function NuevaOrden() {
-  const { proyectos, agentes, crearOrden, solicitarAprobacion } = useNex();
-  const { config } = useConfig();
-  const navigate = useNavigate();
-  const [proyectoId, setProyectoId] = React.useState(proyectos[0]?.id ?? "");
+function NuevaOrdenPantalla() {
+  const { data: proyectos = [] } = useProyectos();
+  const { data: agentes = [] } = useAgentes();
+  const { data: chats = [] } = useChats();
+  const { data: ajustes } = useAjustes();
+  const moneda = ajustes?.moneda ?? "EUR";
+  const crear = useCrearOrden();
+  const navegar = useNavigate();
+
   const [texto, setTexto] = React.useState("");
+  const [proyectoId, setProyectoId] = React.useState<string>("");
   const [modo, setModo] = React.useState<ModoEjecucion>("equilibrado");
   const [prioridad, setPrioridad] = React.useState<Prioridad>("media");
-  const [mesaExpertos, setMesaExpertos] = React.useState(false);
+  const [equipo, setEquipo] = React.useState<string[]>([]);
+  const [sugerencia, setSugerencia] = React.useState<Sugerencia | null>(null);
 
-  const t = texto.toLowerCase();
-  const puntuaciones = agentes.map((a) => {
-    const coincidencias = (PALABRAS[a.id] ?? []).filter((p) => t.includes(p)).length;
-    const pesoCoste = modo === "economico" ? 12 : modo === "maxima_calidad" ? 2 : 6;
-    const pesoCalidad = modo === "maxima_calidad" ? 1.4 : 1;
-    const carga = a.tareasActivas / a.capacidad;
-    return {
-      agente: a,
-      puntos: coincidencias * 20 + a.calidad * pesoCalidad + a.rapidez * 0.3 - a.costeRelativo * pesoCoste - carga * 15,
-    };
-  });
-  const ordenados = [...puntuaciones].sort((x, y) => y.puntos - x.puntos);
-  const recomendado = ordenados[0];
-  const equipo = mesaExpertos ? ordenados.slice(0, 3) : ordenados.slice(0, 1);
+  React.useEffect(() => {
+    if (!proyectoId && proyectos[0]) setProyectoId(proyectos[0].id);
+  }, [proyectos, proyectoId]);
 
-  const factorModo = modo === "economico" ? 0.6 : modo === "maxima_calidad" ? 1.7 : 1;
-  const costeEstimado = Math.round(
-    equipo.reduce((s, e) => s + (30 + texto.length * 0.15) * e.agente.costeRelativo, 0) * factorModo,
-  );
-  const horas = Math.round((1.5 + texto.length / 200) * factorModo * equipo.length * 10) / 10;
-  const riesgo: "Bajo" | "Medio" | "Alto" =
-    prioridad === "critica" || costeEstimado > 250 ? "Alto" : costeEstimado > 120 ? "Medio" : "Bajo";
-  const calidadPrevista = Math.round(
-    equipo.reduce((s, e) => s + e.agente.calidad, 0) / equipo.length + (modo === "maxima_calidad" ? 4 : 0),
-  );
-  const motivos = [
-    costeEstimado > config.umbralAprobacion ? `supera el límite de ${formatoEuros(config.umbralAprobacion)}` : null,
-    prioridad === "critica" ? "prioridad crítica" : null,
-    riesgo === "Alto" ? "riesgo alto" : null,
-  ].filter(Boolean) as string[];
-  const requiereAprobacion = motivos.length > 0;
+  React.useEffect(() => {
+    if (texto.trim().length < 12) {
+      setSugerencia(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      void sugerirProyecto(texto).then(setSugerencia);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [texto]);
+
+  const estimacion = estimar(texto, modo, prioridad, Math.max(1, equipo.length));
+  const umbral = ajustes?.umbral_aprobacion_eur ?? 150;
+  const necesitaAprobacion =
+    estimacion.costeEstimado > umbral ||
+    (ajustes?.aprobar_si_prioridad_critica !== false && prioridad === "critica") ||
+    (ajustes?.aprobar_si_riesgo_alto !== false && estimacion.riesgo === "Alto");
+
+  const alternar = (id: string) =>
+    setEquipo((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]));
+
+  const enviar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const chat = chats.find((c) => c.proyecto_id === proyectoId && c.es_principal);
+    await crear.mutateAsync({
+      entrada: {
+        proyectoId: proyectoId || null,
+        chatId: chat?.id ?? null,
+        texto: texto.trim(),
+        modo,
+        prioridad,
+        agenteId: equipo[0] ?? null,
+        equipo,
+        costeEstimado: estimacion.costeEstimado,
+        horasEstimadas: estimacion.horasEstimadas,
+        riesgo: estimacion.riesgo,
+        calidadPrevista: estimacion.calidadPrevista,
+      },
+      ajustes: ajustes ?? null,
+    });
+    setTexto("");
+    void navegar({ to: necesitaAprobacion ? "/aprobaciones" : "/cola" });
+  };
 
   return (
     <>
-      <Encabezado titulo="Nueva orden" descripcion="Escribe qué necesitas y NexDeveloper propone quién debe hacerlo." />
+      <Encabezado
+        titulo="Nueva orden"
+        descripcion="Escribe lo que quieres conseguir. NexDeveloper propone proyecto, equipo, coste y riesgo."
+      />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <div className="panel p-4">
-          <label className="text-xs text-muted-foreground">Proyecto</label>
-          <select
-            value={proyectoId}
-            onChange={(e) => setProyectoId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm"
-          >
-            {proyectos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
+      <form onSubmit={enviar} className="grid gap-6 xl:grid-cols-[1fr_20rem]">
+        <div className="space-y-4">
+          <div className="panel p-5">
+            <Campo etiqueta="¿Qué quieres que se haga?">
+              <textarea
+                required
+                rows={7}
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder="Por ejemplo: prepara la pantalla de facturación con descarga en PDF y avisos por correo."
+                className={claseCampo}
+              />
+            </Campo>
 
-          <label className="mt-4 block text-xs text-muted-foreground">Orden en lenguaje natural</label>
-          <textarea
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            rows={7}
-            placeholder="Ejemplo: revisa el módulo de facturación y prepara las pruebas antes de publicarlo."
-            className="mt-1 w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm"
-          />
+            {sugerencia && sugerencia.proyecto_id !== proyectoId ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+                <Wand2 className="size-3.5 text-warning" />
+                Esto encaja mejor en «{sugerencia.nombre}» ({Math.round(sugerencia.confianza)}% de confianza).
+                <button
+                  type="button"
+                  onClick={() => setProyectoId(sugerencia.proyecto_id)}
+                  className="font-medium text-primary underline"
+                >
+                  Cambiar a ese proyecto
+                </button>
+              </div>
+            ) : null}
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {(Object.keys(ETIQUETA_MODO) as ModoEjecucion[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setModo(m)}
-                className={
-                  modo === m
-                    ? "rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
-                    : "rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface-2"
-                }
-              >
-                {ETIQUETA_MODO[m]}
-              </button>
-            ))}
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Campo etiqueta="Proyecto">
+                <select value={proyectoId} onChange={(e) => setProyectoId(e.target.value)} className={claseCampo}>
+                  <option value="">Sin clasificar</option>
+                  {proyectos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+              <Campo etiqueta="Prioridad">
+                <select
+                  value={prioridad}
+                  onChange={(e) => setPrioridad(e.target.value as Prioridad)}
+                  className={claseCampo}
+                >
+                  {Object.entries(ETIQUETA_PRIORIDAD).map(([valor, texto]) => (
+                    <option key={valor} value={valor}>
+                      {texto}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+            </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              Prioridad
-              <select
-                value={prioridad}
-                onChange={(e) => setPrioridad(e.target.value as Prioridad)}
-                className="rounded-md border border-input bg-surface px-2 py-1.5 text-sm text-foreground"
-              >
-                <option value="baja">Baja</option>
-                <option value="media">Media</option>
-                <option value="alta">Alta</option>
-                <option value="critica">Crítica</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={mesaExpertos}
-                onChange={(e) => setMesaExpertos(e.target.checked)}
-                className="size-4 accent-primary"
-              />
-              Mesa de expertos (solo decisiones importantes)
-            </label>
+          <div className="panel p-5">
+            <p className="text-xs font-medium text-muted-foreground">Modo de ejecución</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {MODOS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setModo(m)}
+                  aria-pressed={modo === m}
+                  className={
+                    modo === m
+                      ? "rounded-lg border border-primary/50 bg-primary/10 px-3 py-2.5 text-sm font-medium text-primary"
+                      : "rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-muted-foreground transition hover:border-primary/30"
+                  }
+                >
+                  {ETIQUETA_MODO[m]}
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-5 text-xs font-medium text-muted-foreground">Equipo de agentes</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {agentes.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => alternar(a.id)}
+                  aria-pressed={equipo.includes(a.id)}
+                  className={
+                    equipo.includes(a.id)
+                      ? "rounded-full border border-primary/50 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+                      : "rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/30"
+                  }
+                >
+                  {a.nombre}
+                  {!a.conectado ? " · sin conectar" : ""}
+                </button>
+              ))}
+              {agentes.length === 0 && <span className="text-xs text-muted-foreground">Sin agentes en el catálogo.</span>}
+            </div>
           </div>
         </div>
 
-        <aside className="panel h-fit p-4">
-          <h2 className="font-display text-sm font-semibold">Propuesta</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {texto.trim()
-              ? mesaExpertos
-                ? "Equipo propuesto: planifica, ejecuta y revisa."
-                : `Agente recomendado: ${recomendado?.agente.nombre}.`
-              : "Escribe la orden para ver la recomendación."}
-          </p>
-          <ul className="mt-3 space-y-2">
-            {equipo.map((e, i) => (
-              <li key={e.agente.id} className="rounded-lg border border-border bg-surface px-3 py-2 text-sm">
-                <span className="font-medium">{e.agente.nombre}</span>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {mesaExpertos ? ["planifica", "ejecuta", "revisa"][i] : "ejecuta"} · calidad {e.agente.calidad}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <dl className="mt-4 space-y-2 text-sm">
-            <Fila termino="Coste estimado" valor={formatoEuros(costeEstimado)} />
-            <Fila termino="Tiempo estimado" valor={`${horas} h`} />
-            <Fila termino="Riesgo" valor={riesgo} />
-            <Fila termino="Calidad prevista" valor={`${calidadPrevista}/100`} />
-            <Fila termino="Aprobación" valor={requiereAprobacion ? `Necesaria (${motivos.join(", ")})` : "No necesaria"} />
+        <aside className="panel h-fit p-5">
+          <h2 className="font-display text-sm font-semibold">Previsión de esta orden</h2>
+          <dl className="mt-4 space-y-3 text-sm">
+            <Fila termino="Coste estimado" valor={formatoDinero(estimacion.costeEstimado, moneda)} />
+            <Fila termino="Tiempo estimado" valor={`${estimacion.horasEstimadas.toFixed(1)} h`} />
+            <Fila termino="Riesgo" valor={estimacion.riesgo} />
+            <Fila termino="Calidad prevista" valor={`${estimacion.calidadPrevista}%`} />
+            <Fila termino="Agentes" valor={equipo.length ? String(equipo.length) : "Se asignará solo"} />
           </dl>
 
-          <button
-            type="button"
-            disabled={!texto.trim() || !proyectoId}
-            onClick={() => {
-              if (requiereAprobacion) {
-                solicitarAprobacion({
-                  proyectoId,
-                  texto: texto.trim(),
-                  agenteId: recomendado?.agente.id ?? null,
-                  equipo: equipo.map((e) => e.agente.id),
-                  modo,
-                  prioridad,
-                  costeEstimado,
-                  estimacionHoras: horas,
-                  riesgo,
-                  calidadPrevista,
-                  motivo: motivos.join(", "),
-                });
-                toast.info("Orden enviada a aprobación", {
-                  description: "Revísala en la pantalla de Aprobaciones antes de que se ejecute.",
-                });
-                navigate({ to: "/aprobaciones" });
-                return;
-              }
-              crearOrden({
-                proyectoId,
-                texto: texto.trim(),
-                agenteId: recomendado?.agente.id ?? null,
-                costeEstimado,
-                estimacionHoras: horas,
-                prioridad,
-              });
-              toast.success("Orden enviada a la cola", {
-                description: "Los agentes reales se conectarán en una fase posterior.",
-              });
-              navigate({ to: "/proyectos/$proyectoId", params: { proyectoId } });
-            }}
-            className="mt-4 w-full rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
+          <p
+            className={
+              necesitaAprobacion
+                ? "mt-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning"
+                : "mt-4 rounded-lg border border-success/40 bg-success/10 px-3 py-2 text-xs text-success"
+            }
           >
-            {requiereAprobacion ? "Enviar a aprobación" : "Enviar"}
-          </button>
+            {necesitaAprobacion
+              ? `Esta orden pasará por tu aprobación (umbral ${formatoDinero(umbral, moneda)}).`
+              : "Esta orden se enviará directamente a la cola de trabajo."}
+          </p>
+
+          <Boton type="submit" className="mt-4 w-full" disabled={crear.isPending || texto.trim().length < 5}>
+            <Sparkle className="size-4" /> {necesitaAprobacion ? "Enviar a aprobación" : "Enviar a la cola"}
+          </Boton>
         </aside>
-      </div>
+      </form>
     </>
   );
 }
 
 function Fila({ termino, valor }: { termino: string; valor: string }) {
   return (
-    <div className="flex items-center justify-between border-b border-border pb-1.5">
+    <div className="flex items-center justify-between gap-3">
       <dt className="text-muted-foreground">{termino}</dt>
-      <dd className="font-medium">{valor}</dd>
+      <dd className="font-medium text-foreground">{valor}</dd>
     </div>
   );
 }

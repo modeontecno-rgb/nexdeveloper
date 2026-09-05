@@ -1,4 +1,13 @@
-import type { EstadoProyecto, EstadoTarea, ModoEjecucion, Prioridad } from "./types";
+import type {
+  EstadoOrden,
+  EstadoProyecto,
+  EstadoTarea,
+  ModoEjecucion,
+  NivelAlerta,
+  Prioridad,
+  TipoActividad,
+  TipoIntegracion,
+} from "./db-types";
 
 export const ETIQUETA_ESTADO_PROYECTO: Record<EstadoProyecto, string> = {
   pendiente: "Pendiente",
@@ -17,6 +26,19 @@ export const ETIQUETA_ESTADO_TAREA: Record<EstadoTarea, string> = {
   esperando_revision: "Esperando revisión",
   bloqueada: "Bloqueada",
   completada: "Completada",
+  cancelada: "Cancelada",
+  pausada: "Pausada",
+};
+
+export const ETIQUETA_ESTADO_ORDEN: Record<EstadoOrden, string> = {
+  borrador: "Borrador",
+  pendiente_aprobacion: "Pendiente de aprobación",
+  aprobada: "Aprobada",
+  rechazada: "Rechazada",
+  en_cola: "En cola",
+  ejecutando: "Ejecutando",
+  completada: "Completada",
+  cancelada: "Cancelada",
 };
 
 export const ETIQUETA_PRIORIDAD: Record<Prioridad, string> = {
@@ -32,21 +54,51 @@ export const ETIQUETA_MODO: Record<ModoEjecucion, string> = {
   maxima_calidad: "Máxima calidad",
 };
 
-export function formatoEuros(valor: number) {
+export const ETIQUETA_TIPO_ACTIVIDAD: Record<TipoActividad, string> = {
+  orden: "Orden",
+  resultado: "Resultado",
+  decision: "Decisión",
+  cambio: "Cambio",
+  actividad: "Actividad",
+  reorganizacion: "Reorganización",
+  aprobacion: "Aprobación",
+  sistema: "Sistema",
+};
+
+export const ETIQUETA_NIVEL_ALERTA: Record<NivelAlerta, string> = {
+  info: "Informativa",
+  aviso: "Aviso",
+  critico: "Crítica",
+};
+
+export const ETIQUETA_TIPO_INTEGRACION: Record<TipoIntegracion, string> = {
+  codigo: "Código",
+  modelo: "Modelo",
+  diseno: "Diseño",
+  datos: "Datos",
+  despliegue: "Despliegue",
+  otro: "Otro",
+};
+
+export function formatoDinero(valor: number, moneda = "EUR") {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",
-    currency: "EUR",
+    currency: moneda,
     maximumFractionDigits: 0,
-  }).format(valor);
+  }).format(valor || 0);
 }
 
-export function formatoFecha(iso: string) {
+export const formatoEuros = (valor: number) => formatoDinero(valor, "EUR");
+
+export function formatoFecha(iso: string | null | undefined) {
+  if (!iso) return "—";
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "2-digit" }).format(
     new Date(iso),
   );
 }
 
-export function formatoFechaHora(iso: string) {
+export function formatoFechaHora(iso: string | null | undefined) {
+  if (!iso) return "—";
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "short",
@@ -55,10 +107,24 @@ export function formatoFechaHora(iso: string) {
   }).format(new Date(iso));
 }
 
-export function desde(iso: string) {
+export function desde(iso: string | null | undefined) {
+  if (!iso) return "sin actividad";
   const minutos = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutos < 1) return "ahora mismo";
   if (minutos < 60) return `hace ${minutos} min`;
   const h = Math.round(minutos / 60);
   if (h < 24) return `hace ${h} h`;
   return `hace ${Math.round(h / 24)} d`;
+}
+
+export function crearSlug(nombre: string) {
+  return (
+    nombre
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "proyecto"
+  );
 }
