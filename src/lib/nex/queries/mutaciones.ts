@@ -112,7 +112,7 @@ export function useMoverTarea() {
 export function useCrearProyecto() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { nombre: string; descripcion: string; repositorio?: string }) => {
+    mutationFn: async (input: { nombre: string; descripcion: string; repositorio?: string | undefined }) => {
       const fila = await comprobar(
         await supabase
           .from("proyectos")
@@ -127,7 +127,7 @@ export function useCrearProyecto() {
           .select("*")
           .single(),
       );
-      const proyecto = fila as ProyectoRow;
+      const proyecto = fila as unknown as ProyectoRow;
       await supabase.from("chats").insert({
         proyecto_id: proyecto.id,
         titulo: `Chat de ${proyecto.nombre}`,
