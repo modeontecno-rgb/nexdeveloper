@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink, MonitorPlay, Send } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
@@ -10,7 +10,15 @@ import { PanelPreview } from "@/components/nex/panel-preview";
 import { PlanTrabajo } from "@/components/nex/plan-trabajo";
 import { BandaGeneracion } from "@/components/nex/banda-generacion";
 import { TareasEnBloques } from "@/components/nex/tareas-bloques";
-import { ETIQUETA_ENTORNO, ETIQUETA_TIPO_ACTIVIDAD, formatoDinero, formatoFechaHora } from "@/lib/nex/labels";
+import {
+  ETIQUETA_ENTORNO,
+  ETIQUETA_TIPO_ACTIVIDAD,
+  formatoDinero,
+  formatoFechaHora,
+  marcaHora,
+  marcaTiempo,
+  mismoDia,
+} from "@/lib/nex/labels";
 import {
   useActividad,
   useAgentes,
@@ -74,6 +82,13 @@ function DetalleProyecto() {
     );
   }
 
+  const copiarConversacion = () => {
+    const texto = mensajes
+      .map((m) => `[${marcaTiempo(m.fecha)}] ${m.autor === "usuario" ? "Yo" : "IA"}: ${m.texto}`)
+      .join("\n");
+    void navigator.clipboard?.writeText(texto);
+  };
+
   const mandar = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chat || !texto.trim()) return;
@@ -120,7 +135,17 @@ function DetalleProyecto() {
       <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_22rem]">
         <div className="panel flex max-h-[34rem] flex-col">
           <div className="space-y-2 border-b border-border px-4 py-3">
-            <h2 className="font-display text-sm font-semibold">Conversación del proyecto</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-display text-sm font-semibold">Conversación del proyecto</h2>
+              <button
+                type="button"
+                onClick={copiarConversacion}
+                disabled={mensajes.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+              >
+                <Copy className="size-3.5" /> Copiar conversación
+              </button>
+            </div>
             <BandaGeneracion
               proveedorId={chat?.proveedor_id}
               modeloId={chat?.modelo_id}
@@ -130,19 +155,29 @@ function DetalleProyecto() {
             />
           </div>
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
-            {mensajes.map((m) => (
-              <div
-                key={m.id}
-                className={
-                  m.autor === "usuario"
-                    ? "ml-auto max-w-[85%] rounded-xl rounded-br-sm bg-primary/15 px-3 py-2 text-sm"
-                    : "max-w-[85%] rounded-xl rounded-bl-sm border border-border bg-surface px-3 py-2 text-sm"
-                }
-              >
-                <p className="whitespace-pre-wrap text-foreground">{m.texto}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{formatoFechaHora(m.fecha)}</p>
-              </div>
-            ))}
+            {mensajes.map((m, i) => {
+              const previo = i > 0 ? mensajes[i - 1] : undefined;
+              const soloHora = mismoDia(previo?.fecha, m.fecha);
+              return (
+                <div
+                  key={m.id}
+                  className={
+                    m.autor === "usuario"
+                      ? "ml-auto max-w-[85%] rounded-xl rounded-br-sm bg-primary/15 px-3 py-2 text-sm"
+                      : "max-w-[85%] rounded-xl rounded-bl-sm border border-border bg-surface px-3 py-2 text-sm"
+                  }
+                >
+                  <p className="whitespace-pre-wrap text-foreground">{m.texto}</p>
+                  <time
+                    dateTime={m.fecha}
+                    title={marcaTiempo(m.fecha)}
+                    className="mt-1 block text-[11px] text-muted-foreground"
+                  >
+                    {soloHora ? marcaHora(m.fecha) : marcaTiempo(m.fecha)}
+                  </time>
+                </div>
+              );
+            })}
             {mensajes.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 Aún no hay mensajes. Escribe aquí para dejar contexto permanente del proyecto.
