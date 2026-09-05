@@ -233,7 +233,7 @@ Deno.serve(async (req: Request) => {
           if (zip.ok) {
             try {
               const bytes = new Uint8Array(await zip.arrayBuffer());
-              filas = leerZip(bytes);
+              filas = await leerZip(bytes);
             } catch {
               filas = [];
             }
@@ -300,29 +300,23 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-/** Lee el primer fichero JSON de un zip sin comprimir o comprimido con deflate. */
-function leerZip(bytes: Uint8Array): FilaResultado[] {
+/** Lee el fichero JSON que viene dentro del zip del artefacto. */
+async function leerZip(bytes: Uint8Array): Promise<FilaResultado[]> {
   const vista = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let i = 0;
-  while (i < bytes.length - 4) {
-    if (vista.getUint32(i, true) !== 0x04034b50) {
-      i += 1;
-      continue;
-    }
+  for (let i = 0; i < bytes.length - 30; i += 1) {
+    if (vista.getUint32(i, true) !== 0x04034b50) continue;
     const metodo = vista.getUint16(i + 8, true);
     const comprimido = vista.getUint32(i + 18, true);
     const largoNombre = vista.getUint16(i + 26, true);
     const largoExtra = vista.getUint16(i + 28, true);
     const inicio = i + 30 + largoNombre + largoExtra;
     const datos = bytes.slice(inicio, inicio + comprimido);
-    let texto = "";
+    let texto: string;
     if (metodo === 0) {
       texto = new TextDecoder().decode(datos);
     } else {
       const flujo = new Blob([datos]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-      // La lectura del flujo es asíncrona; se resuelve más abajo de forma síncrona no es posible,
-      // por eso se descomprime con un truco: se deja para el bloque asíncrono.
-      return leerZipAsincrono(flujo);
+      texto = await new Response(flujo).text();
     }
     try {
       return JSON.parse(texto) as FilaResultado[];
@@ -330,11 +324,5 @@ function leerZip(bytes: Uint8Array): FilaResultado[] {
       return [];
     }
   }
-  return [];
-}
-
-// Deno permite `await` de nivel superior, pero no dentro de una función síncrona:
-// esta función devuelve una lista vacía y la descompresión real se hace en `leerZipAsincrono`.
-function leerZipAsincrono(_flujo: ReadableStream<Uint8Array>): FilaResultado[] {
   return [];
 }
