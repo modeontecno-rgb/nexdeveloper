@@ -363,10 +363,18 @@ export type Database = {
       archivos: Tabla<ArchivoRow, Partial<SinUsuario<ArchivoRow>> & { nombre: string }>
       configuracion_app: Tabla<ConfiguracionAppRow>
     }
+      acciones: Tabla<AccionRow, Partial<SinUsuario<AccionRow>> & { tipo: TipoAccion; titulo: string }>
+      plantillas_accion: Tabla<
+        PlantillaAccionRow,
+        Partial<SinUsuario<PlantillaAccionRow>> & { tipo: TipoAccion; nombre: string }
+      >
+    }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
       v_carga_agentes: { Row: CargaAgenteRow; Relationships: [] }
+      v_tareas_atencion: { Row: TareaAtencionRow; Relationships: [] }
     }
+
     Functions: {
       sugerir_proyecto: {
         Args: { p_texto: string }
