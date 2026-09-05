@@ -5,21 +5,34 @@
 
 create extension if not exists pgcrypto;
 
--- Clave de cifrado de las claves de proveedor (vive en la base de datos, nunca
--- en el código ni en el navegador). Solo se genera la primera vez.
-do $$
-declare
-  actual text := current_setting('app.clave_cifrado', true);
-begin
-  if actual is null or actual = '' then
-    execute format(
-      'alter database %I set app.clave_cifrado = %L',
-      current_database(),
-      encode(gen_random_bytes(32), 'hex')
-    );
-  end if;
-end
+-- Clave de cifrado de las claves de proveedor. En Supabase no se permite
+-- «alter database ... set», así que vive en la tabla private.claves_sistema y se
+-- lee con private.clave_cifrado(). Solo se genera la primera vez.
+create schema if not exists private;
+
+create table if not exists private.claves_sistema (
+  clave text primary key,
+  valor text not null,
+  created_at timestamptz not null default now()
+);
+
+revoke all on private.claves_sistema from public, anon, authenticated;
+
+insert into private.claves_sistema (clave, valor)
+values ('clave_cifrado', encode(gen_random_bytes(32), 'hex'))
+on conflict (clave) do nothing;
+
+create or replace function private.clave_cifrado()
+returns text
+language sql
+stable
+security definer
+set search_path = private, public
+as $$
+  select valor from private.claves_sistema where clave = 'clave_cifrado'
 $$;
+
+revoke all on function private.clave_cifrado() from public, anon, authenticated;
 
 /* --------------------------------- Tipos ---------------------------------- */
 
@@ -192,10 +205,10 @@ security definer
 set search_path = public
 as $$
 declare
-  v_key text := current_setting('app.clave_cifrado', true);
+  v_key text := private.clave_cifrado();
 begin
   if v_key is null or v_key = '' then
-    raise exception 'No hay clave de cifrado configurada en la base de datos';
+    raise exception 'No hay clave de cifrado configurada en private.claves_sistema';
   end if;
 
   update public.proveedores_ia
@@ -225,7 +238,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_key text := current_setting('app.clave_cifrado', true);
+  v_key text := private.clave_cifrado();
   v_cifrada text;
 begin
   select clave_cifrada into v_cifrada from public.proveedores_ia where id = p_proveedor_id;
