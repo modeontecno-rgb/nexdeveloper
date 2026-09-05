@@ -257,7 +257,14 @@ export type IntegracionRow = {
   cuenta: string | null
   configuracion: Json | null
   ultima_comprobacion: string | null
+  url_panel: string | null
+  url_docs: string | null
+  descripcion: string | null
+  icono: string | null
+  es_predefinida: boolean
+  capacidades: string[] | null
 }
+
 
 export type CredencialRefRow = {
   id: string
