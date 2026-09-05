@@ -175,8 +175,10 @@ export type OrdenRow = {
   confianza_clasificacion: number | null
   reorganizada_el: string | null
   pendiente_confirmar_proyecto: boolean
+  requiere_atencion: boolean
   creado_el: string
 }
+
 
 export type TareaRow = {
   id: string
