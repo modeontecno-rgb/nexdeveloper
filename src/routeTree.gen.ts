@@ -17,6 +17,7 @@ import { Route as ColaRouteImport } from './routes/cola'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
+import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
 
@@ -60,6 +61,11 @@ const NuevaOrdenRoute = NuevaOrdenRouteImport.update({
   path: '/nueva-orden',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjustesProveedoresRoute = AjustesProveedoresRouteImport.update({
+  id: '/ajustes_/proveedores',
+  path: '/ajustes/proveedores',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProyectosIndexRoute = ProyectosIndexRouteImport.update({
   id: '/proyectos/',
   path: '/proyectos/',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/estado': typeof EstadoRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/ajustes/proveedores': typeof AjustesProveedoresRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/estado': typeof EstadoRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/ajustes/proveedores': typeof AjustesProveedoresRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/estado': typeof EstadoRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/ajustes_/proveedores': typeof AjustesProveedoresRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/estado'
     | '/integraciones'
     | '/nueva-orden'
+    | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/estado'
     | '/integraciones'
     | '/nueva-orden'
+    | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/estado'
     | '/integraciones'
     | '/nueva-orden'
+    | '/ajustes_/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   EstadoRoute: typeof EstadoRoute
   IntegracionesRoute: typeof IntegracionesRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
+  AjustesProveedoresRoute: typeof AjustesProveedoresRoute
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
 }
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NuevaOrdenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajustes_/proveedores': {
+      id: '/ajustes_/proveedores'
+      path: '/ajustes/proveedores'
+      fullPath: '/ajustes/proveedores'
+      preLoaderRoute: typeof AjustesProveedoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/proyectos/': {
       id: '/proyectos/'
       path: '/proyectos'
@@ -244,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   EstadoRoute: EstadoRoute,
   IntegracionesRoute: IntegracionesRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
+  AjustesProveedoresRoute: AjustesProveedoresRoute,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
 }
