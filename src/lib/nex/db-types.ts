@@ -499,8 +499,11 @@ export type ConsumoIaRow = {
   user_id: string
   proyecto_id: string | null
   chat_id: string | null
+  mensaje_id: string | null
   tarea_id: string | null
+  proveedor_id: string | null
   modelo_id: string | null
+  experto_id: string | null
   tokens_entrada: number
   tokens_salida: number
   coste: number
