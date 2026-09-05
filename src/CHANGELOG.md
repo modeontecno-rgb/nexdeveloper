@@ -6,7 +6,6 @@
 - Las tareas se separan en «Requiere tu atención» y «Trabajo desatendido», con botón «Ya lo he hecho».
 - Vistas previas incrustadas en una ventana flotante que se mueve, se ancla y recuerda su sitio.
 - Integraciones que puedes crear, editar y borrar desde la aplicación, con los nombres de sus credenciales.
-- Pantalla de Estado con las instrucciones exactas para preparar la base de datos, listas para copiar.
 
 
 
