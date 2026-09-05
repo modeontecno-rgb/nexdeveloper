@@ -87,7 +87,7 @@ function Ajustes() {
               type="checkbox"
               checked={config.reorganizacionAutomatica}
               onChange={(e) => setConfig({ ...config, reorganizacionAutomatica: e.target.checked })}
-              className="size-4 accent-[oklch(0.78_0.13_188)]"
+              className="size-4 accent-primary"
             />
             Recolocar automáticamente cuando el proyecto correcto sea evidente
           </label>
