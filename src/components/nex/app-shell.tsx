@@ -98,6 +98,61 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+const CLAVE_TEMA = "nexdeveloper-tema";
+
+function SelectorTema() {
+  const [oscuro, setOscuro] = React.useState(true);
+
+  React.useEffect(() => {
+    setOscuro(!document.documentElement.classList.contains("dark") === false);
+  }, []);
+
+  const cambiar = (aOscuro: boolean) => {
+    setOscuro(aOscuro);
+    document.documentElement.classList.toggle("dark", aOscuro);
+    try {
+      window.localStorage.setItem(CLAVE_TEMA, aOscuro ? "oscuro" : "claro");
+    } catch {
+      /* sin almacenamiento */
+    }
+  };
+
+  return (
+    <div
+      role="group"
+      aria-label="Tema de color"
+      className="grid grid-cols-2 gap-1 rounded-lg border border-sidebar-border bg-surface p-1"
+    >
+      <button
+        type="button"
+        onClick={() => cambiar(false)}
+        aria-pressed={!oscuro}
+        className={cn(
+          "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+          !oscuro
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <Sun className="size-3.5" /> Claro
+      </button>
+      <button
+        type="button"
+        onClick={() => cambiar(true)}
+        aria-pressed={oscuro}
+        className={cn(
+          "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+          oscuro
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <Moon className="size-3.5" /> Oscuro
+      </button>
+    </div>
+  );
+}
+
 function Marca() {
   return (
     <Link to="/" className="flex items-center gap-2.5">
