@@ -8,7 +8,10 @@ import type { ModoEjecucion, Prioridad } from "@/lib/nex/db-types";
 import { estimar } from "@/lib/nex/estimacion";
 import { ETIQUETA_MODO, ETIQUETA_PRIORIDAD, formatoDinero } from "@/lib/nex/labels";
 import { useAgentes, useAjustes, useChats, useProyectos } from "@/lib/nex/queries/datos";
+import { revisarOrden } from "@/lib/nex/queries/calidad";
 import { sugerirProyecto, useCrearOrden, type Sugerencia } from "@/lib/nex/queries/ordenes";
+import { bloquea, revisarTextoOrden } from "@/lib/nex/revision-orden";
+import type { Hallazgo } from "@/lib/nex/db-types";
 
 export const Route = createFileRoute("/nueva-orden")({
   head: () => ({
@@ -42,6 +45,7 @@ function NuevaOrdenPantalla() {
   const [prioridad, setPrioridad] = React.useState<Prioridad>("media");
   const [equipo, setEquipo] = React.useState<string[]>([]);
   const [sugerencia, setSugerencia] = React.useState<Sugerencia | null>(null);
+  const [hallazgos, setHallazgos] = React.useState<Hallazgo[] | null>(null);
 
   React.useEffect(() => {
     if (!proyectoId && proyectos[0]) setProyectoId(proyectos[0].id);
@@ -68,10 +72,17 @@ function NuevaOrdenPantalla() {
   const alternar = (id: string) =>
     setEquipo((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]));
 
-  const enviar = async (e: React.FormEvent) => {
+  const enviar = async (e: React.FormEvent, forzar = false) => {
     e.preventDefault();
+    const proyecto = proyectos.find((p) => p.id === proyectoId);
+    const encontrados = revisarTextoOrden(texto, proyecto?.repositorio);
+    if (!forzar && encontrados.length > 0) {
+      setHallazgos(encontrados);
+      if (bloquea(encontrados)) return;
+      return;
+    }
     const chat = chats.find((c) => c.proyecto_id === proyectoId && c.es_principal);
-    await crear.mutateAsync({
+    const creada = await crear.mutateAsync({
       entrada: {
         proyectoId: proyectoId || null,
         chatId: chat?.id ?? null,
@@ -87,6 +98,8 @@ function NuevaOrdenPantalla() {
       },
       ajustes: ajustes ?? null,
     });
+    if (creada?.id) await revisarOrden(creada.id).catch(() => undefined);
+    setHallazgos(null);
     setTexto("");
     void navegar({ to: necesitaAprobacion ? "/aprobaciones" : "/cola" });
   };
@@ -217,6 +230,34 @@ function NuevaOrdenPantalla() {
               ? `Esta orden pasará por tu aprobación (umbral ${formatoDinero(umbral, moneda)}).`
               : "Esta orden se enviará directamente a la cola de trabajo."}
           </p>
+
+          {hallazgos && hallazgos.length > 0 ? (
+            <div
+              className={
+                bloquea(hallazgos)
+                  ? "mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+                  : "mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning"
+              }
+            >
+              <p className="font-medium">
+                {bloquea(hallazgos) ? "La orden no puede salir" : "Revisa estos avisos"}
+              </p>
+              <ul className="mt-1.5 list-disc space-y-1 pl-4">
+                {hallazgos.map((h) => (
+                  <li key={h.codigo}>{h.mensaje}</li>
+                ))}
+              </ul>
+              {!bloquea(hallazgos) ? (
+                <button
+                  type="button"
+                  onClick={(ev) => void enviar(ev, true)}
+                  className="mt-2 font-medium underline"
+                >
+                  Enviar de todos modos
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           <Boton type="submit" className="mt-4 w-full" disabled={crear.isPending || texto.trim().length < 5}>
             <Sparkle className="size-4" /> {necesitaAprobacion ? "Enviar a aprobación" : "Enviar a la cola"}
