@@ -335,7 +335,7 @@ select cron.schedule('sincronizar-calidad', '*/2 * * * *', 'select public.lanzar
 
 /* ------------------- Plantilla de acción: instalar el taller ---------------- */
 
-insert into public.plantillas_accion (user_id, tipo, nombre, descripcion, parametros, requiere_aprobacion)
+insert into public.plantillas_accion (user_id, tipo, nombre, descripcion, parametros_por_defecto, requiere_aprobacion)
 select u.id, 'github_subir_archivo', 'Instalar taller de calidad',
        'Sube .github/workflows/calidad.yml al repositorio del proyecto.',
        jsonb_build_object('ruta', '.github/workflows/calidad.yml', 'mensaje', 'Añadir el taller de control de calidad'),
