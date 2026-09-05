@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton } from "@/components/nex/campos";
 import { useAuth } from "@/lib/nex/auth";
+import { SQL_ACCIONES_Y_ATENCION } from "@/lib/nex/migracion-sql";
 import {
   useAgentes,
   useAlertas,
