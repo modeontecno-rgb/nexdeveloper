@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 
 import { EstadoTareaBadge, PrioridadBadge } from "@/components/nex/badges";
+import { SelectorExperto } from "@/components/nex/selector-experto";
 import { Selector } from "@/components/nex/campos";
 import type { AgenteRow, EstadoTarea, Prioridad, TareaRow } from "@/lib/nex/db-types";
 import { ETIQUETA_ESTADO_TAREA, ETIQUETA_PRIORIDAD, formatoDinero, formatoFecha } from "@/lib/nex/labels";
@@ -80,7 +81,14 @@ export function PlanTrabajo({
                     opciones={Object.entries(ETIQUETA_ESTADO_TAREA).map(([valor, texto]) => ({ valor, texto }))}
                   />
                 </td>
-                <td className="px-3 py-2.5 text-muted-foreground">{nombreAgente(t.agente_id)}</td>
+                <td className="px-3 py-2.5 text-muted-foreground">
+                  <p>{nombreAgente(t.agente_id)}</p>
+                  <SelectorExperto
+                    valor={t.experto_id}
+                    onChange={(expertoId) => asignarExperto.mutate({ id: t.id, expertoId })}
+                    className="mt-1 min-w-[10rem] py-1 text-xs"
+                  />
+                </td>
                 <td className="px-3 py-2.5">
                   <Selector
                     etiqueta=""

@@ -8,8 +8,8 @@ import { Boton, claseCampo } from "@/components/nex/campos";
 import { PanelAcciones } from "@/components/nex/panel-acciones";
 import { PanelPreview } from "@/components/nex/panel-preview";
 import { PlanTrabajo } from "@/components/nex/plan-trabajo";
-import { SelectorExperto } from "@/components/nex/selector-experto";
 import { BandaGeneracion } from "@/components/nex/banda-generacion";
+import { SelectorExperto } from "@/components/nex/selector-experto";
 import { TareasEnBloques } from "@/components/nex/tareas-bloques";
 import {
   ETIQUETA_ENTORNO,
@@ -32,6 +32,7 @@ import {
   useTareas,
   useTareasAtencion,
 } from "@/lib/nex/queries/datos";
+import { useAsignarExperto } from "@/lib/nex/queries/expertos";
 import { useEnviarMensaje } from "@/lib/nex/queries/mutaciones";
 
 export const Route = createFileRoute("/proyectos/$proyectoId")({
@@ -60,6 +61,7 @@ function DetalleProyecto() {
   const moneda = ajustes?.moneda ?? "EUR";
 
   const proyecto = proyectos.find((p) => p.id === proyectoId);
+  const asignarExperto = useAsignarExperto("chats");
   const chat = chats.find((c) => c.proyecto_id === proyectoId && c.es_principal) ?? chats.find((c) => c.proyecto_id === proyectoId);
   const { data: mensajes = [] } = useMensajes(chat?.id);
   const enviar = useEnviarMensaje();
