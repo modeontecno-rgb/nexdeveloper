@@ -29,7 +29,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 
 // Proyecto propio de Supabase: valores fijados como respaldo (la clave publicable no es secreta).
-const SUPABASE_PROJECT_ID_RESPALDO = 'eqyuodrmlbclobaverdb';
+export const SUPABASE_PROJECT_ID = 'eqyuodrmlbclobaverdb';
 const SUPABASE_URL_RESPALDO = 'https://eqyuodrmlbclobaverdb.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY_RESPALDO = 'sb_publishable_tQgS3KEHYJC1jOx4XQCH6w_VL44Avu_';
 
