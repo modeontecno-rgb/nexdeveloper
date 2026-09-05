@@ -1,2 +1,2 @@
 /** Versión visible de la aplicación. */
-export const VERSION_APP = "0.7.0";
+export const VERSION_APP = "0.8.0";
