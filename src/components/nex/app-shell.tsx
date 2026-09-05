@@ -104,7 +104,7 @@ function SelectorTema() {
   const [oscuro, setOscuro] = React.useState(true);
 
   React.useEffect(() => {
-    setOscuro(!document.documentElement.classList.contains("dark") === false);
+    setOscuro(document.documentElement.classList.contains("dark"));
   }, []);
 
   const cambiar = (aOscuro: boolean) => {
