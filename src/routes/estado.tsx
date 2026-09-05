@@ -57,12 +57,16 @@ function useVerificacionesBackend(habilitado: boolean) {
     queryKey: ["verificaciones-backend"],
     enabled: habilitado,
     queryFn: async () => {
-      const [acciones, plantillas, funcion] = await Promise.all([
+      const [acciones, plantillas, funcion, proveedores, modelos, consumos, funcionProveedor] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
         verificarFuncion("ejecutar-accion"),
+        verificarTabla("proveedores_ia"),
+        verificarTabla("modelos_ia"),
+        verificarTabla("consumos_ia"),
+        verificarFuncion("probar-proveedor"),
       ]);
-      return { acciones, plantillas, funcion };
+      return { acciones, plantillas, funcion, proveedores, modelos, consumos, funcionProveedor };
     },
   });
 }
