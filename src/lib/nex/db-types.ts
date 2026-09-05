@@ -134,6 +134,10 @@ export type ChatRow = {
   es_principal: boolean
   proyecto_origen_id: string | null
   reorganizado_el: string | null
+  proveedor_id: string | null
+  modelo_id: string | null
+  experto_id: string | null
+  resultado: ResultadoIa | null
 }
 
 export type MensajeRow = {
