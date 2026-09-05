@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClipboardCopy } from "lucide-react";
 import * as React from "react";
@@ -6,7 +7,6 @@ import { toast } from "sonner";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton } from "@/components/nex/campos";
 import { useAuth } from "@/lib/nex/auth";
-import { SQL_ACCIONES_Y_ATENCION } from "@/lib/nex/migracion-sql";
 import {
   useAgentes,
   useAlertas,
@@ -15,6 +15,7 @@ import {
   useProyectos,
   useTareas,
 } from "@/lib/nex/queries/datos";
+import { supabase } from "@/lib/nex/supabase";
 
 export const Route = createFileRoute("/estado")({
   head: () => ({
@@ -30,6 +31,42 @@ export const Route = createFileRoute("/estado")({
 
 type Nivel = "ok" | "aviso" | "error";
 
+async function verificarTabla(nombre: string): Promise<boolean> {
+  const { error } = await supabase
+    .from(nombre as "acciones")
+    .select("*", { count: "exact", head: true })
+    .limit(1);
+  return !error;
+}
+
+async function verificarFuncion(nombre: string): Promise<boolean> {
+  try {
+    await supabase.functions.invoke(nombre, { body: {} });
+    return true;
+  } catch (err) {
+    const mensaje = String((err as Error)?.message ?? err).toLowerCase();
+    if (mensaje.includes("not found") || mensaje.includes("404") || mensaje.includes("no such function")) {
+      return false;
+    }
+    return true;
+  }
+}
+
+function useVerificacionesBackend(habilitado: boolean) {
+  return useQuery({
+    queryKey: ["verificaciones-backend"],
+    enabled: habilitado,
+    queryFn: async () => {
+      const [acciones, plantillas, funcion] = await Promise.all([
+        verificarTabla("acciones"),
+        verificarTabla("plantillas_accion"),
+        verificarFuncion("ejecutar-accion"),
+      ]);
+      return { acciones, plantillas, funcion };
+    },
+  });
+}
+
 function EstadoSistema() {
   const { sesion } = useAuth();
   const proyectos = useProyectos();
@@ -38,6 +75,7 @@ function EstadoSistema() {
   const integraciones = useIntegraciones();
   const credenciales = useCredenciales();
   const alertas = useAlertas();
+  const verificaciones = useVerificacionesBackend(Boolean(sesion));
 
   const piezas: { nombre: string; nivel: Nivel; detalle: string }[] = [
     {
@@ -80,6 +118,33 @@ function EstadoSistema() {
           ? "aviso"
           : "ok",
       detalle: `${alertas.data?.length ?? 0} sin resolver`,
+    },
+    {
+      nombre: "Tabla de acciones",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.acciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.acciones
+          ? "Responde correctamente"
+          : "No responde o falta",
+    },
+    {
+      nombre: "Tabla de plantillas",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.plantillas ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.plantillas
+          ? "Responde correctamente"
+          : "No responde o falta",
+    },
+    {
+      nombre: "Edge Function ejecutar-accion",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcion ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcion
+          ? "Disponible"
+          : "No encontrada",
     },
   ];
 
@@ -134,37 +199,6 @@ function EstadoSistema() {
           </article>
         ))}
       </div>
-
-      <section className="panel mt-6 p-5">
-        <h2 className="font-display text-sm font-semibold">Cambios que no se pueden hacer desde aquí</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Crear tablas o columnas nuevas, activar extensiones de la base de datos y publicar funciones de servidor son
-          las únicas tareas que hay que hacer fuera de la aplicación. Todo lo demás (umbrales, claves, plantillas,
-          moneda) se configura en Ajustes.
-        </p>
-
-        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3">
-          <p className="text-sm text-warning">
-            Si las acciones reales, el bloque «Requiere tu atención» o las vistas previas incrustadas aparecen vacíos,
-            copia estas instrucciones y pégalas una sola vez en el editor de consultas de tu base de datos.
-          </p>
-          <Boton
-            variante="suave"
-            className="mt-3"
-            onClick={() => {
-              void navigator.clipboard.writeText(SQL_ACCIONES_Y_ATENCION);
-              toast.success("Instrucciones copiadas.");
-            }}
-          >
-            <ClipboardCopy className="size-4" /> Copiar instrucciones
-          </Boton>
-        </div>
-
-        <pre className="mt-3 max-h-72 overflow-auto rounded-lg border border-border bg-surface p-3 text-xs text-muted-foreground">
-          {SQL_ACCIONES_Y_ATENCION}
-        </pre>
-      </section>
-
     </>
   );
 }
