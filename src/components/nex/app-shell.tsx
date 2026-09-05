@@ -5,11 +5,13 @@ import {
   Gauge,
   LayoutDashboard,
   ListTodo,
+  Moon,
   Plug,
   Settings,
   Sparkle,
   Activity,
   Menu,
+  Sun,
   X,
 } from "lucide-react";
 import * as React from "react";
@@ -86,9 +88,67 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Se usarán tus datos reales en cuanto enlaces tu base de datos propia.
           </p>
         </div>
+        <div className="p-3">
+          <SelectorTema />
+        </div>
       </aside>
 
       <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">{children}</main>
+    </div>
+  );
+}
+
+const CLAVE_TEMA = "nexdeveloper-tema";
+
+function SelectorTema() {
+  const [oscuro, setOscuro] = React.useState(true);
+
+  React.useEffect(() => {
+    setOscuro(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const cambiar = (aOscuro: boolean) => {
+    setOscuro(aOscuro);
+    document.documentElement.classList.toggle("dark", aOscuro);
+    try {
+      window.localStorage.setItem(CLAVE_TEMA, aOscuro ? "oscuro" : "claro");
+    } catch {
+      /* sin almacenamiento */
+    }
+  };
+
+  return (
+    <div
+      role="group"
+      aria-label="Tema de color"
+      className="grid grid-cols-2 gap-1 rounded-lg border border-sidebar-border bg-surface p-1"
+    >
+      <button
+        type="button"
+        onClick={() => cambiar(false)}
+        aria-pressed={!oscuro}
+        className={cn(
+          "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+          !oscuro
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <Sun className="size-3.5" /> Claro
+      </button>
+      <button
+        type="button"
+        onClick={() => cambiar(true)}
+        aria-pressed={oscuro}
+        className={cn(
+          "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+          oscuro
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <Moon className="size-3.5" /> Oscuro
+      </button>
     </div>
   );
 }

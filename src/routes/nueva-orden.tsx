@@ -128,7 +128,7 @@ function NuevaOrden() {
                 type="checkbox"
                 checked={mesaExpertos}
                 onChange={(e) => setMesaExpertos(e.target.checked)}
-                className="size-4 accent-[oklch(0.78_0.13_188)]"
+                className="size-4 accent-primary"
               />
               Mesa de expertos (solo decisiones importantes)
             </label>
