@@ -679,6 +679,14 @@ export type Database = {
         Partial<ResultadoCalidadRow> & { ejecucion_id: string; control_codigo: string }
       >
       revisiones_orden: Tabla<RevisionOrdenRow, Partial<SinUsuario<RevisionOrdenRow>> & { orden_id: string }>
+      repositorios: Tabla<
+        RepositorioRow,
+        Partial<SinUsuario<RepositorioRow>> & { proyecto_id: string; nombre_completo: string }
+      >
+      repositorio_subidas: Tabla<
+        RepositorioSubidaRow,
+        Partial<RepositorioSubidaRow> & { repositorio_id: string }
+      >
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
