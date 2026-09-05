@@ -24,6 +24,7 @@ export const claves = {
   modelosIa: ["modelos_ia"] as const,
   politicaEnrutado: ["politica_enrutado"] as const,
   consumosIa: ["consumos_ia"] as const,
+  expertos: ["expertos"] as const,
   rendimientoModelos: ["v_rendimiento_modelos"] as const,
 };
 

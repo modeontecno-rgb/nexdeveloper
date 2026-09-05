@@ -52,6 +52,29 @@ export type UbicacionCredencial = "vault" | "supabase_secret" | "externo"
 export type EntornoPreview = "desarrollo" | "pruebas" | "produccion"
 export type Disponibilidad = "disponible" | "ocupado" | "sin_configurar"
 export type TemaPerfil = "claro" | "oscuro" | "sistema"
+export type OrigenExperto = "propio" | "red" | "sugerido"
+export type EstadoExperto = "propuesto" | "adoptado" | "descartado"
+
+export type ExpertoRow = {
+  id: string
+  user_id: string
+  slug: string
+  nombre: string
+  origen: OrigenExperto
+  papel: string
+  cuando_usarlo: string | null
+  instrucciones: string | null
+  modelo_aconsejado_id: string | null
+  tareas: string[]
+  muestra_url: string | null
+  url_origen: string | null
+  url_origen_publicado: string | null
+  estado: EstadoExperto
+  valoracion: number | null
+  usos: number
+  created_at: string
+  updated_at: string
+}
 
 export type PerfilRow = {
   id: string
@@ -582,6 +605,7 @@ export type Database = {
       >
       politica_enrutado: Tabla<PoliticaEnrutadoRow, Partial<SinUsuario<PoliticaEnrutadoRow>> & { tarea: string }>
       consumos_ia: Tabla<ConsumoIaRow>
+      expertos: Tabla<ExpertoRow, Partial<SinUsuario<ExpertoRow>> & { slug: string; nombre: string }>
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
@@ -608,6 +632,10 @@ export type Database = {
         Args: Record<string, never>
         Returns: number
       }
+      sembrar_expertos: {
+        Args: Record<string, never>
+        Returns: number
+      }
     }
     Enums: {
       estado_proyecto: EstadoProyecto
@@ -617,6 +645,8 @@ export type Database = {
       modo_ejecucion: ModoEjecucion
       rol_agente: RolAgente
       tipo_accion: TipoAccion
+      origen_experto: OrigenExperto
+      estado_experto: EstadoExperto
       estado_accion: EstadoAccion
     }
     CompositeTypes: { [_ in never]: never }
