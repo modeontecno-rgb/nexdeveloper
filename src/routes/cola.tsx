@@ -5,9 +5,17 @@ import * as React from "react";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoOrdenBadge, EstadoTareaBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
 import { Boton, Selector } from "@/components/nex/campos";
+import { TareasEnBloques } from "@/components/nex/tareas-bloques";
 import type { EstadoTarea } from "@/lib/nex/db-types";
 import { ETIQUETA_ESTADO_TAREA, desde, formatoDinero } from "@/lib/nex/labels";
-import { useAgentes, useAjustes, useOrdenes, useProyectos, useTareas } from "@/lib/nex/queries/datos";
+import {
+  useAgentes,
+  useAjustes,
+  useOrdenes,
+  useProyectos,
+  useTareas,
+  useTareasAtencion,
+} from "@/lib/nex/queries/datos";
 import { useMoverTarea } from "@/lib/nex/queries/mutaciones";
 import { useCancelarOrden, useMoverOrden } from "@/lib/nex/queries/ordenes";
 
@@ -30,6 +38,7 @@ function Cola() {
   const { data: proyectos = [] } = useProyectos();
   const { data: agentes = [] } = useAgentes();
   const { data: ordenes = [] } = useOrdenes();
+  const { data: tareasAtencion = [] } = useTareasAtencion();
   const { data: ajustes } = useAjustes();
   const moneda = ajustes?.moneda ?? "EUR";
   const mover = useMoverTarea();
@@ -96,6 +105,10 @@ function Cola() {
           </ul>
         </section>
       ) : null}
+
+      <div className="mb-6">
+        <TareasEnBloques tareas={tareasAtencion} mostrarProyecto />
+      </div>
 
       {isPending ? (
         <Cargando />

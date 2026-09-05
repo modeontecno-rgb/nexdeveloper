@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton } from "@/components/nex/campos";
 import { useAuth } from "@/lib/nex/auth";
+import { SQL_ACCIONES_Y_ATENCION } from "@/lib/nex/migracion-sql";
 import {
   useAgentes,
   useAlertas,
@@ -141,7 +142,29 @@ function EstadoSistema() {
           las únicas tareas que hay que hacer fuera de la aplicación. Todo lo demás (umbrales, claves, plantillas,
           moneda) se configura en Ajustes.
         </p>
+
+        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3">
+          <p className="text-sm text-warning">
+            Si las acciones reales, el bloque «Requiere tu atención» o las vistas previas incrustadas aparecen vacíos,
+            copia estas instrucciones y pégalas una sola vez en el editor de consultas de tu base de datos.
+          </p>
+          <Boton
+            variante="suave"
+            className="mt-3"
+            onClick={() => {
+              void navigator.clipboard.writeText(SQL_ACCIONES_Y_ATENCION);
+              toast.success("Instrucciones copiadas.");
+            }}
+          >
+            <ClipboardCopy className="size-4" /> Copiar instrucciones
+          </Boton>
+        </div>
+
+        <pre className="mt-3 max-h-72 overflow-auto rounded-lg border border-border bg-surface p-3 text-xs text-muted-foreground">
+          {SQL_ACCIONES_Y_ATENCION}
+        </pre>
       </section>
+
     </>
   );
 }

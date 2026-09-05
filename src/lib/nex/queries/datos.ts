@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type {
+  AccionRow,
   ActividadRow,
   AgenteRow,
   AjustesRow,
@@ -15,7 +16,9 @@ import type {
   PerfilRow,
   PreviewRow,
   ProyectoRow,
+  PlantillaAccionRow,
   ResumenProyectoRow,
+  TareaAtencionRow,
   TareaRow,
 } from "../db-types";
 import { supabase } from "../supabase";
@@ -156,5 +159,43 @@ export function useConfiguracionApp() {
       const filas = await pedir<ConfiguracionAppRow>(supabase.from("configuracion_app").select("clave,valor"));
       return Object.fromEntries(filas.map((f) => [f.clave, f.valor])) as Record<string, string>;
     },
+  });
+}
+
+export function useTareasAtencion(proyectoId?: string) {
+  return useQuery({
+    queryKey: [...claves.tareasAtencion, proyectoId ?? "todos"],
+    queryFn: () => {
+      const consulta = supabase.from("v_tareas_atencion").select("*");
+      return pedir<TareaAtencionRow>(proyectoId ? consulta.eq("proyecto_id", proyectoId) : consulta);
+    },
+  });
+}
+
+export function useAcciones(proyectoId?: string) {
+  return useQuery({
+    queryKey: [...claves.acciones, proyectoId ?? "todas"],
+    queryFn: () => {
+      const consulta = supabase.from("acciones").select("*").order("creado_el", { ascending: false });
+      return pedir<AccionRow>(proyectoId ? consulta.eq("proyecto_id", proyectoId) : consulta);
+    },
+  });
+}
+
+export function usePlantillasAccion() {
+  return useQuery({
+    queryKey: claves.plantillasAccion,
+    staleTime: 5 * 60 * 1000,
+    queryFn: () => pedir<PlantillaAccionRow>(supabase.from("plantillas_accion").select("*").order("orden")),
+  });
+}
+
+export function useIntegracionProyectos() {
+  return useQuery({
+    queryKey: claves.integracionProyectos,
+    queryFn: () =>
+      pedir<{ integracion_id: string; proyecto_id: string; permisos: string[] }>(
+        supabase.from("integracion_proyectos").select("integracion_id,proyecto_id,permisos"),
+      ),
   });
 }

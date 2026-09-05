@@ -175,8 +175,10 @@ export type OrdenRow = {
   confianza_clasificacion: number | null
   reorganizada_el: string | null
   pendiente_confirmar_proyecto: boolean
+  requiere_atencion: boolean
   creado_el: string
 }
+
 
 export type TareaRow = {
   id: string
@@ -201,7 +203,12 @@ export type TareaRow = {
   ultima_actividad: string
   proyecto_origen_id: string | null
   orden: number
+  requiere_atencion: boolean
+  instrucciones: string | null
+  motivo_atencion: string | null
+  atendida_el: string | null
 }
+
 
 export type EstimacionRow = {
   id: string
@@ -257,7 +264,14 @@ export type IntegracionRow = {
   cuenta: string | null
   configuracion: Json | null
   ultima_comprobacion: string | null
+  url_panel: string | null
+  url_docs: string | null
+  descripcion: string | null
+  icono: string | null
+  es_predefinida: boolean
+  capacidades: string[] | null
 }
+
 
 export type CredencialRefRow = {
   id: string
@@ -272,6 +286,16 @@ export type CredencialRefRow = {
   notas: string | null
 }
 
+export type ResultadoVerificacion = "correcto" | "error" | "sin_verificar"
+
+export type PosicionPanel = {
+  x: number
+  y: number
+  ancho: number
+  alto: number
+  anclado: boolean
+}
+
 export type PreviewRow = {
   id: string
   user_id: string
@@ -279,7 +303,87 @@ export type PreviewRow = {
   titulo: string
   url: string
   entorno: EntornoPreview
+  es_principal: boolean
+  ultima_verificacion: string | null
+  resultado_verificacion: ResultadoVerificacion
+  detalle_verificacion: string | null
+  captura_path: string | null
+  posicion: Json | null
 }
+
+export type TipoAccion =
+  | "supabase_sql"
+  | "supabase_migracion"
+  | "supabase_listar_tablas"
+  | "supabase_secreto"
+  | "github_crear_repo"
+  | "github_subir_archivo"
+  | "github_crear_issue"
+  | "github_listar_ramas"
+  | "http_generica"
+
+export type EstadoAccion =
+  | "borrador"
+  | "pendiente_aprobacion"
+  | "aprobada"
+  | "ejecutando"
+  | "completada"
+  | "error"
+  | "cancelada"
+
+export type AccionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  tarea_id: string | null
+  integracion_id: string | null
+  tipo: TipoAccion
+  titulo: string
+  parametros: Json | null
+  requiere_aprobacion: boolean
+  estado: EstadoAccion
+  resultado: Json | null
+  error: string | null
+  aprobada_el: string | null
+  aprobada_por: string | null
+  ejecutada_el: string | null
+  creado_el: string
+}
+
+export type PlantillaAccionRow = {
+  id: string
+  user_id: string
+  tipo: TipoAccion
+  nombre: string
+  descripcion: string | null
+  parametros_por_defecto: Json | null
+  requiere_aprobacion: boolean
+  orden: number
+}
+
+export type TareaAtencionRow = {
+  id: string
+  proyecto_id: string
+  proyecto_nombre: string | null
+  agente_nombre: string | null
+  titulo: string
+  descripcion: string | null
+  estado: EstadoTarea
+  prioridad: Prioridad
+  agente_id: string | null
+  requiere_atencion: boolean
+  instrucciones: string | null
+  motivo_atencion: string | null
+  atendida_el: string | null
+  bloque: "requiere_atencion" | "desatendida"
+  estimacion_horas: number
+  horas_consumidas: number
+  coste_estimado: number
+  coste_consumido: number
+  progreso: number
+  ultima_actividad: string
+}
+
 
 export type ArchivoRow = {
   id: string
@@ -362,11 +466,19 @@ export type Database = {
       previews: Tabla<PreviewRow, Partial<SinUsuario<PreviewRow>> & { proyecto_id: string; titulo: string; url: string }>
       archivos: Tabla<ArchivoRow, Partial<SinUsuario<ArchivoRow>> & { nombre: string }>
       configuracion_app: Tabla<ConfiguracionAppRow>
+      acciones: Tabla<AccionRow, Partial<SinUsuario<AccionRow>> & { tipo: TipoAccion; titulo: string }>
+
+      plantillas_accion: Tabla<
+        PlantillaAccionRow,
+        Partial<SinUsuario<PlantillaAccionRow>> & { tipo: TipoAccion; nombre: string }
+      >
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
       v_carga_agentes: { Row: CargaAgenteRow; Relationships: [] }
+      v_tareas_atencion: { Row: TareaAtencionRow; Relationships: [] }
     }
+
     Functions: {
       sugerir_proyecto: {
         Args: { p_texto: string }
@@ -380,6 +492,8 @@ export type Database = {
       prioridad: Prioridad
       modo_ejecucion: ModoEjecucion
       rol_agente: RolAgente
+      tipo_accion: TipoAccion
+      estado_accion: EstadoAccion
     }
     CompositeTypes: { [_ in never]: never }
   }

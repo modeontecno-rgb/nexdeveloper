@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink, Send } from "lucide-react";
+import { ArrowLeft, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge } from "@/components/nex/badges";
 import { Boton, claseCampo } from "@/components/nex/campos";
+import { PanelAcciones } from "@/components/nex/panel-acciones";
+import { PanelPreview } from "@/components/nex/panel-preview";
 import { PlanTrabajo } from "@/components/nex/plan-trabajo";
-import { ETIQUETA_TIPO_ACTIVIDAD, formatoDinero, formatoFechaHora } from "@/lib/nex/labels";
+import { TareasEnBloques } from "@/components/nex/tareas-bloques";
+import { ETIQUETA_ENTORNO, ETIQUETA_TIPO_ACTIVIDAD, formatoDinero, formatoFechaHora } from "@/lib/nex/labels";
 import {
   useActividad,
   useAgentes,
@@ -17,6 +20,7 @@ import {
   useProyectos,
   useResumenProyectos,
   useTareas,
+  useTareasAtencion,
 } from "@/lib/nex/queries/datos";
 import { useEnviarMensaje } from "@/lib/nex/queries/mutaciones";
 
@@ -41,6 +45,7 @@ function DetalleProyecto() {
   const { data: previews = [] } = usePreviews();
   const { data: resumenes = [] } = useResumenProyectos();
   const { data: actividad = [] } = useActividad(proyectoId);
+  const { data: tareasAtencion = [] } = useTareasAtencion(proyectoId);
   const { data: ajustes } = useAjustes();
   const moneda = ajustes?.moneda ?? "EUR";
 
@@ -49,6 +54,7 @@ function DetalleProyecto() {
   const { data: mensajes = [] } = useMensajes(chat?.id);
   const enviar = useEnviarMensaje();
   const [texto, setTexto] = React.useState("");
+  const [previewAbierta, setPreviewAbierta] = React.useState<string | null>(null);
 
   const tareasProyecto = tareas.filter((t) => t.proyecto_id === proyectoId);
   const resumen = resumenes.find((r) => r.proyecto_id === proyectoId);
@@ -99,7 +105,15 @@ function DetalleProyecto() {
       </section>
 
       <div className="mt-6">
+        <TareasEnBloques tareas={tareasAtencion} />
+      </div>
+
+      <div className="mt-6">
         <PlanTrabajo tareas={tareasProyecto} agentes={agentes} moneda={moneda} />
+      </div>
+
+      <div className="mt-6">
+        <PanelAcciones proyectoId={proyectoId} />
       </div>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_22rem]">
@@ -146,18 +160,26 @@ function DetalleProyecto() {
             <h2 className="font-display text-sm font-semibold">Vistas previas</h2>
             <ul className="mt-3 space-y-2">
               {previewsProyecto.map((p) => (
-                <li key={p.id}>
+                <li key={p.id} className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewAbierta(p.id)}
+                    className="flex flex-1 items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-left text-sm transition hover:border-primary/40"
+                  >
+                    <span>
+                      {p.titulo}
+                      <span className="ml-2 text-xs text-muted-foreground">{ETIQUETA_ENTORNO[p.entorno]}</span>
+                    </span>
+                    <MonitorPlay className="size-3.5 text-muted-foreground" />
+                  </button>
                   <a
                     href={p.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm transition hover:border-primary/40"
+                    aria-label={`Abrir ${p.titulo} en una pestaña nueva`}
+                    className="rounded-lg border border-border bg-surface p-2 text-muted-foreground transition hover:text-foreground"
                   >
-                    <span>
-                      {p.titulo}
-                      <span className="ml-2 text-xs text-muted-foreground">{p.entorno}</span>
-                    </span>
-                    <ExternalLink className="size-3.5 text-muted-foreground" />
+                    <ExternalLink className="size-3.5" />
                   </a>
                 </li>
               ))}
@@ -184,6 +206,13 @@ function DetalleProyecto() {
           </div>
         </aside>
       </section>
+
+      {previewAbierta ? (
+        (() => {
+          const activa = previewsProyecto.find((p) => p.id === previewAbierta);
+          return activa ? <PanelPreview preview={activa} onCerrar={() => setPreviewAbierta(null)} /> : null;
+        })()
+      ) : null}
     </>
   );
 }

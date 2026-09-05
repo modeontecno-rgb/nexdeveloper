@@ -18,6 +18,18 @@ async function comprobar<T>(res: { data: T | null; error: { message: string } | 
   return res.data as T;
 }
 
+/** Nombre visible del usuario actual (perfil o correo), para dejar constancia de quién decide. */
+export async function nombreDelUsuario(): Promise<string | null> {
+  const { data: sesion } = await supabase.auth.getUser();
+  if (!sesion.user) return null;
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("nombre_completo")
+    .eq("id", sesion.user.id)
+    .maybeSingle();
+  return perfil?.nombre_completo ?? sesion.user.email ?? null;
+}
+
 export async function registrarActividad(
   proyectoId: string | null,
   tipo: TipoActividad,

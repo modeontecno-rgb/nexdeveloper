@@ -1,10 +1,13 @@
 import type {
+  EntornoPreview,
+  EstadoAccion,
   EstadoOrden,
   EstadoProyecto,
   EstadoTarea,
   ModoEjecucion,
   NivelAlerta,
   Prioridad,
+  TipoAccion,
   TipoActividad,
   TipoIntegracion,
 } from "./db-types";
@@ -128,3 +131,31 @@ export function crearSlug(nombre: string) {
       .slice(0, 40) || "proyecto"
   );
 }
+
+export const ETIQUETA_TIPO_ACCION: Record<TipoAccion, string> = {
+  supabase_sql: "Consulta SQL",
+  supabase_migracion: "Migración de base de datos",
+  supabase_listar_tablas: "Listar tablas",
+  supabase_secreto: "Guardar un secreto",
+  github_crear_repo: "Crear repositorio",
+  github_subir_archivo: "Subir archivo",
+  github_crear_issue: "Crear incidencia",
+  github_listar_ramas: "Listar ramas",
+  http_generica: "Llamada web genérica",
+};
+
+export const ETIQUETA_ESTADO_ACCION: Record<EstadoAccion, string> = {
+  borrador: "Borrador",
+  pendiente_aprobacion: "Pendiente de aprobación",
+  aprobada: "Aprobada",
+  ejecutando: "Ejecutando",
+  completada: "Completada",
+  error: "Con error",
+  cancelada: "Cancelada",
+};
+
+export const ETIQUETA_ENTORNO: Record<EntornoPreview, string> = {
+  desarrollo: "Desarrollo",
+  pruebas: "Pruebas",
+  produccion: "Producción",
+};

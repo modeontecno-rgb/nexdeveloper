@@ -11,6 +11,8 @@ const TABLAS: { tabla: string; clave: readonly string[] }[] = [
   { tabla: "mensajes", clave: claves.mensajes },
   { tabla: "actividad", clave: claves.actividad },
   { tabla: "alertas", clave: claves.alertas },
+  { tabla: "acciones", clave: claves.acciones },
+  { tabla: "previews", clave: claves.previews },
 ];
 
 /** Mantiene la interfaz al día con los cambios que ocurren en la base de datos. */
@@ -27,6 +29,7 @@ export function useRealtime(activo: boolean) {
         if (tabla === "tareas" || tabla === "ordenes") {
           void queryClient.invalidateQueries({ queryKey: claves.resumenProyectos });
           void queryClient.invalidateQueries({ queryKey: claves.cargaAgentes });
+          void queryClient.invalidateQueries({ queryKey: claves.tareasAtencion });
         }
       });
     }
