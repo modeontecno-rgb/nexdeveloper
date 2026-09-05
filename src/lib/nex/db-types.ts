@@ -432,6 +432,80 @@ export type CargaAgenteRow = {
   capacidad_libre: number
 }
 
+/* --------------------- Proveedores, modelos y trazabilidad -------------------- */
+
+export type TipoProveedorIa = "texto" | "voz" | "imagen" | "busqueda" | "multi"
+export type VelocidadModelo = "baja" | "media" | "alta" | "muy_alta"
+export type EstrategiaEnrutado = "barato" | "rapido" | "mejor"
+export type ResultadoIa = "ok" | "aviso" | "error"
+export type TareaIa =
+  | "codigo"
+  | "razonamiento"
+  | "resumen"
+  | "traduccion"
+  | "clasificacion"
+  | "busqueda"
+  | "imagen"
+  | "voz"
+  | "vision"
+
+/** Vista pública del proveedor: nunca incluye la clave, solo si la hay. */
+export type ProveedorIaRow = {
+  id: string
+  user_id: string
+  nombre: string
+  clave_slug: string
+  tipo: TipoProveedorIa
+  activo: boolean
+  tiene_clave: boolean
+  url_base: string | null
+  notas: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ModeloIaRow = {
+  id: string
+  user_id: string
+  proveedor_id: string
+  identificador: string
+  nombre: string
+  activo: boolean
+  coste_entrada: number | null
+  coste_salida: number | null
+  velocidad: VelocidadModelo
+  contexto_max: number | null
+  calidad: number | null
+  tareas_aconsejadas: string[]
+  notas: string | null
+  created_at: string
+}
+
+export type PoliticaEnrutadoRow = {
+  id: string
+  user_id: string
+  tarea: string
+  estrategia: EstrategiaEnrutado
+  modelo_preferido_id: string | null
+  modelo_respaldo_id: string | null
+  updated_at: string
+}
+
+export type ConsumoIaRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  chat_id: string | null
+  tarea_id: string | null
+  modelo_id: string | null
+  tokens_entrada: number
+  tokens_salida: number
+  coste: number
+  duracion_ms: number
+  resultado: ResultadoIa
+  created_at: string
+}
+
 type SinUsuario<T> = Omit<T, "user_id">
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
   Row: Row
