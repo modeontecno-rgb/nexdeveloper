@@ -13,6 +13,7 @@ import {
 import type {
   Agente,
   Alerta,
+  Aprobacion,
   EstadoTarea,
   EventoActividad,
   Integracion,
@@ -34,6 +35,7 @@ interface Estado {
   previews: Preview[];
   integraciones: Integracion[];
   alertas: Alerta[];
+  aprobaciones: Aprobacion[];
   usuario: string;
 }
 
@@ -46,6 +48,7 @@ const estadoInicial: Estado = {
   previews: PREVIEWS,
   integraciones: INTEGRACIONES,
   alertas: ALERTAS,
+  aprobaciones: [],
   usuario: "Javier Romero",
 };
 
@@ -64,6 +67,8 @@ interface Contexto extends Estado {
     estimacionHoras: number;
     prioridad: Prioridad;
   }) => void;
+  solicitarAprobacion: (input: Omit<Aprobacion, "id" | "estado" | "solicitadaEl">) => void;
+  resolverAprobacion: (id: string, decision: "aprobada" | "rechazada", comentario?: string) => void;
   crearProyecto: (input: { nombre: string; descripcion: string; repositorio?: string | undefined }) => string;
   reiniciarDemo: () => void;
 }
@@ -220,6 +225,64 @@ export function ProveedorNex({ children }: { children: React.ReactNode }) {
         ],
         actividad: [registrar(proyectoId, "orden", `Orden aprobada y enviada a la cola: ${texto.slice(0, 60)}`), ...e.actividad],
       })),
+    solicitarAprobacion: (input) =>
+      setEstado((e) => ({
+        ...e,
+        aprobaciones: [
+          { ...input, id: `ap-${Math.random().toString(36).slice(2, 10)}`, estado: "pendiente", solicitadaEl: new Date().toISOString() },
+          ...e.aprobaciones,
+        ],
+        actividad: [
+          registrar(input.proyectoId, "decision", `Orden pendiente de aprobación: ${input.texto.slice(0, 60)}`),
+          ...e.actividad,
+        ],
+      })),
+    resolverAprobacion: (id, decision, comentario) =>
+      setEstado((e) => {
+        const ap = e.aprobaciones.find((a) => a.id === id);
+        if (!ap) return e;
+        const aprobaciones = e.aprobaciones.map((a) =>
+          a.id === id
+            ? { ...a, estado: decision, resueltaEl: new Date().toISOString(), resueltaPor: e.usuario, comentario }
+            : a,
+        );
+        if (decision === "rechazada") {
+          return {
+            ...e,
+            aprobaciones,
+            actividad: [
+              registrar(ap.proyectoId, "decision", `Orden rechazada por ${e.usuario}: ${ap.texto.slice(0, 60)}`),
+              ...e.actividad,
+            ],
+          };
+        }
+        return {
+          ...e,
+          aprobaciones,
+          tareas: [
+            {
+              id: `t-${Math.random().toString(36).slice(2, 10)}`,
+              proyectoId: ap.proyectoId,
+              titulo: ap.texto.slice(0, 80),
+              estado: "en_cola" as EstadoTarea,
+              agenteId: ap.agenteId,
+              prioridad: ap.prioridad,
+              enviadaEl: new Date().toISOString(),
+              estimacionHoras: ap.estimacionHoras,
+              horasConsumidas: 0,
+              costeEstimado: ap.costeEstimado,
+              costeConsumido: 0,
+              progreso: 0,
+              ultimaActividad: new Date().toISOString(),
+            },
+            ...e.tareas,
+          ],
+          actividad: [
+            registrar(ap.proyectoId, "orden", `Orden aprobada por ${e.usuario} y enviada a la cola: ${ap.texto.slice(0, 60)}`),
+            ...e.actividad,
+          ],
+        };
+      }),
     crearProyecto: ({ nombre, descripcion, repositorio }) => {
       const id = `${nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 32)}-${Math.random()
         .toString(36)
