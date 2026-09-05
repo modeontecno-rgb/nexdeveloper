@@ -32,6 +32,8 @@ function peticionDePrueba(slug: string, clave: string, urlBase: string | null): 
       return { url: `${base || "https://fal.run"}/`, cabeceras: { Authorization: `Key ${clave}` } };
     case "cohere":
       return { url: `${base || "https://api.cohere.com"}/v1/models`, cabeceras: { Authorization: `Bearer ${clave}` } };
+    case "canva":
+      return { url: `${base || "https://api.canva.com/rest/v1"}/users/me`, cabeceras: { Authorization: `Bearer ${clave}` } };
     case "ollama":
       return { url: `${base || "http://localhost:11434"}/api/tags`, cabeceras: {} };
     default:
@@ -75,7 +77,51 @@ Deno.serve(async (req: Request) => {
     });
     if (errorClave || !clave) return responder({ ok: false, error: "No se ha podido leer la clave guardada." });
 
-    const prueba = peticionDePrueba(info.clave_slug, clave as string, info.url_base);
+    let claveUso = clave as string;
+
+    // Canva guarda un JSON con los dos tokens: si el de acceso ha caducado se
+    // renueva con el de refresco antes de probar.
+    if (info.clave_slug === "canva") {
+      try {
+        const tokens = JSON.parse(claveUso);
+        const caducado = !tokens.expira_en || new Date(tokens.expira_en).getTime() < Date.now() + 60_000;
+        if (caducado && tokens.refresh_token) {
+          const clienteId = Deno.env.get("CANVA_CLIENT_ID");
+          const clienteSecreto = Deno.env.get("CANVA_CLIENT_SECRET");
+          if (!clienteId || !clienteSecreto) {
+            return responder({ ok: false, error: "Faltan CANVA_CLIENT_ID y CANVA_CLIENT_SECRET en los secretos." });
+          }
+          const renovacion = await fetch("https://api.canva.com/rest/v1/oauth/token", {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${btoa(`${clienteId}:${clienteSecreto}`)}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: tokens.refresh_token }),
+          });
+          const datos = await renovacion.json();
+          if (!renovacion.ok) {
+            return responder({ ok: false, error: "La conexión con Canva ha caducado. Vuelve a conectarla." });
+          }
+          const nuevos = {
+            access_token: datos.access_token,
+            refresh_token: datos.refresh_token ?? tokens.refresh_token,
+            expira_en: new Date(Date.now() + Number(datos.expires_in ?? 0) * 1000).toISOString(),
+          };
+          await comoUsuario.rpc("guardar_clave_proveedor", {
+            p_proveedor_id: proveedorId,
+            p_clave: JSON.stringify(nuevos),
+          });
+          claveUso = nuevos.access_token;
+        } else {
+          claveUso = tokens.access_token;
+        }
+      } catch {
+        return responder({ ok: false, error: "La conexión con Canva no es válida. Vuelve a conectarla." });
+      }
+    }
+
+    const prueba = peticionDePrueba(info.clave_slug, claveUso, info.url_base);
     if (!prueba) return responder({ ok: false, error: "Este proveedor no admite comprobación automática." });
 
     const inicio = Date.now();
