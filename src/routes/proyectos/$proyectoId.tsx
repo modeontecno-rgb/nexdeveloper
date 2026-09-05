@@ -8,6 +8,7 @@ import { Boton, claseCampo } from "@/components/nex/campos";
 import { PanelAcciones } from "@/components/nex/panel-acciones";
 import { PanelPreview } from "@/components/nex/panel-preview";
 import { PlanTrabajo } from "@/components/nex/plan-trabajo";
+import { BandaGeneracion } from "@/components/nex/banda-generacion";
 import { TareasEnBloques } from "@/components/nex/tareas-bloques";
 import { ETIQUETA_ENTORNO, ETIQUETA_TIPO_ACTIVIDAD, formatoDinero, formatoFechaHora } from "@/lib/nex/labels";
 import {
