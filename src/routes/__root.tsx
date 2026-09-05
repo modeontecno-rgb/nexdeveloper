@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/nex/app-shell";
+import { ProveedorConfig } from "@/lib/nex/config";
 import { ProveedorNex } from "@/lib/nex/store";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -133,11 +134,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ProveedorNex>
+        <ProveedorConfig>
         <AppShell>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
         </AppShell>
         <Toaster position="top-right" richColors />
+        </ProveedorConfig>
       </ProveedorNex>
     </QueryClientProvider>
   );
