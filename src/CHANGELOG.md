@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 0.7.0 — 5 de septiembre de 2026
+
+- Nueva pantalla «Calidad»: semáforo verde, ámbar o rojo por proyecto y versión, con los doce controles automáticos y su historial.
+- Revisión previa de cada orden: si el texto contiene algo que parece una clave o el proyecto no tiene repositorio, la orden no sale; los demás avisos se pueden aceptar y enviar igualmente.
+- Insignia «Revisada» o «Bloqueada» en cada orden pendiente de aprobación.
+- Batería de controles en GitHub Actions al cerrar cada tanda, con taller «calidad.yml» copiable desde la propia aplicación.
+- Un proyecto no puede darse por terminado con el control de calidad en rojo, y en ámbar pide confirmación.
+- Chip del semáforo de calidad junto al nombre en la ficha de cada proyecto.
+- Estado del sistema: semáforos nuevos para las tablas de calidad y la función «calidad-github».
+
 ## 0.6.0 — 5 de septiembre de 2026
 
 - Nueva pantalla «Expertos»: los tuyos, los encontrados en la red y los sugeridos, con buscador, filtros, valoración y contador de usos.
