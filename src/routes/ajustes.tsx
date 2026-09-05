@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Database, Trash2 } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Cpu, Database, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/nex/auth";
 import { borrarDatosDemostracion, cargarDatosDemostracion } from "@/lib/nex/demo";
 import { useAjustes, usePerfil } from "@/lib/nex/queries/datos";
 import { useGuardarAjustes } from "@/lib/nex/queries/mutaciones";
+import { VERSION_APP } from "@/lib/nex/version";
 
 export const Route = createFileRoute("/ajustes")({
   head: () => ({
