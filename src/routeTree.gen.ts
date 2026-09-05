@@ -10,33 +10,141 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgentesRouteImport } from './routes/agentes'
+import { Route as AjustesRouteImport } from './routes/ajustes'
+import { Route as ColaRouteImport } from './routes/cola'
+import { Route as EstadoRouteImport } from './routes/estado'
+import { Route as IntegracionesRouteImport } from './routes/integraciones'
+import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
+import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
+import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentesRoute = AgentesRouteImport.update({
+  id: '/agentes',
+  path: '/agentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AjustesRoute = AjustesRouteImport.update({
+  id: '/ajustes',
+  path: '/ajustes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ColaRoute = ColaRouteImport.update({
+  id: '/cola',
+  path: '/cola',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstadoRoute = EstadoRouteImport.update({
+  id: '/estado',
+  path: '/estado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntegracionesRoute = IntegracionesRouteImport.update({
+  id: '/integraciones',
+  path: '/integraciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NuevaOrdenRoute = NuevaOrdenRouteImport.update({
+  id: '/nueva-orden',
+  path: '/nueva-orden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProyectosIndexRoute = ProyectosIndexRouteImport.update({
+  id: '/proyectos/',
+  path: '/proyectos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProyectosProyectoIdRoute = ProyectosProyectoIdRouteImport.update({
+  id: '/proyectos/$proyectoId',
+  path: '/proyectos/$proyectoId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agentes': typeof AgentesRoute
+  '/ajustes': typeof AjustesRoute
+  '/cola': typeof ColaRoute
+  '/estado': typeof EstadoRoute
+  '/integraciones': typeof IntegracionesRoute
+  '/nueva-orden': typeof NuevaOrdenRoute
+  '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
+  '/proyectos/': typeof ProyectosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agentes': typeof AgentesRoute
+  '/ajustes': typeof AjustesRoute
+  '/cola': typeof ColaRoute
+  '/estado': typeof EstadoRoute
+  '/integraciones': typeof IntegracionesRoute
+  '/nueva-orden': typeof NuevaOrdenRoute
+  '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
+  '/proyectos': typeof ProyectosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agentes': typeof AgentesRoute
+  '/ajustes': typeof AjustesRoute
+  '/cola': typeof ColaRoute
+  '/estado': typeof EstadoRoute
+  '/integraciones': typeof IntegracionesRoute
+  '/nueva-orden': typeof NuevaOrdenRoute
+  '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
+  '/proyectos/': typeof ProyectosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/agentes'
+    | '/ajustes'
+    | '/cola'
+    | '/estado'
+    | '/integraciones'
+    | '/nueva-orden'
+    | '/proyectos/$proyectoId'
+    | '/proyectos/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/agentes'
+    | '/ajustes'
+    | '/cola'
+    | '/estado'
+    | '/integraciones'
+    | '/nueva-orden'
+    | '/proyectos/$proyectoId'
+    | '/proyectos'
+  id:
+    | '__root__'
+    | '/'
+    | '/agentes'
+    | '/ajustes'
+    | '/cola'
+    | '/estado'
+    | '/integraciones'
+    | '/nueva-orden'
+    | '/proyectos/$proyectoId'
+    | '/proyectos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentesRoute: typeof AgentesRoute
+  AjustesRoute: typeof AjustesRoute
+  ColaRoute: typeof ColaRoute
+  EstadoRoute: typeof EstadoRoute
+  IntegracionesRoute: typeof IntegracionesRoute
+  NuevaOrdenRoute: typeof NuevaOrdenRoute
+  ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
+  ProyectosIndexRoute: typeof ProyectosIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +156,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agentes': {
+      id: '/agentes'
+      path: '/agentes'
+      fullPath: '/agentes'
+      preLoaderRoute: typeof AgentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ajustes': {
+      id: '/ajustes'
+      path: '/ajustes'
+      fullPath: '/ajustes'
+      preLoaderRoute: typeof AjustesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cola': {
+      id: '/cola'
+      path: '/cola'
+      fullPath: '/cola'
+      preLoaderRoute: typeof ColaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estado': {
+      id: '/estado'
+      path: '/estado'
+      fullPath: '/estado'
+      preLoaderRoute: typeof EstadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/integraciones': {
+      id: '/integraciones'
+      path: '/integraciones'
+      fullPath: '/integraciones'
+      preLoaderRoute: typeof IntegracionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nueva-orden': {
+      id: '/nueva-orden'
+      path: '/nueva-orden'
+      fullPath: '/nueva-orden'
+      preLoaderRoute: typeof NuevaOrdenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/proyectos/': {
+      id: '/proyectos/'
+      path: '/proyectos'
+      fullPath: '/proyectos/'
+      preLoaderRoute: typeof ProyectosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/proyectos/$proyectoId': {
+      id: '/proyectos/$proyectoId'
+      path: '/proyectos/$proyectoId'
+      fullPath: '/proyectos/$proyectoId'
+      preLoaderRoute: typeof ProyectosProyectoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentesRoute: AgentesRoute,
+  AjustesRoute: AjustesRoute,
+  ColaRoute: ColaRoute,
+  EstadoRoute: EstadoRoute,
+  IntegracionesRoute: IntegracionesRoute,
+  NuevaOrdenRoute: NuevaOrdenRoute,
+  ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
+  ProyectosIndexRoute: ProyectosIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
