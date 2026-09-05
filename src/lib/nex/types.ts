@@ -31,6 +31,7 @@ export type {
   PosicionPanel,
   ResultadoVerificacion,
   ProyectoRow,
+  RendimientoModeloRow,
   ResumenProyectoRow,
   Riesgo,
   RolAgente,

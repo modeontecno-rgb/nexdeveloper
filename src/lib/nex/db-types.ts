@@ -439,7 +439,7 @@ export type CargaAgenteRow = {
 
 export type TipoProveedorIa = "texto" | "voz" | "imagen" | "busqueda" | "multi"
 export type VelocidadModelo = "baja" | "media" | "alta" | "muy_alta"
-export type EstrategiaEnrutado = "barato" | "rapido" | "mejor"
+export type EstrategiaEnrutado = "barato" | "rapido" | "mejor" | "aprendido"
 export type ResultadoIa = "ok" | "aviso" | "error"
 export type TareaIa =
   | "codigo"
@@ -463,6 +463,7 @@ export type ProveedorIaRow = {
   tiene_clave: boolean
   url_base: string | null
   notas: string | null
+  cuenta: string | null
   created_at: string
   updated_at: string
 }
@@ -482,6 +483,17 @@ export type ModeloIaRow = {
   tareas_aconsejadas: string[]
   notas: string | null
   created_at: string
+}
+
+export type RendimientoModeloRow = {
+  user_id: string
+  tarea: string
+  modelo_id: string
+  trabajos: number
+  porcentaje_ok: number
+  coste_medio: number
+  duracion_media_ms: number
+  ultimo_uso: string
 }
 
 export type PoliticaEnrutadoRow = {
@@ -576,6 +588,7 @@ export type Database = {
       v_carga_agentes: { Row: CargaAgenteRow; Relationships: [] }
       v_tareas_atencion: { Row: TareaAtencionRow; Relationships: [] }
       v_proveedores_ia: { Row: ProveedorIaRow; Relationships: [] }
+      v_rendimiento_modelos: { Row: RendimientoModeloRow; Relationships: [] }
     }
 
     Functions: {
