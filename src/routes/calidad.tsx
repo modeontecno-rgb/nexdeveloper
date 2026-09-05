@@ -9,7 +9,7 @@ import { Dialogo } from "@/components/nex/dialogo";
 import { SemaforoBadge } from "@/components/nex/semaforo";
 import type { EstadoEjecucionCalidad, ResultadoControl, SemaforoCalidad } from "@/lib/nex/db-types";
 import { TALLER_CALIDAD, RUTA_TALLER } from "@/lib/nex/calidad-workflow";
-import { fechaHoraCorta } from "@/lib/nex/labels";
+import { marcaTiempo } from "@/lib/nex/labels";
 import {
   useControlesCalidad,
   useEjecucionesCalidad,
@@ -111,7 +111,7 @@ function PantallaCalidad() {
         descripcion="Cada proyecto pasa los mismos doce controles automáticos antes y después de cada tanda."
         acciones={
           <div className="flex flex-wrap gap-2">
-            <Boton variante="secundario" onClick={() => setAyuda(true)}>
+            <Boton variante="suave" onClick={() => setAyuda(true)}>
               <ShieldCheck className="size-4" /> Cómo instalar el taller
             </Boton>
             <Boton onClick={() => sincronizar.mutate()} disabled={sincronizar.isPending}>
@@ -160,7 +160,7 @@ function PantallaCalidad() {
                     <SemaforoBadge semaforo={p.semaforo_calidad ?? "sin_datos"} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {ultima ? fechaHoraCorta(ultima.terminada_el ?? ultima.iniciada_el) : "Nunca"}
+                    {ultima ? marcaTiempo(ultima.terminada_el ?? ultima.iniciada_el) : "Nunca"}
                     {ultima && (ultima.estado === "en_cola" || ultima.estado === "ejecutando") ? (
                       <span className="ml-2 text-xs text-info">{ETIQUETA_EJECUCION[ultima.estado]}</span>
                     ) : null}
@@ -181,7 +181,7 @@ function PantallaCalidad() {
                         </a>
                       ) : null}
                       <Boton
-                        variante="secundario"
+                        variante="suave"
                         onClick={() => {
                           setVersion(ultima?.version ?? VERSION_APP);
                           setPidiendoVersion(p.id);
@@ -223,7 +223,7 @@ function PantallaCalidad() {
                     }
                   >
                     <span className="font-medium">v{e.version}</span> · {ETIQUETA_EJECUCION[e.estado]}
-                    <span className="block">{fechaHoraCorta(e.terminada_el ?? e.iniciada_el)}</span>
+                    <span className="block">{marcaTiempo(e.terminada_el ?? e.iniciada_el)}</span>
                   </button>
                 </li>
               ))}
@@ -290,7 +290,7 @@ function PantallaCalidad() {
           <input value={version} onChange={(e) => setVersion(e.target.value)} className={claseCampo} />
         </Campo>
         <div className="mt-4 flex justify-end gap-2">
-          <Boton variante="secundario" onClick={() => setPidiendoVersion(null)}>
+          <Boton variante="suave" onClick={() => setPidiendoVersion(null)}>
             Cancelar
           </Boton>
           <Boton onClick={() => void confirmarLanzamiento()} disabled={lanzar.isPending}>
@@ -306,7 +306,7 @@ function PantallaCalidad() {
         onCerrar={() => setAyuda(false)}
         ancho="max-w-3xl"
       >
-        <Boton variante="secundario" onClick={() => void copiarTaller()}>
+        <Boton variante="suave" onClick={() => void copiarTaller()}>
           <ClipboardCopy className="size-4" /> Copiar el fichero
         </Boton>
         <pre className="mt-3 max-h-[26rem] overflow-auto rounded-lg border border-border bg-surface p-3 text-[11px] leading-relaxed text-muted-foreground">
