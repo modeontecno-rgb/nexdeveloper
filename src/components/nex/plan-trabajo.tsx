@@ -1,10 +1,11 @@
 import { Check } from "lucide-react";
 
 import { EstadoTareaBadge, PrioridadBadge } from "@/components/nex/badges";
-import { SelectorExperto } from "@/components/nex/selector-experto";
 import { Selector } from "@/components/nex/campos";
+import { SelectorExperto } from "@/components/nex/selector-experto";
 import type { AgenteRow, EstadoTarea, Prioridad, TareaRow } from "@/lib/nex/db-types";
 import { ETIQUETA_ESTADO_TAREA, ETIQUETA_PRIORIDAD, formatoDinero, formatoFecha } from "@/lib/nex/labels";
+import { useAsignarExperto } from "@/lib/nex/queries/expertos";
 import { useCambiarEstadoTarea, useCambiarPrioridadTarea } from "@/lib/nex/queries/mutaciones";
 
 /** Tabla del plan de trabajo: siempre visible, con totales y previsión real. */
@@ -19,6 +20,7 @@ export function PlanTrabajo({
 }) {
   const cambiarEstado = useCambiarEstadoTarea();
   const cambiarPrioridad = useCambiarPrioridadTarea();
+  const asignarExperto = useAsignarExperto("tareas");
   const nombreAgente = (id: string | null) => agentes.find((a) => a.id === id)?.nombre ?? "Sin asignar";
 
   const totalHoras = tareas.reduce((s, t) => s + Number(t.estimacion_horas), 0);
