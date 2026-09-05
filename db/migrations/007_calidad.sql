@@ -315,14 +315,14 @@ begin
     return;
   end if;
   select valor into v_url   from private.claves_sistema where clave = 'url_funciones';
-  select valor into v_clave from private.claves_sistema where clave = 'service_role';
+  select valor into v_clave from private.claves_sistema where clave = 'cron_token';
   if v_url is null or v_clave is null then
-    raise notice 'Faltan url_funciones o service_role en private.claves_sistema';
+    raise notice 'Faltan url_funciones o cron_token en private.claves_sistema';
     return;
   end if;
   perform net.http_post(
     url     := v_url || '/calidad-github',
-    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || v_clave),
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-token', v_clave),
     body    := jsonb_build_object('accion', 'sincronizar', 'programado', true)
   );
 end;
