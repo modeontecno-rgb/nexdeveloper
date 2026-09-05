@@ -84,6 +84,25 @@ function Ajustes() {
         </section>
 
         <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Proveedores de IA</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Enciende los proveedores que uses, guarda sus claves de forma cifrada, ajusta precios y decide qué modelo
+            se encarga de cada tipo de trabajo.
+          </p>
+          <Link
+            to="/ajustes/proveedores"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+          >
+            <Cpu className="size-4" /> Abrir proveedores de IA
+          </Link>
+        </section>
+
+        <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Versión</h2>
+          <p className="mt-2 text-sm text-muted-foreground">NexDeveloper {VERSION_APP}</p>
+        </section>
+
+        <section className="panel p-5">
           <h2 className="font-display text-sm font-semibold">Aprobaciones</h2>
           <div className="mt-4 space-y-4">
             <Campo etiqueta="Pedir aprobación por encima de (importe)">
