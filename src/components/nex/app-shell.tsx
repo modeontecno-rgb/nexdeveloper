@@ -5,11 +5,13 @@ import {
   Gauge,
   LayoutDashboard,
   ListTodo,
+  Moon,
   Plug,
   Settings,
   Sparkle,
   Activity,
   Menu,
+  Sun,
   X,
 } from "lucide-react";
 import * as React from "react";
