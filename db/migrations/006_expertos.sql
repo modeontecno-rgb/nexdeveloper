@@ -218,8 +218,8 @@ $$;
 
 /* ------------------------- Barrido semanal (pg_cron) ------------------------ */
 
--- Necesita las extensiones pg_cron y pg_net y el secreto de servicio guardado
--- en private.claves_sistema con la clave 'service_role'.
+-- Necesita las extensiones pg_cron y pg_net y el token de cron guardado
+-- en private.claves_sistema con la clave 'cron_token'.
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
@@ -239,14 +239,14 @@ declare
   v_clave text;
 begin
   select valor into v_url   from private.claves_sistema where clave = 'url_funciones';
-  select valor into v_clave from private.claves_sistema where clave = 'service_role';
+  select valor into v_clave from private.claves_sistema where clave = 'cron_token';
   if v_url is null or v_clave is null then
-    raise notice 'Faltan url_funciones o service_role en private.claves_sistema';
+    raise notice 'Faltan url_funciones o cron_token en private.claves_sistema';
     return;
   end if;
   perform net.http_post(
     url     := v_url || '/barrer-expertos',
-    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || v_clave),
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-token', v_clave),
     body    := jsonb_build_object('programado', true)
   );
 end;

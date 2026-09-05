@@ -2,7 +2,7 @@
 // Lanza el taller de calidad en GitHub Actions y recoge sus resultados.
 //
 // Despliegue: supabase functions deploy calidad-github
-// Secretos: GITHUB_TOKEN (permiso repo y workflow), SUPABASE_ACCESS_TOKEN (opcional,
+// Secretos: GITHUB_TOKEN (permiso repo y workflow), CUENTA_SUPABASE_TOKEN (opcional,
 // para los avisos de seguridad y rendimiento de la base de datos).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
 
     if (!abiertas || abiertas.length === 0) return responder({ ok: true, revisadas: 0 });
 
-    const tokenSupabase = Deno.env.get("SUPABASE_ACCESS_TOKEN") ?? null;
+    const tokenSupabase = Deno.env.get("CUENTA_SUPABASE_TOKEN") ?? Deno.env.get("SUPABASE_ACCESS_TOKEN") ?? null;
     let cerradas = 0;
 
     for (const ejecucion of abiertas) {
