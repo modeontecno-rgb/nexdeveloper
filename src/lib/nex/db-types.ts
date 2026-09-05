@@ -53,7 +53,7 @@ export type EntornoPreview = "desarrollo" | "pruebas" | "produccion"
 export type Disponibilidad = "disponible" | "ocupado" | "sin_configurar"
 export type TemaPerfil = "claro" | "oscuro" | "sistema"
 
-export interface PerfilRow {
+export type PerfilRow = {
   id: string
   nombre_completo: string | null
   email: string | null
@@ -61,7 +61,7 @@ export interface PerfilRow {
   tema: TemaPerfil
 }
 
-export interface AjustesRow {
+export type AjustesRow = {
   user_id: string
   umbral_aprobacion_eur: number
   aprobar_si_prioridad_critica: boolean
@@ -73,7 +73,7 @@ export interface AjustesRow {
   actualizado_el: string | null
 }
 
-export interface AgenteRow {
+export type AgenteRow = {
   id: string
   user_id: string
   codigo: string
@@ -92,7 +92,7 @@ export interface AgenteRow {
   activo: boolean
 }
 
-export interface ProyectoRow {
+export type ProyectoRow = {
   id: string
   user_id: string
   slug: string
@@ -114,7 +114,7 @@ export interface ProyectoRow {
   actualizado_el: string
 }
 
-export interface PresupuestoRow {
+export type PresupuestoRow = {
   id: string
   user_id: string
   proyecto_id: string
@@ -126,7 +126,7 @@ export interface PresupuestoRow {
   notas: string | null
 }
 
-export interface ChatRow {
+export type ChatRow = {
   id: string
   user_id: string
   proyecto_id: string | null
@@ -136,7 +136,7 @@ export interface ChatRow {
   reorganizado_el: string | null
 }
 
-export interface MensajeRow {
+export type MensajeRow = {
   id: string
   user_id: string
   chat_id: string
@@ -151,7 +151,7 @@ export interface MensajeRow {
   fecha: string
 }
 
-export interface OrdenRow {
+export type OrdenRow = {
   id: string
   user_id: string
   proyecto_id: string | null
@@ -178,7 +178,7 @@ export interface OrdenRow {
   creado_el: string
 }
 
-export interface TareaRow {
+export type TareaRow = {
   id: string
   user_id: string
   proyecto_id: string
@@ -203,7 +203,7 @@ export interface TareaRow {
   orden: number
 }
 
-export interface EstimacionRow {
+export type EstimacionRow = {
   id: string
   user_id: string
   proyecto_id: string | null
@@ -220,7 +220,7 @@ export interface EstimacionRow {
   calidad_real: number | null
 }
 
-export interface ActividadRow {
+export type ActividadRow = {
   id: string
   user_id: string
   proyecto_id: string | null
@@ -233,7 +233,7 @@ export interface ActividadRow {
   fecha: string
 }
 
-export interface AlertaRow {
+export type AlertaRow = {
   id: string
   user_id: string
   proyecto_id: string | null
@@ -246,7 +246,7 @@ export interface AlertaRow {
   referencia_id: string | null
 }
 
-export interface IntegracionRow {
+export type IntegracionRow = {
   id: string
   user_id: string
   codigo: string
@@ -259,7 +259,7 @@ export interface IntegracionRow {
   ultima_comprobacion: string | null
 }
 
-export interface CredencialRefRow {
+export type CredencialRefRow = {
   id: string
   user_id: string
   integracion_id: string
@@ -272,7 +272,7 @@ export interface CredencialRefRow {
   notas: string | null
 }
 
-export interface PreviewRow {
+export type PreviewRow = {
   id: string
   user_id: string
   proyecto_id: string
@@ -281,7 +281,7 @@ export interface PreviewRow {
   entorno: EntornoPreview
 }
 
-export interface ArchivoRow {
+export type ArchivoRow = {
   id: string
   user_id: string
   proyecto_id: string | null
@@ -294,12 +294,12 @@ export interface ArchivoRow {
   bytes: number | null
 }
 
-export interface ConfiguracionAppRow {
+export type ConfiguracionAppRow = {
   clave: string
   valor: string
 }
 
-export interface ResumenProyectoRow {
+export type ResumenProyectoRow = {
   proyecto_id: string
   total_tareas: number
   completadas: number
@@ -312,7 +312,7 @@ export interface ResumenProyectoRow {
   coste_consumido: number
 }
 
-export interface CargaAgenteRow {
+export type CargaAgenteRow = {
   agente_id: string
   nombre: string
   capacidad: number
