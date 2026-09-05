@@ -71,7 +71,7 @@ function Referencia() {
           coste: 0,
         };
       fila.usos += 1;
-      if (c.resultado === "correcto") fila.correctos += 1;
+      if (c.resultado === "ok") fila.correctos += 1;
       fila.tokens += Number(c.tokens_entrada) + Number(c.tokens_salida);
       fila.coste += Number(c.coste);
       mapa.set(clave, fila);
