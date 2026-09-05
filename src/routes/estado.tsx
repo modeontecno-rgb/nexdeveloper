@@ -76,6 +76,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         resultados,
         revisiones,
         funcionCalidad,
+        repositorios,
+        repositorioSubidas,
+        funcionRepos,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -94,6 +97,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("resultados_calidad"),
         verificarTabla("revisiones_orden"),
         verificarFuncion("calidad-github"),
+        verificarTabla("repositorios"),
+        verificarTabla("repositorio_subidas"),
+        verificarFuncion("github-repos"),
       ]);
       return {
         acciones,
@@ -113,6 +119,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         resultados,
         revisiones,
         funcionCalidad,
+        repositorios,
+        repositorioSubidas,
+        funcionRepos,
       };
     },
   });
@@ -318,6 +327,33 @@ function EstadoSistema() {
         : verificaciones.data?.funcionPublicar
           ? "Disponible"
           : "Falta la función publicar-experto",
+    },
+    {
+      nombre: "Repositorios de GitHub",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.repositorios ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.repositorios
+          ? "Responde correctamente"
+          : "Falta la tabla repositorios (migración 008)",
+    },
+    {
+      nombre: "Historial de subidas",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.repositorioSubidas ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.repositorioSubidas
+          ? "Responde correctamente"
+          : "Falta la tabla repositorio_subidas (migración 008)",
+    },
+    {
+      nombre: "Edge Function github-repos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionRepos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionRepos
+          ? "Disponible"
+          : "No encontrada",
     },
     {
       nombre: "Versión de la aplicación",

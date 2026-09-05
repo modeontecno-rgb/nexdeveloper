@@ -1,5 +1,14 @@
 # Historial de cambios
 
+## 0.8.0 — 5 de septiembre de 2026
+
+- Nueva pantalla «Repositorios»: crea repositorios privados de GitHub en la cuenta modeontecno-rgb para cualquier proyecto, con un solo botón.
+- «Crear y preparar» deja el repositorio con README (con la leyenda «Powered by Soluciones EvoluteIA S.L.»), taller de calidad y CHANGELOG inicial.
+- «Subir carpeta»: eliges la carpeta del proyecto en tu ordenador y se sube por tandas con barra de progreso y enlace al envío.
+- Nunca se suben carpetas generadas ni archivos con claves: se listan como omitidos por seguridad.
+- «Enlazar existente» asocia a un proyecto un repositorio que ya tengas, y «Ya está conectado» marca los hechos con el editor web.
+- Estado del sistema: semáforos nuevos para los repositorios, el historial de subidas y la función «github-repos».
+
 ## 0.7.0 — 5 de septiembre de 2026
 
 - Nueva pantalla «Calidad»: semáforo verde, ámbar o rojo por proyecto y versión, con los doce controles automáticos y su historial.

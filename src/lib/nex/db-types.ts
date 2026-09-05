@@ -60,6 +60,38 @@ export type ResultadoControl = "ok" | "aviso" | "fallo" | "omitido"
 export type SemaforoCalidad = "verde" | "ambar" | "rojo" | "sin_datos"
 export type GravedadHallazgo = "bloquea" | "aviso"
 
+export type EstadoRepositorio = "pendiente" | "creado" | "con_codigo" | "error"
+export type OrigenCodigoRepositorio = "vacio" | "carpeta_subida" | "lovable" | "externo"
+export type EstadoSubidaRepositorio = "subiendo" | "ok" | "error"
+
+export type RepositorioRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  nombre_completo: string
+  url: string
+  privado: boolean
+  rama_por_defecto: string
+  estado: EstadoRepositorio
+  origen_codigo: OrigenCodigoRepositorio
+  ultimo_commit_sha: string | null
+  ultimo_push_el: string | null
+  error: string | null
+  creado_el: string
+}
+
+export type RepositorioSubidaRow = {
+  id: string
+  repositorio_id: string
+  archivos: number
+  bytes: number
+  commit_sha: string | null
+  mensaje: string
+  estado: EstadoSubidaRepositorio
+  detalle: string | null
+  creado_el: string
+}
+
 export type ControlCalidadRow = {
   id: string
   codigo: string
@@ -679,6 +711,14 @@ export type Database = {
         Partial<ResultadoCalidadRow> & { ejecucion_id: string; control_codigo: string }
       >
       revisiones_orden: Tabla<RevisionOrdenRow, Partial<SinUsuario<RevisionOrdenRow>> & { orden_id: string }>
+      repositorios: Tabla<
+        RepositorioRow,
+        Partial<SinUsuario<RepositorioRow>> & { proyecto_id: string; nombre_completo: string }
+      >
+      repositorio_subidas: Tabla<
+        RepositorioSubidaRow,
+        Partial<RepositorioSubidaRow> & { repositorio_id: string }
+      >
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
@@ -730,6 +770,9 @@ export type Database = {
       estado_ejecucion_calidad: EstadoEjecucionCalidad
       resultado_control: ResultadoControl
       semaforo_calidad: SemaforoCalidad
+      estado_repositorio: EstadoRepositorio
+      origen_codigo_repositorio: OrigenCodigoRepositorio
+      estado_subida_repositorio: EstadoSubidaRepositorio
     }
     CompositeTypes: { [_ in never]: never }
   }
