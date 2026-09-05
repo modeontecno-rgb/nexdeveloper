@@ -111,7 +111,7 @@ export function FormularioAccion({
         </Campo>
 
         {campos.map((campo) => (
-          <Campo key={campo.clave} etiqueta={campo.etiqueta} {...(campo.ayuda ? { ayuda: campo.ayuda } : {})}>
+          <Campo key={campo.clave} etiqueta={campo.etiqueta} {...(campo.ayuda ? { pista: campo.ayuda } : {})}>
             {campo.tipo === "area" ? (
               <textarea
                 rows={5}
