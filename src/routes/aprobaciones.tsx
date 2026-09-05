@@ -7,6 +7,8 @@ import { Boton, claseCampo } from "@/components/nex/campos";
 import { ETIQUETA_MODO, formatoDinero, formatoFechaHora } from "@/lib/nex/labels";
 import { useAgentes, useAjustes, useOrdenes, useProyectos } from "@/lib/nex/queries/datos";
 import { useResolverOrden } from "@/lib/nex/queries/ordenes";
+import { revisarOrden } from "@/lib/nex/queries/calidad";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/aprobaciones")({
   head: () => ({
@@ -28,6 +30,25 @@ function Aprobaciones() {
   const moneda = ajustes?.moneda ?? "EUR";
   const resolver = useResolverOrden();
   const [comentarios, setComentarios] = React.useState<Record<string, string>>({});
+
+  /** Antes de aprobar, la orden pasa la revisión previa. */
+  const aprobar = async (orden: (typeof ordenes)[number]) => {
+    try {
+      const revision = await revisarOrden(orden.id);
+      if (!revision.aprobada) {
+        toast.error(
+          `La orden no puede salir: ${revision.hallazgos
+            .filter((h) => h.gravedad === "bloquea")
+            .map((h) => h.mensaje)
+            .join(" ")}`,
+        );
+        return;
+      }
+    } catch {
+      // Si la revisión no está disponible, se continúa con la decisión.
+    }
+    resolver.mutate({ orden, decision: "aprobada", comentario: comentarios[orden.id] ?? "" });
+  };
 
   const pendientes = ordenes.filter((o) => o.estado === "pendiente_aprobacion");
   const resueltas = ordenes.filter((o) => o.resuelta_el).slice(0, 12);
@@ -58,6 +79,15 @@ function Aprobaciones() {
               <div className="flex items-center gap-2">
                 <EstadoOrdenBadge estado={o.estado} />
                 <PrioridadBadge prioridad={o.prioridad} />
+                {o.bloqueada_por_revision ? (
+                  <span className="rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
+                    Bloqueada
+                  </span>
+                ) : o.revision_id ? (
+                  <span className="rounded-full border border-success/40 bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
+                    Revisada ✓
+                  </span>
+                ) : null}
               </div>
             </div>
 
@@ -82,9 +112,7 @@ function Aprobaciones() {
 
             <div className="mt-3 flex flex-wrap gap-2">
               <Boton
-                onClick={() =>
-                  resolver.mutate({ orden: o, decision: "aprobada", comentario: comentarios[o.id] ?? "" })
-                }
+                onClick={() => void aprobar(o)}
               >
                 Aprobar y enviar
               </Boton>
