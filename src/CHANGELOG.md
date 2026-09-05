@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## 0.5.0 — 5 de septiembre de 2026
+
+- Catálogo de proveedores completo: se añade Canva y el modelo de imagen Nano Banana de Google; Anthropic, Google, Groq, ElevenLabs, fal y Canva vienen encendidos.
+- Cada tarjeta de proveedor explica en una línea para qué sirve y muestra su tipo.
+- Ollama: puedes cambiar la dirección de tu servidor, con aviso de que solo es accesible desde tu red.
+- Nueva estrategia «Aprendido de mis consumos» y botón para rellenar la política con los modelos que mejor te han funcionado en los últimos 30 días, indicando en cuántos trabajos se basa.
+- Conexión con Canva mediante autorización segura, sin pegar ninguna clave: la tarjeta indica con qué cuenta estás conectado.
+- Estado del sistema: semáforos nuevos para el rendimiento de modelos y la conexión con Canva.
+
+
+
 ## 0.4.0 — 5 de septiembre de 2026
 
 - Pantalla de proveedores de IA: enciendes los que uses, guardas su clave cifrada y la pruebas sin salir de la aplicación.
