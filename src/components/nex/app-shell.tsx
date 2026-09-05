@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
+  BookOpen,
   Boxes,
   Cpu,
   LayoutDashboard,
@@ -29,6 +30,7 @@ const NAVEGACION = [
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },
   { to: "/aprobaciones", etiqueta: "Aprobaciones", icono: ShieldCheck },
   { to: "/agentes", etiqueta: "Agentes", icono: Cpu },
+  { to: "/referencia", etiqueta: "Referencia de uso", icono: BookOpen },
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },
   { to: "/ajustes", etiqueta: "Ajustes", icono: Settings },

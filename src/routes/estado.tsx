@@ -16,6 +16,7 @@ import {
   useTareas,
 } from "@/lib/nex/queries/datos";
 import { supabase } from "@/lib/nex/supabase";
+import { VERSION_APP } from "@/lib/nex/version";
 
 export const Route = createFileRoute("/estado")({
   head: () => ({
@@ -57,12 +58,16 @@ function useVerificacionesBackend(habilitado: boolean) {
     queryKey: ["verificaciones-backend"],
     enabled: habilitado,
     queryFn: async () => {
-      const [acciones, plantillas, funcion] = await Promise.all([
+      const [acciones, plantillas, funcion, proveedores, modelos, consumos, funcionProveedor] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
         verificarFuncion("ejecutar-accion"),
+        verificarTabla("proveedores_ia"),
+        verificarTabla("modelos_ia"),
+        verificarTabla("consumos_ia"),
+        verificarFuncion("probar-proveedor"),
       ]);
-      return { acciones, plantillas, funcion };
+      return { acciones, plantillas, funcion, proveedores, modelos, consumos, funcionProveedor };
     },
   });
 }
@@ -145,6 +150,47 @@ function EstadoSistema() {
         : verificaciones.data?.funcion
           ? "Disponible"
           : "No encontrada",
+    },
+    {
+      nombre: "Catálogo de proveedores de IA",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.proveedores ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.proveedores
+          ? "Responde correctamente"
+          : "No responde o falta",
+    },
+    {
+      nombre: "Catálogo de modelos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.modelos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.modelos
+          ? "Responde correctamente"
+          : "No responde o falta",
+    },
+    {
+      nombre: "Registro de consumo",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.consumos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.consumos
+          ? "Responde correctamente"
+          : "No responde o falta",
+    },
+    {
+      nombre: "Edge Function probar-proveedor",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionProveedor ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionProveedor
+          ? "Disponible"
+          : "No encontrada",
+    },
+    {
+      nombre: "Versión de la aplicación",
+      nivel: "ok",
+      detalle: `NexDeveloper ${VERSION_APP}`,
     },
   ];
 

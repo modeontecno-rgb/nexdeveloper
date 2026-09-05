@@ -1,0 +1,93 @@
+// Edge Function «probar-proveedor».
+// Hace una llamada mínima al proveedor con la clave guardada (que se descifra
+// en el servidor) y devuelve solo «correcto» o el error. La clave nunca sale
+// de aquí ni se registra en ningún sitio.
+//
+// Despliegue: supabase functions deploy probar-proveedor
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type Prueba = { url: string; cabeceras: Record<string, string> };
+
+function peticionDePrueba(slug: string, clave: string, urlBase: string | null): Prueba | null {
+  const base = (urlBase ?? "").replace(/\/$/, "");
+  switch (slug) {
+    case "anthropic":
+      return {
+        url: `${base || "https://api.anthropic.com"}/v1/models`,
+        cabeceras: { "x-api-key": clave, "anthropic-version": "2023-06-01" },
+      };
+    case "google":
+      return {
+        url: `${base || "https://generativelanguage.googleapis.com"}/v1beta/models?key=${encodeURIComponent(clave)}`,
+        cabeceras: {},
+      };
+    case "elevenlabs":
+      return { url: `${base || "https://api.elevenlabs.io"}/v1/models`, cabeceras: { "xi-api-key": clave } };
+    case "fal":
+      return { url: `${base || "https://fal.run"}/`, cabeceras: { Authorization: `Key ${clave}` } };
+    case "cohere":
+      return { url: `${base || "https://api.cohere.com"}/v1/models`, cabeceras: { Authorization: `Bearer ${clave}` } };
+    case "ollama":
+      return { url: `${base || "http://localhost:11434"}/api/tags`, cabeceras: {} };
+    default:
+      // Proveedores compatibles con la API de OpenAI.
+      return { url: `${base}/models`, cabeceras: { Authorization: `Bearer ${clave}` } };
+  }
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  const responder = (cuerpo: Record<string, unknown>, estado = 200) =>
+    new Response(JSON.stringify(cuerpo), {
+      status: estado,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
+
+  try {
+    const { proveedor_id: proveedorId } = await req.json();
+    if (!proveedorId) return responder({ ok: false, error: "Falta el proveedor." }, 400);
+
+    const autorizacion = req.headers.get("Authorization") ?? "";
+    const url = Deno.env.get("SUPABASE_URL")!;
+
+    // 1) Comprobamos que el proveedor es del usuario que llama.
+    const comoUsuario = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: autorizacion } },
+    });
+    const { data: filas, error: errorRpc } = await comoUsuario.rpc("probar_proveedor", {
+      p_proveedor_id: proveedorId,
+    });
+    if (errorRpc) return responder({ ok: false, error: errorRpc.message }, 400);
+    const info = Array.isArray(filas) ? filas[0] : filas;
+    if (!info) return responder({ ok: false, error: "Proveedor no encontrado." }, 404);
+    if (!info.tiene_clave) return responder({ ok: false, error: "Este proveedor todavía no tiene clave guardada." });
+
+    // 2) Descifrado en servidor.
+    const comoServicio = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: clave, error: errorClave } = await comoServicio.rpc("descifrar_clave_proveedor", {
+      p_proveedor_id: proveedorId,
+    });
+    if (errorClave || !clave) return responder({ ok: false, error: "No se ha podido leer la clave guardada." });
+
+    const prueba = peticionDePrueba(info.clave_slug, clave as string, info.url_base);
+    if (!prueba) return responder({ ok: false, error: "Este proveedor no admite comprobación automática." });
+
+    const inicio = Date.now();
+    const respuesta = await fetch(prueba.url, { headers: prueba.cabeceras });
+    const duracion = Date.now() - inicio;
+
+    if (!respuesta.ok) {
+      const texto = (await respuesta.text()).slice(0, 300);
+      return responder({ ok: false, error: `El proveedor ha respondido ${respuesta.status}. ${texto}` });
+    }
+    return responder({ ok: true, duracion_ms: duracion });
+  } catch (e) {
+    return responder({ ok: false, error: e instanceof Error ? e.message : "Error inesperado." }, 500);
+  }
+});

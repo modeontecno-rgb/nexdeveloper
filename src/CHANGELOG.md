@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 0.4.0 — 5 de septiembre de 2026
+
+- Pantalla de proveedores de IA: enciendes los que uses, guardas su clave cifrada y la pruebas sin salir de la aplicación.
+- Catálogo de modelos con precio por millón de tokens, velocidad, calidad y para qué sirve cada uno.
+- Política de enrutado: eliges qué modelo hace cada tipo de trabajo, con recálculo automático por precio, rapidez o calidad.
+- Trazabilidad: cada respuesta y cada tarea indican con qué IA, modelo y experto se hizo, con tokens y coste.
+- Nueva pantalla «Referencia de uso» con lo que mejor te ha funcionado.
+
+
+
 ## 0.3.0 — 5 de septiembre de 2026
 
 - Acciones reales: consultas y cambios en la base de datos, repositorios y llamadas web, siempre con aprobación previa.

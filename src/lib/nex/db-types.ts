@@ -134,6 +134,10 @@ export type ChatRow = {
   es_principal: boolean
   proyecto_origen_id: string | null
   reorganizado_el: string | null
+  proveedor_id: string | null
+  modelo_id: string | null
+  experto_id: string | null
+  resultado: ResultadoIa | null
 }
 
 export type MensajeRow = {
@@ -207,6 +211,10 @@ export type TareaRow = {
   instrucciones: string | null
   motivo_atencion: string | null
   atendida_el: string | null
+  proveedor_id: string | null
+  modelo_id: string | null
+  experto_id: string | null
+  resultado: ResultadoIa | null
 }
 
 
@@ -403,6 +411,9 @@ export type ConfiguracionAppRow = {
   valor: string
 }
 
+
+
+
 export type ResumenProyectoRow = {
   proyecto_id: string
   total_tareas: number
@@ -422,6 +433,83 @@ export type CargaAgenteRow = {
   capacidad: number
   tareas_activas: number
   capacidad_libre: number
+}
+
+/* --------------------- Proveedores, modelos y trazabilidad -------------------- */
+
+export type TipoProveedorIa = "texto" | "voz" | "imagen" | "busqueda" | "multi"
+export type VelocidadModelo = "baja" | "media" | "alta" | "muy_alta"
+export type EstrategiaEnrutado = "barato" | "rapido" | "mejor"
+export type ResultadoIa = "ok" | "aviso" | "error"
+export type TareaIa =
+  | "codigo"
+  | "razonamiento"
+  | "resumen"
+  | "traduccion"
+  | "clasificacion"
+  | "busqueda"
+  | "imagen"
+  | "voz"
+  | "vision"
+
+/** Vista pública del proveedor: nunca incluye la clave, solo si la hay. */
+export type ProveedorIaRow = {
+  id: string
+  user_id: string
+  nombre: string
+  clave_slug: string
+  tipo: TipoProveedorIa
+  activo: boolean
+  tiene_clave: boolean
+  url_base: string | null
+  notas: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ModeloIaRow = {
+  id: string
+  user_id: string
+  proveedor_id: string
+  identificador: string
+  nombre: string
+  activo: boolean
+  coste_entrada: number | null
+  coste_salida: number | null
+  velocidad: VelocidadModelo
+  contexto_max: number | null
+  calidad: number | null
+  tareas_aconsejadas: string[]
+  notas: string | null
+  created_at: string
+}
+
+export type PoliticaEnrutadoRow = {
+  id: string
+  user_id: string
+  tarea: string
+  estrategia: EstrategiaEnrutado
+  modelo_preferido_id: string | null
+  modelo_respaldo_id: string | null
+  updated_at: string
+}
+
+export type ConsumoIaRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  chat_id: string | null
+  mensaje_id: string | null
+  tarea_id: string | null
+  proveedor_id: string | null
+  modelo_id: string | null
+  experto_id: string | null
+  tokens_entrada: number
+  tokens_salida: number
+  coste: number
+  duracion_ms: number
+  resultado: ResultadoIa
+  created_at: string
 }
 
 type SinUsuario<T> = Omit<T, "user_id">
@@ -472,17 +560,40 @@ export type Database = {
         PlantillaAccionRow,
         Partial<SinUsuario<PlantillaAccionRow>> & { tipo: TipoAccion; nombre: string }
       >
+      proveedores_ia: Tabla<
+        Omit<ProveedorIaRow, "tiene_clave">,
+        Partial<SinUsuario<Omit<ProveedorIaRow, "tiene_clave">>> & { nombre: string; clave_slug: string }
+      >
+      modelos_ia: Tabla<
+        ModeloIaRow,
+        Partial<SinUsuario<ModeloIaRow>> & { proveedor_id: string; identificador: string; nombre: string }
+      >
+      politica_enrutado: Tabla<PoliticaEnrutadoRow, Partial<SinUsuario<PoliticaEnrutadoRow>> & { tarea: string }>
+      consumos_ia: Tabla<ConsumoIaRow>
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
       v_carga_agentes: { Row: CargaAgenteRow; Relationships: [] }
       v_tareas_atencion: { Row: TareaAtencionRow; Relationships: [] }
+      v_proveedores_ia: { Row: ProveedorIaRow; Relationships: [] }
     }
 
     Functions: {
       sugerir_proyecto: {
         Args: { p_texto: string }
         Returns: { proyecto_id: string; nombre: string; confianza: number }[]
+      }
+      guardar_clave_proveedor: {
+        Args: { p_proveedor_id: string; p_clave: string }
+        Returns: boolean
+      }
+      probar_proveedor: {
+        Args: { p_proveedor_id: string }
+        Returns: { clave_slug: string; url_base: string | null; tiene_clave: boolean }[]
+      }
+      sembrar_proveedores_ia: {
+        Args: Record<string, never>
+        Returns: number
       }
     }
     Enums: {

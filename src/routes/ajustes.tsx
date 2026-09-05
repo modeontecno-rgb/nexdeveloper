@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Database, Trash2 } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Cpu, Database, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/nex/auth";
 import { borrarDatosDemostracion, cargarDatosDemostracion } from "@/lib/nex/demo";
 import { useAjustes, usePerfil } from "@/lib/nex/queries/datos";
 import { useGuardarAjustes } from "@/lib/nex/queries/mutaciones";
+import { VERSION_APP } from "@/lib/nex/version";
 
 export const Route = createFileRoute("/ajustes")({
   head: () => ({
@@ -81,6 +82,25 @@ function Ajustes() {
           <p className="mt-2 text-sm text-muted-foreground">
             {perfil?.nombre_completo ?? "Sin nombre"} · {perfil?.email ?? usuario?.email ?? "—"}
           </p>
+        </section>
+
+        <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Proveedores de IA</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Enciende los proveedores que uses, guarda sus claves de forma cifrada, ajusta precios y decide qué modelo
+            se encarga de cada tipo de trabajo.
+          </p>
+          <Link
+            to="/ajustes/proveedores"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+          >
+            <Cpu className="size-4" /> Abrir proveedores de IA
+          </Link>
+        </section>
+
+        <section className="panel p-5">
+          <h2 className="font-display text-sm font-semibold">Versión</h2>
+          <p className="mt-2 text-sm text-muted-foreground">NexDeveloper {VERSION_APP}</p>
         </section>
 
         <section className="panel p-5">
