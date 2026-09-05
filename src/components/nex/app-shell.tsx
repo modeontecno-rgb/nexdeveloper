@@ -16,6 +16,7 @@ import {
   Sparkle,
   Sun,
   X,
+  BadgeCheck,
 } from "lucide-react";
 import * as React from "react";
 
@@ -33,6 +34,7 @@ const NAVEGACION = [
   { to: "/agentes", etiqueta: "Agentes", icono: Cpu },
   { to: "/referencia", etiqueta: "Referencia de uso", icono: BookOpen },
   { to: "/expertos", etiqueta: "Expertos", icono: Users },
+  { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },
   { to: "/ajustes", etiqueta: "Ajustes", icono: Settings },
