@@ -1,4 +1,4 @@
-import { ChevronDown, KeyRound, PlugZap, Star } from "lucide-react";
+import { ChevronDown, KeyRound, Link2, PlugZap, Star } from "lucide-react";
 import * as React from "react";
 
 import { Dialogo } from "@/components/nex/dialogo";
@@ -6,8 +6,42 @@ import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import type { ModeloIaRow, ProveedorIaRow } from "@/lib/nex/db-types";
 import { CLASE_VELOCIDAD, ETIQUETA_TAREA_IA, ETIQUETA_VELOCIDAD, TAREAS_IA } from "@/lib/nex/enrutado";
 import { formatoDinero } from "@/lib/nex/labels";
-import { useGuardarClaveProveedor, useGuardarModelo, useGuardarProveedor, useProbarProveedor } from "@/lib/nex/queries/proveedores";
+import {
+  useConectarCanva,
+  useGuardarClaveProveedor,
+  useGuardarModelo,
+  useGuardarProveedor,
+  useProbarProveedor,
+} from "@/lib/nex/queries/proveedores";
 import { cn } from "@/lib/utils";
+
+/** Una línea que explica para qué sirve cada proveedor. */
+export const PARA_QUE_SIRVE: Record<string, string> = {
+  anthropic: "Modelos Claude: programación, razonamiento largo y análisis de documentos.",
+  openai: "Modelos GPT: uso general, visión y voz en un mismo proveedor.",
+  google: "Modelos Gemini: contexto enorme, visión y generación de imágenes.",
+  groq: "Modelos abiertos a mucha velocidad y precio bajo.",
+  mistral: "Modelos europeos equilibrados, con Codestral para programar.",
+  deepseek: "Razonamiento y programación a coste muy contenido.",
+  xai: "Modelos Grok: razonamiento y programación con contexto amplio.",
+  perplexity: "Búsqueda en internet con respuestas citadas y actualizadas.",
+  cohere: "Modelos de empresa para clasificar, resumir y buscar documentos.",
+  openrouter: "Pasarela única hacia cientos de modelos de otros proveedores.",
+  together: "Modelos abiertos alojados, con buen precio por rendimiento.",
+  elevenlabs: "Voz: locución natural, doblaje y clonación de voz.",
+  fal: "Imagen y vídeo por generación rápida con modelos FLUX.",
+  abacus: "Plataforma con enrutado propio incluido en la suscripción.",
+  ollama: "Modelos ejecutados en tu propio equipo, sin coste por uso.",
+  canva: "Diseños desde tus plantillas de marca, autorrelleno y exportación a PDF, PNG o MP4.",
+};
+
+const ETIQUETA_TIPO: Record<string, string> = {
+  texto: "Texto",
+  voz: "Voz",
+  imagen: "Imagen",
+  busqueda: "Búsqueda",
+  multi: "Multiuso",
+};
 
 export function TarjetaProveedor({
   proveedor,
@@ -26,6 +60,10 @@ export function TarjetaProveedor({
   const guardarProveedor = useGuardarProveedor();
   const guardarClave = useGuardarClaveProveedor();
   const probar = useProbarProveedor();
+  const conectarCanva = useConectarCanva();
+  const esCanva = proveedor.clave_slug === "canva";
+  const esOllama = proveedor.clave_slug === "ollama";
+  const [urlBase, setUrlBase] = React.useState(proveedor.url_base ?? "http://localhost:11434");
 
   return (
     <article className="panel p-4">
@@ -35,9 +73,20 @@ export function TarjetaProveedor({
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold text-foreground">{proveedor.nombre}</h3>
-          <p className="text-xs text-muted-foreground">
-            {proveedor.tipo} · {proveedor.tiene_clave ? "Clave guardada" : "Sin clave"}
-          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-foreground/80">
+              {ETIQUETA_TIPO[proveedor.tipo] ?? proveedor.tipo}
+            </span>
+            <span>
+              {esCanva
+                ? proveedor.tiene_clave
+                  ? `Conectado como ${proveedor.cuenta ?? "cuenta de Canva"}`
+                  : "Sin conectar"
+                : proveedor.tiene_clave
+                  ? "Clave guardada"
+                  : "Sin clave"}
+            </span>
+          </div>
         </div>
         <label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
           <input
@@ -50,14 +99,40 @@ export function TarjetaProveedor({
         </label>
       </div>
 
+      <p className="mt-3 text-xs text-muted-foreground">{PARA_QUE_SIRVE[proveedor.clave_slug] ?? proveedor.notas ?? ""}</p>
+
+      {esOllama ? (
+        <div className="mt-3 space-y-1">
+          <label className="text-xs text-muted-foreground" htmlFor={`url-${proveedor.id}`}>
+            Dirección de tu servidor
+          </label>
+          <input
+            id={`url-${proveedor.id}`}
+            value={urlBase}
+            onChange={(e) => setUrlBase(e.target.value)}
+            onBlur={() => guardarProveedor.mutate({ id: proveedor.id, cambios: { url_base: urlBase.trim() } })}
+            className={claseCampo}
+          />
+          <p className="text-xs text-warning">
+            Solo accesible desde tu red; la función de prueba del servidor no llega a tu equipo.
+          </p>
+        </div>
+      ) : null}
+
       <p className="mt-3 text-xs text-muted-foreground">
         Gasto de este mes: <span className="font-medium text-foreground">{formatoDinero(gastoMes, moneda)}</span>
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Boton variante="suave" onClick={() => setDialogoClave(true)}>
-          <KeyRound className="size-4" /> Clave…
-        </Boton>
+        {esCanva ? (
+          <Boton variante="suave" disabled={conectarCanva.isPending} onClick={() => conectarCanva.mutate(proveedor.id)}>
+            <Link2 className="size-4" /> {proveedor.tiene_clave ? "Volver a conectar" : "Conectar con Canva"}
+          </Boton>
+        ) : (
+          <Boton variante="suave" onClick={() => setDialogoClave(true)}>
+            <KeyRound className="size-4" /> Clave…
+          </Boton>
+        )}
         <Boton variante="suave" disabled={probar.isPending} onClick={() => probar.mutate(proveedor.id)}>
           <PlugZap className="size-4" /> Probar
         </Boton>
