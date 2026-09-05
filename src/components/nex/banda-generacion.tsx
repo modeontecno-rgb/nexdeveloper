@@ -11,12 +11,12 @@ export function BandaGeneracion({
   tareaId,
   moneda = "EUR",
 }: {
-  proveedorId?: string | null;
-  modeloId?: string | null;
-  expertoId?: string | null;
-  chatId?: string | null;
-  tareaId?: string | null;
-  moneda?: string;
+  proveedorId?: string | null | undefined;
+  modeloId?: string | null | undefined;
+  expertoId?: string | null | undefined;
+  chatId?: string | null | undefined;
+  tareaId?: string | null | undefined;
+  moneda?: string | undefined;
 }) {
   const { data: proveedores = [] } = useProveedoresIa();
   const { data: modelos = [] } = useModelosIa();
