@@ -15,6 +15,7 @@ import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as AprobacionesRouteImport } from './routes/aprobaciones'
 import { Route as ColaRouteImport } from './routes/cola'
 import { Route as EstadoRouteImport } from './routes/estado'
+import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
@@ -51,6 +52,11 @@ const ColaRoute = ColaRouteImport.update({
 const EstadoRoute = EstadoRouteImport.update({
   id: '/estado',
   path: '/estado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpertosRoute = ExpertosRouteImport.update({
+  id: '/expertos',
+  path: '/expertos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IntegracionesRoute = IntegracionesRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/aprobaciones': typeof AprobacionesRoute
   '/cola': typeof ColaRoute
   '/estado': typeof EstadoRoute
+  '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/aprobaciones': typeof AprobacionesRoute
   '/cola': typeof ColaRoute
   '/estado': typeof EstadoRoute
+  '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/aprobaciones': typeof AprobacionesRoute
   '/cola': typeof ColaRoute
   '/estado': typeof EstadoRoute
+  '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/aprobaciones'
     | '/cola'
     | '/estado'
+    | '/expertos'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/aprobaciones'
     | '/cola'
     | '/estado'
+    | '/expertos'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/aprobaciones'
     | '/cola'
     | '/estado'
+    | '/expertos'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   AprobacionesRoute: typeof AprobacionesRoute
   ColaRoute: typeof ColaRoute
   EstadoRoute: typeof EstadoRoute
+  ExpertosRoute: typeof ExpertosRoute
   IntegracionesRoute: typeof IntegracionesRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/estado'
       fullPath: '/estado'
       preLoaderRoute: typeof EstadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/expertos': {
+      id: '/expertos'
+      path: '/expertos'
+      fullPath: '/expertos'
+      preLoaderRoute: typeof ExpertosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/integraciones': {
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   AprobacionesRoute: AprobacionesRoute,
   ColaRoute: ColaRoute,
   EstadoRoute: EstadoRoute,
+  ExpertosRoute: ExpertosRoute,
   IntegracionesRoute: IntegracionesRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,

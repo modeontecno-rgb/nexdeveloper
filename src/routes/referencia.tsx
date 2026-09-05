@@ -7,6 +7,7 @@ import { Cargando } from "@/components/nex/badges";
 import { ETIQUETA_TAREA_IA } from "@/lib/nex/enrutado";
 import { formatoDinero } from "@/lib/nex/labels";
 import { useAgentes, useAjustes } from "@/lib/nex/queries/datos";
+import { useExpertos } from "@/lib/nex/queries/expertos";
 import { useConsumosIa, useModelosIa, useProveedoresIa } from "@/lib/nex/queries/proveedores";
 
 export const Route = createFileRoute("/referencia")({
@@ -45,7 +46,7 @@ function Referencia() {
   const { data: consumos = [], isPending } = useConsumosIa();
   const { data: modelos = [] } = useModelosIa();
   const { data: proveedores = [] } = useProveedoresIa();
-  const { data: agentes = [] } = useAgentes();
+  const { data: expertos = [] } = useExpertos();
   const { data: ajustes } = useAjustes();
   const moneda = ajustes?.moneda ?? "EUR";
 
@@ -54,7 +55,7 @@ function Referencia() {
     for (const c of consumos) {
       const modelo = modelos.find((m) => m.id === c.modelo_id);
       const proveedor = proveedores.find((p) => p.id === c.proveedor_id);
-      const experto = agentes.find((a) => a.id === c.experto_id);
+      const experto = expertos.find((e) => e.id === c.experto_id);
       const trabajoCodigo = modelo?.tareas_aconsejadas[0] ?? "general";
       const clave = `${trabajoCodigo}|${c.modelo_id ?? "-"}|${c.experto_id ?? "-"}`;
       const fila =
