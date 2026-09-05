@@ -186,12 +186,8 @@ export function useEnlazarRepositorio() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: { proyectoId: string; nombreCompleto: string; url: string; privado: boolean }) => {
-      const { data: sesion } = await supabase.auth.getUser();
-      const userId = sesion.user?.id;
-      if (!userId) throw new Error("Debes haber iniciado sesión.");
       const { error } = await supabase.from("repositorios").upsert(
         {
-          user_id: userId,
           proyecto_id: input.proyectoId,
           nombre_completo: input.nombreCompleto,
           url: input.url,
