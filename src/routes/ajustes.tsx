@@ -37,7 +37,7 @@ function Ajustes() {
     umbral_aprobacion_eur: 150,
     aprobar_si_prioridad_critica: true,
     aprobar_si_riesgo_alto: true,
-    umbral_confianza_reorganizacion: 80,
+    umbral_confianza_reorganizacion: 85,
     reorganizacion_automatica: true,
     mesa_expertos_solo_importantes: true,
     moneda: "EUR",
@@ -49,7 +49,7 @@ function Ajustes() {
       umbral_aprobacion_eur: Number(ajustes.umbral_aprobacion_eur),
       aprobar_si_prioridad_critica: ajustes.aprobar_si_prioridad_critica,
       aprobar_si_riesgo_alto: ajustes.aprobar_si_riesgo_alto,
-      umbral_confianza_reorganizacion: Number(ajustes.umbral_confianza_reorganizacion),
+      umbral_confianza_reorganizacion: Math.round(Number(ajustes.umbral_confianza_reorganizacion) * 100),
       reorganizacion_automatica: ajustes.reorganizacion_automatica,
       mesa_expertos_solo_importantes: ajustes.mesa_expertos_solo_importantes,
       moneda: ajustes.moneda,
@@ -126,7 +126,7 @@ function Ajustes() {
             />
             <Campo
               etiqueta="Confianza mínima para mover algo sin preguntar (%)"
-              pista="Por debajo de este valor te preguntaremos antes de cambiar una orden de proyecto."
+              pista="Por debajo de este porcentaje te preguntaremos antes de cambiar una orden de proyecto."
             >
               <input
                 type="number"
@@ -181,7 +181,12 @@ function Ajustes() {
       <div className="mt-6">
         <Boton
           disabled={guardar.isPending}
-          onClick={() => guardar.mutate(formulario, { onSuccess: () => void refetch() })}
+          onClick={() =>
+            guardar.mutate(
+              { ...formulario, umbral_confianza_reorganizacion: formulario.umbral_confianza_reorganizacion / 100 },
+              { onSuccess: () => void refetch() },
+            )
+          }
         >
           Guardar ajustes
         </Boton>
