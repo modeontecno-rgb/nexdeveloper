@@ -411,69 +411,7 @@ export type ConfiguracionAppRow = {
   valor: string
 }
 
-export type TipoProveedorIa = "texto" | "imagen" | "voz" | "video" | "multimodal" | "busqueda"
-export type VelocidadModelo = "baja" | "media" | "alta" | "muy_alta"
-export type EstrategiaEnrutado = "barato" | "rapido" | "mejor"
-export type ResultadoGeneracion = "correcto" | "revisado" | "descartado" | "sin_valorar"
 
-export type ProveedorIaRow = {
-  id: string
-  user_id: string
-  codigo: string
-  nombre: string
-  tipo: TipoProveedorIa
-  url_base: string | null
-  url_docs: string | null
-  activo: boolean
-  tiene_clave: boolean
-  ultima_prueba: string | null
-  resultado_prueba: string | null
-  notas: string | null
-  orden: number
-}
-
-export type ModeloIaRow = {
-  id: string
-  user_id: string
-  proveedor_id: string
-  identificador: string
-  nombre: string
-  coste_entrada: number | null
-  coste_salida: number | null
-  velocidad: VelocidadModelo
-  calidad: number | null
-  contexto: number | null
-  tareas_aconsejadas: string[]
-  activo: boolean
-  notas: string | null
-}
-
-export type PoliticaEnrutadoRow = {
-  id: string
-  user_id: string
-  tarea: string
-  estrategia: EstrategiaEnrutado
-  modelo_preferido_id: string | null
-  modelo_respaldo_id: string | null
-  updated_at: string | null
-}
-
-export type ConsumoIaRow = {
-  id: string
-  user_id: string
-  proyecto_id: string | null
-  tarea_id: string | null
-  chat_id: string | null
-  mensaje_id: string | null
-  proveedor_id: string | null
-  modelo_id: string | null
-  experto_id: string | null
-  tokens_entrada: number
-  tokens_salida: number
-  coste: number
-  resultado: ResultadoGeneracion
-  created_at: string
-}
 
 
 export type ResumenProyectoRow = {
