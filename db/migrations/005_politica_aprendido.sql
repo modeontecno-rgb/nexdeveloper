@@ -5,9 +5,10 @@
 
 /* ------------------------- Estrategia «aprendido» -------------------------- */
 
-do $$ begin
-  alter type estrategia_enrutado add value if not exists 'aprendido';
-exception when duplicate_object then null; end $$;
+-- Nota: ejecuta esta línea sola (fuera de cualquier transacción) si tu cliente
+-- de SQL agrupa todo el guion en una transacción.
+alter type estrategia_enrutado add value if not exists 'aprendido';
+
 
 /* ------------------ Cuenta conectada (OAuth, p. ej. Canva) ----------------- */
 
