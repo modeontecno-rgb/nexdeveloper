@@ -1,8 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { KeyRound, Lock, Plug } from "lucide-react";
+import { ExternalLink, KeyRound, Lock, Pencil, Plug, Plus, Trash2 } from "lucide-react";
+import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando } from "@/components/nex/badges";
+import { Boton } from "@/components/nex/campos";
+import { FormularioIntegracion } from "@/components/nex/formulario-integracion";
+import type { IntegracionRow } from "@/lib/nex/db-types";
+import { useBorrarIntegracion } from "@/lib/nex/queries/integraciones";
 import { ETIQUETA_TIPO_INTEGRACION, formatoFecha } from "@/lib/nex/labels";
 import { useCredenciales, useIntegraciones } from "@/lib/nex/queries/datos";
 
@@ -27,6 +32,18 @@ const ETIQUETA_UBICACION = {
 function Integraciones() {
   const { data: integraciones = [], isPending } = useIntegraciones();
   const { data: credenciales = [] } = useCredenciales();
+  const borrar = useBorrarIntegracion();
+  const [abierto, setAbierto] = React.useState(false);
+  const [editando, setEditando] = React.useState<IntegracionRow | undefined>(undefined);
+
+  const abrirNueva = () => {
+    setEditando(undefined);
+    setAbierto(true);
+  };
+  const abrirEdicion = (i: IntegracionRow) => {
+    setEditando(i);
+    setAbierto(true);
+  };
 
   if (isPending) return <Cargando />;
 
@@ -35,6 +52,11 @@ function Integraciones() {
       <Encabezado
         titulo="Integraciones y seguridad"
         descripcion="Ninguna contraseña ni clave se guarda en texto plano: solo se muestra si está configurada."
+        acciones={
+          <Boton onClick={abrirNueva}>
+            <Plus className="size-4" /> Nueva integración
+          </Boton>
+        }
       />
 
       <div className="panel mb-6 flex items-start gap-3 p-4 text-sm">
@@ -63,6 +85,7 @@ function Integraciones() {
                     </p>
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
                 <span
                   className={
                     i.conectada
@@ -72,7 +95,38 @@ function Integraciones() {
                 >
                   {i.conectada ? "Conectada" : "Sin conectar"}
                 </span>
+                  <button
+                    type="button"
+                    aria-label={`Editar ${i.nombre}`}
+                    onClick={() => abrirEdicion(i)}
+                    className="rounded-md p-1.5 text-muted-foreground transition hover:text-foreground"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                  {!i.es_predefinida ? (
+                    <button
+                      type="button"
+                      aria-label={`Eliminar ${i.nombre}`}
+                      onClick={() => borrar.mutate(i)}
+                      className="rounded-md p-1.5 text-muted-foreground transition hover:text-destructive"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  ) : null}
+                </div>
               </div>
+
+              {i.descripcion ? <p className="mt-3 text-sm text-muted-foreground">{i.descripcion}</p> : null}
+
+              {(i.capacidades ?? []).length > 0 ? (
+                <ul className="mt-3 flex flex-wrap gap-1.5">
+                  {(i.capacidades ?? []).map((c) => (
+                    <li key={c} className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-muted-foreground">
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
 
               <ul className="mt-4 space-y-2">
                 {claves.map((c) => (
@@ -98,6 +152,21 @@ function Integraciones() {
                 )}
               </ul>
 
+              {i.url_panel || i.url_docs ? (
+                <div className="mt-3 flex flex-wrap gap-3 text-xs">
+                  {i.url_panel ? (
+                    <a href={i.url_panel} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                      Panel del servicio <ExternalLink className="size-3" />
+                    </a>
+                  ) : null}
+                  {i.url_docs ? (
+                    <a href={i.url_docs} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                      Documentación <ExternalLink className="size-3" />
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
+
               <p className="mt-3 text-xs text-muted-foreground">
                 {i.requiere_aprobacion
                   ? "Las acciones de esta integración requieren tu aprobación."
@@ -110,6 +179,8 @@ function Integraciones() {
           <p className="panel p-6 text-sm text-muted-foreground">Todavía no hay integraciones registradas.</p>
         )}
       </div>
+
+      <FormularioIntegracion abierto={abierto} onCerrar={() => setAbierto(false)} integracion={editando} />
     </>
   );
 }
