@@ -88,6 +88,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Se usarán tus datos reales en cuanto enlaces tu base de datos propia.
           </p>
         </div>
+        <div className="p-3">
+          <SelectorTema />
+        </div>
       </aside>
 
       <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">{children}</main>
