@@ -21,6 +21,7 @@ import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
+import { Route as AjustesProveedoresCanvaRetornoRouteImport } from './routes/ajustes_.proveedores.canva.retorno'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +83,12 @@ const ProyectosProyectoIdRoute = ProyectosProyectoIdRouteImport.update({
   path: '/proyectos/$proyectoId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjustesProveedoresCanvaRetornoRoute =
+  AjustesProveedoresCanvaRetornoRouteImport.update({
+    id: '/canva/retorno',
+    path: '/canva/retorno',
+    getParentRoute: () => AjustesProveedoresRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -93,9 +100,10 @@ export interface FileRoutesByFullPath {
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
-  '/ajustes/proveedores': typeof AjustesProveedoresRoute
+  '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
+  '/ajustes/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -107,9 +115,10 @@ export interface FileRoutesByTo {
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
-  '/ajustes/proveedores': typeof AjustesProveedoresRoute
+  '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
+  '/ajustes/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,9 +131,10 @@ export interface FileRoutesById {
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
-  '/ajustes_/proveedores': typeof AjustesProveedoresRoute
+  '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
+  '/ajustes_/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
+    | '/ajustes/proveedores/canva/retorno'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos'
+    | '/ajustes/proveedores/canva/retorno'
   id:
     | '__root__'
     | '/'
@@ -169,6 +181,7 @@ export interface FileRouteTypes {
     | '/ajustes_/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
+    | '/ajustes_/proveedores/canva/retorno'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -181,7 +194,7 @@ export interface RootRouteChildren {
   IntegracionesRoute: typeof IntegracionesRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
-  AjustesProveedoresRoute: typeof AjustesProveedoresRoute
+  AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
 }
@@ -272,8 +285,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProyectosProyectoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajustes_/proveedores/canva/retorno': {
+      id: '/ajustes_/proveedores/canva/retorno'
+      path: '/canva/retorno'
+      fullPath: '/ajustes/proveedores/canva/retorno'
+      preLoaderRoute: typeof AjustesProveedoresCanvaRetornoRouteImport
+      parentRoute: typeof AjustesProveedoresRoute
+    }
   }
 }
+
+interface AjustesProveedoresRouteChildren {
+  AjustesProveedoresCanvaRetornoRoute: typeof AjustesProveedoresCanvaRetornoRoute
+}
+
+const AjustesProveedoresRouteChildren: AjustesProveedoresRouteChildren = {
+  AjustesProveedoresCanvaRetornoRoute: AjustesProveedoresCanvaRetornoRoute,
+}
+
+const AjustesProveedoresRouteWithChildren =
+  AjustesProveedoresRoute._addFileChildren(AjustesProveedoresRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -285,7 +316,7 @@ const rootRouteChildren: RootRouteChildren = {
   IntegracionesRoute: IntegracionesRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,
-  AjustesProveedoresRoute: AjustesProveedoresRoute,
+  AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
 }

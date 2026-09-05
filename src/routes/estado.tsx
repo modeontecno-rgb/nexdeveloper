@@ -58,7 +58,17 @@ function useVerificacionesBackend(habilitado: boolean) {
     queryKey: ["verificaciones-backend"],
     enabled: habilitado,
     queryFn: async () => {
-      const [acciones, plantillas, funcion, proveedores, modelos, consumos, funcionProveedor] = await Promise.all([
+      const [
+        acciones,
+        plantillas,
+        funcion,
+        proveedores,
+        modelos,
+        consumos,
+        funcionProveedor,
+        rendimiento,
+        funcionCanva,
+      ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
         verificarFuncion("ejecutar-accion"),
@@ -66,8 +76,20 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("modelos_ia"),
         verificarTabla("consumos_ia"),
         verificarFuncion("probar-proveedor"),
+        verificarTabla("v_rendimiento_modelos"),
+        verificarFuncion("canva-oauth"),
       ]);
-      return { acciones, plantillas, funcion, proveedores, modelos, consumos, funcionProveedor };
+      return {
+        acciones,
+        plantillas,
+        funcion,
+        proveedores,
+        modelos,
+        consumos,
+        funcionProveedor,
+        rendimiento,
+        funcionCanva,
+      };
     },
   });
 }
@@ -184,6 +206,24 @@ function EstadoSistema() {
       detalle: verificaciones.isPending
         ? "Comprobando..."
         : verificaciones.data?.funcionProveedor
+          ? "Disponible"
+          : "No encontrada",
+    },
+    {
+      nombre: "Rendimiento de modelos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.rendimiento ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.rendimiento
+          ? "Responde correctamente"
+          : "Falta la vista v_rendimiento_modelos",
+    },
+    {
+      nombre: "Edge Function canva-oauth",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionCanva ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionCanva
           ? "Disponible"
           : "No encontrada",
     },

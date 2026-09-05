@@ -1,4 +1,10 @@
-import type { EstrategiaEnrutado, ModeloIaRow, PoliticaEnrutadoRow, ProveedorIaRow } from "./db-types";
+import type {
+  EstrategiaEnrutado,
+  ModeloIaRow,
+  PoliticaEnrutadoRow,
+  ProveedorIaRow,
+  RendimientoModeloRow,
+} from "./db-types";
 
 export const TAREAS_IA = [
   "codigo",
@@ -28,7 +34,11 @@ export const ETIQUETA_ESTRATEGIA: Record<EstrategiaEnrutado, string> = {
   barato: "Más barato",
   rapido: "Más rápido",
   mejor: "Mejor calidad",
+  aprendido: "Aprendido de mis consumos",
 };
+
+/** Mínimo de trabajos registrados para fiarse de las métricas de un modelo. */
+export const MINIMO_TRABAJOS = 3;
 
 export const ETIQUETA_VELOCIDAD: Record<string, string> = {
   baja: "Baja",
@@ -72,6 +82,40 @@ export function ordenarPorEstrategia(modelos: ModeloIaRow[], estrategia: Estrate
       .sort((a, b) => (PESO_VELOCIDAD[b.velocidad] ?? 0) - (PESO_VELOCIDAD[a.velocidad] ?? 0));
   }
   return lista.sort((a, b) => (b.calidad ?? 0) - (a.calidad ?? 0));
+}
+
+/**
+ * Ordena los modelos de una tarea por lo aprendido en los últimos 30 días:
+ * primero el mayor porcentaje de resultados correctos, después el coste medio
+ * y por último la duración media. Sin datos suficientes, cae a «mejor calidad».
+ */
+export function ordenarAprendido(
+  modelos: ModeloIaRow[],
+  rendimiento: RendimientoModeloRow[],
+  tarea: string,
+): ModeloIaRow[] {
+  const metricas = new Map(
+    rendimiento.filter((r) => r.tarea === tarea && r.trabajos >= MINIMO_TRABAJOS).map((r) => [r.modelo_id, r]),
+  );
+  const conDatos = modelos.filter((m) => metricas.has(m.id));
+  if (conDatos.length === 0) return ordenarPorEstrategia(modelos, "mejor");
+
+  const resto = modelos.filter((m) => !metricas.has(m.id));
+  conDatos.sort((a, b) => {
+    const ra = metricas.get(a.id)!;
+    const rb = metricas.get(b.id)!;
+    return (
+      Number(rb.porcentaje_ok) - Number(ra.porcentaje_ok) ||
+      Number(ra.coste_medio ?? 0) - Number(rb.coste_medio ?? 0) ||
+      Number(ra.duracion_media_ms ?? 0) - Number(rb.duracion_media_ms ?? 0)
+    );
+  });
+  return [...conDatos, ...ordenarPorEstrategia(resto, "mejor")];
+}
+
+/** Trabajos registrados para una tarea (suma de los modelos con datos). */
+export function trabajosDeTarea(rendimiento: RendimientoModeloRow[], tarea: string): number {
+  return rendimiento.filter((r) => r.tarea === tarea).reduce((total, r) => total + Number(r.trabajos), 0);
 }
 
 /** Modelo (y proveedor) que la política asigna a una tarea, con respaldo. */

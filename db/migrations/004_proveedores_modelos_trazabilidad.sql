@@ -282,13 +282,16 @@ declare
 begin
   if v_user is null then raise exception 'Sin sesión'; end if;
 
-  insert into public.proveedores_ia (user_id, nombre, clave_slug, tipo, activo, url_base)
-  select v_user, x.nombre, x.slug, x.tipo::tipo_proveedor_ia, x.activo, x.url
+  insert into public.proveedores_ia (user_id, nombre, clave_slug, tipo, activo, url_base, notas)
+  select v_user, x.nombre, x.slug, x.tipo::tipo_proveedor_ia, x.activo, x.url,
+         case when x.slug = 'canva'
+           then 'API Canva Connect: diseños desde plantillas de marca, autorrelleno y exportación a PDF/PNG/MP4; no genera imágenes por texto'
+         end
   from (values
     ('Anthropic','anthropic','texto',true,'https://api.anthropic.com'),
     ('OpenAI','openai','multi',false,'https://api.openai.com/v1'),
-    ('Google','google','multi',false,'https://generativelanguage.googleapis.com'),
-    ('Groq','groq','texto',false,'https://api.groq.com/openai/v1'),
+    ('Google','google','multi',true,'https://generativelanguage.googleapis.com'),
+    ('Groq','groq','texto',true,'https://api.groq.com/openai/v1'),
     ('Mistral','mistral','texto',false,'https://api.mistral.ai/v1'),
     ('DeepSeek','deepseek','texto',false,'https://api.deepseek.com'),
     ('xAI','xai','texto',false,'https://api.x.ai/v1'),
@@ -296,10 +299,11 @@ begin
     ('Cohere','cohere','texto',false,'https://api.cohere.com'),
     ('OpenRouter','openrouter','multi',false,'https://openrouter.ai/api/v1'),
     ('Together','together','texto',false,'https://api.together.xyz/v1'),
-    ('ElevenLabs','elevenlabs','voz',false,'https://api.elevenlabs.io'),
-    ('fal','fal','imagen',false,'https://fal.run'),
+    ('ElevenLabs','elevenlabs','voz',true,'https://api.elevenlabs.io'),
+    ('fal','fal','imagen',true,'https://fal.run'),
     ('Abacus','abacus','multi',false,'https://api.abacus.ai'),
-    ('Ollama','ollama','texto',false,'http://localhost:11434')
+    ('Ollama','ollama','texto',false,'http://localhost:11434'),
+    ('Canva','canva','imagen',true,'https://api.canva.com/rest/v1')
   ) as x(nombre, slug, tipo, activo, url)
   on conflict (user_id, clave_slug) do nothing;
 
@@ -318,6 +322,7 @@ begin
       ('google','gemini-2.5-pro','Gemini 2.5 Pro',1.25,10,'media',1048576,5,array['razonamiento','codigo','vision'],'Precio del tramo hasta 200k tokens'),
       ('google','gemini-2.5-flash','Gemini 2.5 Flash',0.30,2.50,'alta',1048576,4,array['resumen','clasificacion','vision'],null),
       ('google','gemini-2.5-flash-lite','Gemini 2.5 Flash Lite',0.10,0.40,'muy_alta',1048576,3,array['clasificacion','traduccion'],null),
+      ('google','gemini-2.5-flash-image','Nano Banana (Gemini 2.5 Flash Image)',0.30,30,'alta',null,4,array['imagen','vision'],'Se cobra por imagen (~0,04 $)'),
       ('google','gemini-2.0-flash','Gemini 2.0 Flash',0.10,0.40,'muy_alta',1048576,3,array['resumen','clasificacion'],null),
       ('groq','llama-3.3-70b-versatile','Llama 3.3 70B',0.59,0.79,'muy_alta',131072,4,array['codigo','resumen'],null),
       ('groq','llama-3.1-8b-instant','Llama 3.1 8B',0.05,0.08,'muy_alta',131072,2,array['clasificacion','traduccion'],null),
@@ -348,7 +353,8 @@ begin
       ('fal','fal-ai/flux-pro/v1.1','FLUX1.1 pro',null,null,'media',null,5,array['imagen'],'Se cobra por imagen generada'),
       ('abacus','route-llm','RouteLLM',null,null,'media',null,4,array['codigo','razonamiento'],'Incluido en la suscripción del proveedor'),
       ('ollama','llama3.1:8b','Llama 3.1 8B (local)',0,0,'alta',131072,2,array['clasificacion','resumen'],'Se ejecuta en tu equipo'),
-      ('ollama','qwen2.5-coder:14b','Qwen2.5 Coder 14B (local)',0,0,'media',32768,3,array['codigo'],'Se ejecuta en tu equipo')
+      ('ollama','qwen2.5-coder:14b','Qwen2.5 Coder 14B (local)',0,0,'media',32768,3,array['codigo'],'Se ejecuta en tu equipo'),
+      ('canva','canva-connect','Canva Connect (diseños y exportación)',null,null,'alta',null,4,array['imagen'],'Diseños desde plantillas de marca y exportación; no genera imágenes por texto')
     ) as m(slug, identificador, nombre, entrada, salida, velocidad, contexto, calidad, tareas, notas)
   loop
     select id into v_prov from public.proveedores_ia where user_id = v_user and clave_slug = r.slug;
