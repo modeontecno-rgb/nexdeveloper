@@ -26,7 +26,11 @@ export const claves = {
   consumosIa: ["consumos_ia"] as const,
   expertos: ["expertos"] as const,
   rendimientoModelos: ["v_rendimiento_modelos"] as const,
+  controlesCalidad: ["controles_calidad"] as const,
+  ejecucionesCalidad: ["ejecuciones_calidad"] as const,
+  resultadosCalidad: ["resultados_calidad"] as const,
 };
+
 
 export function errorLegible(error: { message?: string } | null | undefined, contexto: string) {
   if (!error) return contexto;
