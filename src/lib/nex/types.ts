@@ -108,3 +108,23 @@ export interface Alerta {
   nivel: "info" | "aviso" | "critico";
   requiereDecision: boolean;
 }
+
+export interface Aprobacion {
+  id: string;
+  proyectoId: string;
+  texto: string;
+  agenteId: string | null;
+  equipo: string[];
+  modo: ModoEjecucion;
+  prioridad: Prioridad;
+  costeEstimado: number;
+  estimacionHoras: number;
+  riesgo: "Bajo" | "Medio" | "Alto";
+  calidadPrevista: number;
+  motivo: string;
+  estado: "pendiente" | "aprobada" | "rechazada";
+  solicitadaEl: string;
+  resueltaEl?: string | undefined;
+  resueltaPor?: string | undefined;
+  comentario?: string | undefined;
+}
