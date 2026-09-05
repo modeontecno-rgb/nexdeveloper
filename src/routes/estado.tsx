@@ -71,6 +71,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         expertos,
         funcionBarrer,
         funcionPublicar,
+        controles,
+        ejecuciones,
+        resultados,
+        revisiones,
+        funcionCalidad,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -84,6 +89,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("expertos"),
         verificarFuncion("barrer-expertos"),
         verificarFuncion("publicar-experto"),
+        verificarTabla("controles_calidad"),
+        verificarTabla("ejecuciones_calidad"),
+        verificarTabla("resultados_calidad"),
+        verificarTabla("revisiones_orden"),
+        verificarFuncion("calidad-github"),
       ]);
       return {
         acciones,
@@ -98,6 +108,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         expertos,
         funcionBarrer,
         funcionPublicar,
+        controles,
+        ejecuciones,
+        resultados,
+        revisiones,
+        funcionCalidad,
       };
     },
   });
@@ -226,6 +241,47 @@ function EstadoSistema() {
         : verificaciones.data?.rendimiento
           ? "Responde correctamente"
           : "Falta la vista v_rendimiento_modelos",
+    },
+    {
+      nombre: "Catálogo de controles de calidad",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.controles ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.controles
+          ? "Responde correctamente"
+          : "Falta la tabla controles_calidad (migración 007)",
+    },
+    {
+      nombre: "Comprobaciones de calidad",
+      nivel:
+        verificaciones.isPending
+          ? "aviso"
+          : verificaciones.data?.ejecuciones && verificaciones.data?.resultados
+            ? "ok"
+            : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.ejecuciones && verificaciones.data?.resultados
+          ? "Responde correctamente"
+          : "Faltan ejecuciones_calidad o resultados_calidad",
+    },
+    {
+      nombre: "Revisiones previas de órdenes",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.revisiones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.revisiones
+          ? "Responde correctamente"
+          : "Falta la tabla revisiones_orden",
+    },
+    {
+      nombre: "Edge Function calidad-github",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionCalidad ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionCalidad
+          ? "Disponible"
+          : "No encontrada",
     },
     {
       nombre: "Edge Function canva-oauth",
