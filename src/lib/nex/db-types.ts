@@ -211,6 +211,10 @@ export type TareaRow = {
   instrucciones: string | null
   motivo_atencion: string | null
   atendida_el: string | null
+  proveedor_id: string | null
+  modelo_id: string | null
+  experto_id: string | null
+  resultado: ResultadoIa | null
 }
 
 
