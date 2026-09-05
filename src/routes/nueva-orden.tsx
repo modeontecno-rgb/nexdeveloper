@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Encabezado } from "@/components/nex/app-shell";
 import { ETIQUETA_MODO } from "@/lib/nex/labels";
 import { formatoEuros } from "@/lib/nex/labels";
+import { useConfig } from "@/lib/nex/config";
 import { useNex } from "@/lib/nex/store";
 import type { ModoEjecucion, Prioridad } from "@/lib/nex/types";
 
@@ -30,7 +31,8 @@ const PALABRAS: Record<string, string[]> = {
 };
 
 function NuevaOrden() {
-  const { proyectos, agentes, crearOrden } = useNex();
+  const { proyectos, agentes, crearOrden, solicitarAprobacion } = useNex();
+  const { config } = useConfig();
   const navigate = useNavigate();
   const [proyectoId, setProyectoId] = React.useState(proyectos[0]?.id ?? "");
   const [texto, setTexto] = React.useState("");
@@ -58,11 +60,17 @@ function NuevaOrden() {
     equipo.reduce((s, e) => s + (30 + texto.length * 0.15) * e.agente.costeRelativo, 0) * factorModo,
   );
   const horas = Math.round((1.5 + texto.length / 200) * factorModo * equipo.length * 10) / 10;
-  const riesgo = prioridad === "critica" || costeEstimado > 250 ? "Alto" : costeEstimado > 120 ? "Medio" : "Bajo";
+  const riesgo: "Bajo" | "Medio" | "Alto" =
+    prioridad === "critica" || costeEstimado > 250 ? "Alto" : costeEstimado > 120 ? "Medio" : "Bajo";
   const calidadPrevista = Math.round(
     equipo.reduce((s, e) => s + e.agente.calidad, 0) / equipo.length + (modo === "maxima_calidad" ? 4 : 0),
   );
-  const requiereAprobacion = costeEstimado > 150 || prioridad === "critica" || riesgo === "Alto";
+  const motivos = [
+    costeEstimado > config.umbralAprobacion ? `supera el límite de ${formatoEuros(config.umbralAprobacion)}` : null,
+    prioridad === "critica" ? "prioridad crítica" : null,
+    riesgo === "Alto" ? "riesgo alto" : null,
+  ].filter(Boolean) as string[];
+  const requiereAprobacion = motivos.length > 0;
 
   return (
     <>
@@ -160,13 +168,33 @@ function NuevaOrden() {
             <Fila termino="Tiempo estimado" valor={`${horas} h`} />
             <Fila termino="Riesgo" valor={riesgo} />
             <Fila termino="Calidad prevista" valor={`${calidadPrevista}/100`} />
-            <Fila termino="Aprobación" valor={requiereAprobacion ? "Necesaria" : "No necesaria"} />
+            <Fila termino="Aprobación" valor={requiereAprobacion ? `Necesaria (${motivos.join(", ")})` : "No necesaria"} />
           </dl>
 
           <button
             type="button"
             disabled={!texto.trim() || !proyectoId}
             onClick={() => {
+              if (requiereAprobacion) {
+                solicitarAprobacion({
+                  proyectoId,
+                  texto: texto.trim(),
+                  agenteId: recomendado?.agente.id ?? null,
+                  equipo: equipo.map((e) => e.agente.id),
+                  modo,
+                  prioridad,
+                  costeEstimado,
+                  estimacionHoras: horas,
+                  riesgo,
+                  calidadPrevista,
+                  motivo: motivos.join(", "),
+                });
+                toast.info("Orden enviada a aprobación", {
+                  description: "Revísala en la pantalla de Aprobaciones antes de que se ejecute.",
+                });
+                navigate({ to: "/aprobaciones" });
+                return;
+              }
               crearOrden({
                 proyectoId,
                 texto: texto.trim(),
@@ -175,14 +203,14 @@ function NuevaOrden() {
                 estimacionHoras: horas,
                 prioridad,
               });
-              toast.success("Orden aprobada y enviada a la cola", {
+              toast.success("Orden enviada a la cola", {
                 description: "Los agentes reales se conectarán en una fase posterior.",
               });
               navigate({ to: "/proyectos/$proyectoId", params: { proyectoId } });
             }}
             className="mt-4 w-full rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
-            {requiereAprobacion ? "Aprobar y enviar" : "Enviar"}
+            {requiereAprobacion ? "Enviar a aprobación" : "Enviar"}
           </button>
         </aside>
       </div>

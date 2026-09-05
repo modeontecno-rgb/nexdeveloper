@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
+import { useConfig } from "@/lib/nex/config";
 import { useNex } from "@/lib/nex/store";
 
 export const Route = createFileRoute("/ajustes")({
@@ -17,41 +17,13 @@ export const Route = createFileRoute("/ajustes")({
   component: Ajustes,
 });
 
-const CLAVE_AJUSTES = "nexdeveloper-ajustes-v1";
-
-interface Config {
-  organizacion: string;
-  moneda: string;
-  umbralAprobacion: number;
-  tareasParalelas: number;
-  reorganizacionAutomatica: boolean;
-  confianzaMinima: number;
-}
-
-const POR_DEFECTO: Config = {
-  organizacion: "Mi organización",
-  moneda: "EUR",
-  umbralAprobacion: 150,
-  tareasParalelas: 4,
-  reorganizacionAutomatica: true,
-  confianzaMinima: 80,
-};
-
 function Ajustes() {
   const nex = useNex();
-  const [config, setConfig] = React.useState<Config>(POR_DEFECTO);
-
-  React.useEffect(() => {
-    try {
-      const bruto = window.localStorage.getItem(CLAVE_AJUSTES);
-      if (bruto) setConfig({ ...POR_DEFECTO, ...JSON.parse(bruto) });
-    } catch {
-      /* sin almacenamiento */
-    }
-  }, []);
+  const { config, actualizar, guardar: persistir } = useConfig();
+  const setConfig = (valor: typeof config) => actualizar(valor);
 
   const guardar = () => {
-    window.localStorage.setItem(CLAVE_AJUSTES, JSON.stringify(config));
+    persistir(config);
     toast.success("Ajustes guardados");
   };
 
