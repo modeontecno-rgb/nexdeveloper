@@ -466,8 +466,8 @@ export type Database = {
       previews: Tabla<PreviewRow, Partial<SinUsuario<PreviewRow>> & { proyecto_id: string; titulo: string; url: string }>
       archivos: Tabla<ArchivoRow, Partial<SinUsuario<ArchivoRow>> & { nombre: string }>
       configuracion_app: Tabla<ConfiguracionAppRow>
-    }
       acciones: Tabla<AccionRow, Partial<SinUsuario<AccionRow>> & { tipo: TipoAccion; titulo: string }>
+
       plantillas_accion: Tabla<
         PlantillaAccionRow,
         Partial<SinUsuario<PlantillaAccionRow>> & { tipo: TipoAccion; nombre: string }
