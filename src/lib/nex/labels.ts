@@ -159,3 +159,30 @@ export const ETIQUETA_ENTORNO: Record<EntornoPreview, string> = {
   pruebas: "Pruebas",
   produccion: "Producción",
 };
+
+/** Fecha y hora exactas en el huso del navegador: 05/09/2026 22:41 */
+export function marcaTiempo(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** Solo la hora: 22:41 */
+export function marcaHora(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+export function mismoDia(a: string | null | undefined, b: string | null | undefined) {
+  if (!a || !b) return false;
+  const x = new Date(a);
+  const y = new Date(b);
+  return (
+    x.getFullYear() === y.getFullYear() && x.getMonth() === y.getMonth() && x.getDate() === y.getDate()
+  );
+}

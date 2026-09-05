@@ -7,6 +7,7 @@
 - Política de enrutado: eliges qué modelo hace cada tipo de trabajo, con recálculo automático por precio, rapidez o calidad.
 - Trazabilidad: cada respuesta y cada tarea indican con qué IA, modelo y experto se hizo, con tokens y coste.
 - Nueva pantalla «Referencia de uso» con lo que mejor te ha funcionado.
+- Fecha y hora en cada mensaje de chat.
 
 
 
