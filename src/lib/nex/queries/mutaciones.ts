@@ -158,8 +158,25 @@ export function useCrearProyecto() {
 }
 
 export function useActualizarProyecto() {
-  return useAccion<{ id: string; cambios: Partial<Omit<ProyectoRow, "id" | "user_id">> }>(
-    async ({ id, cambios }) => {
+  return useAccion<{ id: string; cambios: Partial<Omit<ProyectoRow, "id" | "user_id">>; confirmado?: boolean }>(
+    async ({ id, cambios, confirmado }) => {
+      // Nada se da por terminado con el control de calidad en rojo.
+      if (cambios.estado === "completado") {
+        const { data: proyecto } = await supabase
+          .from("proyectos")
+          .select("semaforo_calidad")
+          .eq("id", id)
+          .maybeSingle();
+        const semaforo = proyecto?.semaforo_calidad ?? "sin_datos";
+        if (semaforo === "rojo") {
+          throw new Error("No se puede publicar en rojo: corrige los controles bloqueantes.");
+        }
+        if (semaforo === "ambar" && !confirmado) {
+          throw new Error(
+            "El control de calidad está en ámbar. Vuelve a pulsar para publicar de todos modos.",
+          );
+        }
+      }
       await comprobar(await supabase.from("proyectos").update(cambios).eq("id", id).select("id").maybeSingle());
     },
     "Proyecto actualizado.",

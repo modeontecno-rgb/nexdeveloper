@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge } from "@/components/nex/badges";
+import { SemaforoBadge } from "@/components/nex/semaforo";
 import { Boton, claseCampo } from "@/components/nex/campos";
 import { PanelAcciones } from "@/components/nex/panel-acciones";
 import { PanelPreview } from "@/components/nex/panel-preview";
@@ -110,6 +111,7 @@ function DetalleProyecto() {
         {...(proyecto.descripcion ? { descripcion: proyecto.descripcion } : {})}
         acciones={
           <div className="flex items-center gap-2">
+            <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
             <EstadoProyectoBadge estado={proyecto.estado} />
             <PrioridadBadge prioridad={proyecto.prioridad} />
           </div>
