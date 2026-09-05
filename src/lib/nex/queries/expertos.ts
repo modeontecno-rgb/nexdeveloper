@@ -179,3 +179,19 @@ export function useUsarExpertoEnProyecto() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+/** Asigna el experto a una conversación o a una tarea. */
+export function useAsignarExperto(destino: "chats" | "tareas") {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, expertoId }: { id: string; expertoId: string | null }) => {
+      const { error } = await supabase.from(destino).update({ experto_id: expertoId }).eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: destino === "chats" ? claves.chats : claves.tareas });
+      void queryClient.invalidateQueries({ queryKey: claves.expertos });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

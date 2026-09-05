@@ -8,6 +8,7 @@ import { Boton, claseCampo } from "@/components/nex/campos";
 import { PanelAcciones } from "@/components/nex/panel-acciones";
 import { PanelPreview } from "@/components/nex/panel-preview";
 import { PlanTrabajo } from "@/components/nex/plan-trabajo";
+import { SelectorExperto } from "@/components/nex/selector-experto";
 import { BandaGeneracion } from "@/components/nex/banda-generacion";
 import { TareasEnBloques } from "@/components/nex/tareas-bloques";
 import {
@@ -145,6 +146,14 @@ function DetalleProyecto() {
               >
                 <Copy className="size-3.5" /> Copiar conversación
               </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Experto</span>
+              <SelectorExperto
+                valor={chat?.experto_id}
+                onChange={(expertoId) => chat && asignarExperto.mutate({ id: chat.id, expertoId })}
+                className="max-w-[16rem]"
+              />
             </div>
             <BandaGeneracion
               proveedorId={chat?.proveedor_id}
