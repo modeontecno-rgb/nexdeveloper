@@ -63,7 +63,7 @@ export function useCrearOrden() {
   return useMutation({
     mutationFn: async ({ entrada, ajustes }: { entrada: NuevaOrden; ajustes: AjustesRow | null }) => {
       const sugerencia = await sugerirProyecto(entrada.texto);
-      const umbralConfianza = ajustes?.umbral_confianza_reorganizacion ?? 80;
+      const umbralConfianza = ajustes?.umbral_confianza_reorganizacion ?? 0.85;
       const automatica = ajustes?.reorganizacion_automatica ?? true;
 
       let proyectoFinal = entrada.proyectoId;
@@ -126,7 +126,7 @@ export function useCrearOrden() {
         await registrarActividad(
           proyectoFinal,
           "reorganizacion",
-          `Orden reasignada automáticamente a «${sugerencia.nombre}» con ${Math.round(sugerencia.confianza)}% de confianza`,
+          `Orden reasignada automáticamente a «${sugerencia.nombre}» con ${Math.round(sugerencia.confianza * 100)}% de confianza`,
           { referencia_tabla: "ordenes", referencia_id: orden.id },
         );
       }
@@ -134,7 +134,7 @@ export function useCrearOrden() {
       if (pendienteConfirmar && sugerencia) {
         await crearAlerta(
           proyectoFinal,
-          `Una orden podría pertenecer a «${sugerencia.nombre}» (${Math.round(sugerencia.confianza)}% de confianza). Confirma el proyecto.`,
+          `Una orden podría pertenecer a «${sugerencia.nombre}» (${Math.round(sugerencia.confianza * 100)}% de confianza). Confirma el proyecto.`,
           "aviso",
           true,
         );
@@ -188,12 +188,21 @@ export function useResolverOrden() {
       comentario?: string;
     }) => {
       const { data: sesion } = await supabase.auth.getUser();
+      let resueltaPor: string | null = sesion.user?.email ?? null;
+      if (sesion.user?.id) {
+        const { data: perfil } = await supabase
+          .from("perfiles")
+          .select("nombre_completo")
+          .eq("id", sesion.user.id)
+          .maybeSingle();
+        resueltaPor = perfil?.nombre_completo ?? sesion.user.email ?? null;
+      }
       const actualizada = await supabase
         .from("ordenes")
         .update({
           estado: decision === "aprobada" ? "en_cola" : "rechazada",
           resuelta_el: new Date().toISOString(),
-          resuelta_por: sesion.user?.id ?? null,
+          resuelta_por: resueltaPor,
           comentario: comentario ?? null,
         })
         .eq("id", orden.id)
