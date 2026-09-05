@@ -17,6 +17,7 @@ import { Route as ColaRouteImport } from './routes/cola'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
+import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
@@ -61,6 +62,11 @@ const NuevaOrdenRoute = NuevaOrdenRouteImport.update({
   path: '/nueva-orden',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReferenciaRoute = ReferenciaRouteImport.update({
+  id: '/referencia',
+  path: '/referencia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AjustesProveedoresRoute = AjustesProveedoresRouteImport.update({
   id: '/ajustes_/proveedores',
   path: '/ajustes/proveedores',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/estado': typeof EstadoRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/referencia': typeof ReferenciaRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/estado': typeof EstadoRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/referencia': typeof ReferenciaRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/estado': typeof EstadoRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/referencia': typeof ReferenciaRoute
   '/ajustes_/proveedores': typeof AjustesProveedoresRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/estado'
     | '/integraciones'
     | '/nueva-orden'
+    | '/referencia'
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/estado'
     | '/integraciones'
     | '/nueva-orden'
+    | '/referencia'
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/estado'
     | '/integraciones'
     | '/nueva-orden'
+    | '/referencia'
     | '/ajustes_/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   EstadoRoute: typeof EstadoRoute
   IntegracionesRoute: typeof IntegracionesRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
+  ReferenciaRoute: typeof ReferenciaRoute
   AjustesProveedoresRoute: typeof AjustesProveedoresRoute
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NuevaOrdenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/referencia': {
+      id: '/referencia'
+      path: '/referencia'
+      fullPath: '/referencia'
+      preLoaderRoute: typeof ReferenciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ajustes_/proveedores': {
       id: '/ajustes_/proveedores'
       path: '/ajustes/proveedores'
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   EstadoRoute: EstadoRoute,
   IntegracionesRoute: IntegracionesRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
+  ReferenciaRoute: ReferenciaRoute,
   AjustesProveedoresRoute: AjustesProveedoresRoute,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
