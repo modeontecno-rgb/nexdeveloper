@@ -1,13 +1,21 @@
-import { Wand2 } from "lucide-react";
+import { GraduationCap, Wand2 } from "lucide-react";
 
 import { Boton, claseCampo } from "@/components/nex/campos";
-import type { EstrategiaEnrutado, ModeloIaRow, PoliticaEnrutadoRow, ProveedorIaRow } from "@/lib/nex/db-types";
+import type {
+  EstrategiaEnrutado,
+  ModeloIaRow,
+  PoliticaEnrutadoRow,
+  ProveedorIaRow,
+  RendimientoModeloRow,
+} from "@/lib/nex/db-types";
 import {
   ETIQUETA_ESTRATEGIA,
   ETIQUETA_TAREA_IA,
   TAREAS_IA,
   modelosDisponibles,
+  ordenarAprendido,
   ordenarPorEstrategia,
+  trabajosDeTarea,
 } from "@/lib/nex/enrutado";
 import { useGuardarPolitica } from "@/lib/nex/queries/proveedores";
 
@@ -15,10 +23,12 @@ export function PoliticaEnrutado({
   politica,
   modelos,
   proveedores,
+  rendimiento = [],
 }: {
   politica: PoliticaEnrutadoRow[];
   modelos: ModeloIaRow[];
   proveedores: ProveedorIaRow[];
+  rendimiento?: RendimientoModeloRow[];
 }) {
   const guardar = useGuardarPolitica();
 
@@ -38,6 +48,20 @@ export function PoliticaEnrutado({
     }
   };
 
+  const aprender = () => {
+    for (const tarea of TAREAS_IA) {
+      const candidatos = ordenarAprendido(modelosDisponibles(modelos, proveedores, tarea), rendimiento, tarea);
+      guardar.mutate({
+        tarea,
+        cambios: {
+          estrategia: "aprendido",
+          modelo_preferido_id: candidatos[0]?.id ?? null,
+          modelo_respaldo_id: candidatos[1]?.id ?? null,
+        },
+      });
+    }
+  };
+
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -47,9 +71,14 @@ export function PoliticaEnrutado({
             Qué modelo se usa para cada tipo de trabajo. Solo aparecen modelos activos de proveedores activos.
           </p>
         </div>
-        <Boton variante="suave" onClick={recalcular}>
-          <Wand2 className="size-4" /> Recalcular automáticamente
-        </Boton>
+        <div className="flex flex-wrap gap-2">
+          <Boton variante="suave" onClick={recalcular}>
+            <Wand2 className="size-4" /> Recalcular automáticamente
+          </Boton>
+          <Boton variante="suave" onClick={aprender}>
+            <GraduationCap className="size-4" /> Aprender de mis consumos
+          </Boton>
+        </div>
       </div>
 
       <div className="mt-4 overflow-x-auto">
@@ -69,6 +98,7 @@ export function PoliticaEnrutado({
               const validos = modelosDisponibles(modelos, proveedores, tarea);
               const preferido = disponibles.find((m) => m.id === fila?.modelo_preferido_id);
               const sinModelo = !preferido && validos.length === 0;
+              const trabajos = trabajosDeTarea(rendimiento, tarea);
 
               return (
                 <tr
@@ -84,6 +114,9 @@ export function PoliticaEnrutado({
                     {sinModelo ? (
                       <p className="mt-0.5 text-xs text-warning">Sin modelo activo para esta tarea</p>
                     ) : null}
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {trabajos > 0 ? `Basado en ${trabajos} trabajos` : "Todavía sin datos de uso"}
+                    </p>
                   </td>
                   <td className="py-2 pr-3">
                     <select

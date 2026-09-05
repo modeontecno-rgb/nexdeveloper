@@ -13,6 +13,7 @@ import {
   useModelosIa,
   usePoliticaEnrutado,
   useProveedoresIa,
+  useRendimientoModelos,
   useSembrarProveedores,
 } from "@/lib/nex/queries/proveedores";
 
@@ -41,6 +42,7 @@ function Proveedores() {
   const { data: modelos = [] } = useModelosIa();
   const { data: politica = [] } = usePoliticaEnrutado();
   const { data: consumos = [] } = useConsumosIa();
+  const { data: rendimiento = [] } = useRendimientoModelos();
   const { data: ajustes } = useAjustes();
   const [busqueda, setBusqueda] = React.useState("");
   const [soloActivos, setSoloActivos] = React.useState(false);
@@ -111,7 +113,12 @@ function Proveedores() {
       </div>
 
       <div className="mt-6">
-        <PoliticaEnrutado politica={politica} modelos={modelos} proveedores={proveedores} />
+        <PoliticaEnrutado
+          politica={politica}
+          modelos={modelos}
+          proveedores={proveedores}
+          rendimiento={rendimiento}
+        />
       </div>
     </>
   );
