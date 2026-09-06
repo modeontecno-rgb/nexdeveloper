@@ -250,3 +250,67 @@ function Interruptor({
     </label>
   );
 }
+
+/** Elige los cuatro accesos de la barra inferior del móvil. */
+function AccesosRapidosMovil() {
+  const actuales = useAccesosMovil();
+  const [seleccion, setSeleccion] = React.useState<RutaMenu[]>(actuales);
+
+  React.useEffect(() => {
+    setSeleccion(actuales);
+  }, [actuales]);
+
+  const cambiar = (indice: number, ruta: RutaMenu) => {
+    const copia = [...seleccion];
+    copia[indice] = ruta;
+    setSeleccion(copia);
+  };
+
+  return (
+    <section className="panel p-5">
+      <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
+        <Smartphone className="size-4" /> Accesos rápidos del móvil
+      </h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Elige las cuatro pantallas de la barra inferior del móvil. La quinta posición es siempre el botón «Menú».
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {[0, 1, 2, 3].map((i) => (
+          <Campo key={i} etiqueta={`Acceso ${i + 1}`}>
+            <select
+              value={seleccion[i] ?? ""}
+              onChange={(e) => cambiar(i, e.target.value as RutaMenu)}
+              className={claseCampo}
+            >
+              {TODAS_LAS_PANTALLAS.map((p) => (
+                <option key={p.to} value={p.to}>
+                  {p.etiqueta}
+                </option>
+              ))}
+            </select>
+          </Campo>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Boton
+          onClick={() => {
+            guardarAccesosMovil(seleccion);
+            toast.success("Accesos rápidos guardados.");
+          }}
+        >
+          Guardar accesos
+        </Boton>
+        <Boton
+          variante="suave"
+          onClick={() => {
+            setSeleccion(ACCESOS_MOVIL_POR_DEFECTO);
+            guardarAccesosMovil(ACCESOS_MOVIL_POR_DEFECTO);
+            toast.success("Accesos rápidos restaurados.");
+          }}
+        >
+          Restaurar los de fábrica
+        </Boton>
+      </div>
+    </section>
+  );
+}
