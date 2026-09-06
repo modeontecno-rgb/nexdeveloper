@@ -1617,66 +1617,57 @@ export type PortalPeticionRow = {
 
 
 
-/* --------------------- Facturación y horas (0.29.0) ---------------------- */
+/* ------------- Facturación con EvoluteIA (0.32.0) ------------- */
 
 export type ContratoCliente = "horas" | "mensual" | "fijo" | "sin_facturar"
 export type OrigenHoras = "manual" | "cronometro" | "tarea" | "ejecucion"
-export type EstadoFactura = "borrador" | "emitida" | "enviada" | "pagada" | "vencida" | "anulada"
-export type TipoLineaFactura = "cuota" | "horas" | "fijo" | "ia" | "otro"
 
-export type EmisorFacturacion = {
-  nombre?: string
-  nif?: string
-  direccion?: string
-  cp?: string
-  ciudad?: string
-  email?: string
-  telefono?: string
-  iban?: string
-  logo_url?: string
-  pie?: string
-}
+/** Estados de los documentos de venta en EvoluteIA. */
+export type EstadoFacturaEvoluteia =
+  | "borrador"
+  | "emitido"
+  | "enviado"
+  | "cobrado"
+  | "vencido"
+  | "anulado"
 
-export type ClienteFactura = {
-  nombre_fiscal?: string
-  nif?: string
-  direccion?: string
-  email?: string
-  telefono?: string
-}
-
-export type LineaFactura = {
-  tipo: TipoLineaFactura
-  concepto: string
-  detalle?: string | null
-  cantidad: number
-  unidad?: string | null
-  precio: number
-  importe: number
+export type LineaFacturaEvoluteia = {
+  id?: string
+  concepto?: string | null
+  descripcion?: string | null
+  cantidad?: number | null
+  precio?: number | null
+  importe?: number | null
+  base?: number | null
 }
 
 export type FacturacionConfigRow = {
   id: string
   user_id: string
-  emisor: EmisorFacturacion | null
-  serie: string
-  siguiente_numero: number
-  moneda: string
-  iva_pct: number
-  irpf_pct: number
+  modo: string | null
   tarifa_hora: number
   refacturar_ia: boolean
   recargo_ia_pct: number
-  dias_vencimiento: number
   redondeo_min: number
   generar_borradores_mes: boolean
-  texto_legal: string | null
+  evoluteia_ref: string | null
+  evoluteia_url: string | null
+  evoluteia_tenant_id: string | null
+  evoluteia_empresa_id: string | null
+  evoluteia_sede_id: string | null
+  evoluteia_impuesto_id: string | null
+  evoluteia_forma_pago_id: string | null
+  evoluteia_usuario: string | null
 }
 
 export type FacturacionClienteRow = {
   id: string
   user_id: string
   proyecto_id: string
+  tercero_id: string | null
+  contrato_id: string | null
+  tercero_codigo: string | null
+  sincronizado_el: string | null
   nombre_fiscal: string | null
   nif: string | null
   direccion: string | null
@@ -1688,7 +1679,6 @@ export type FacturacionClienteRow = {
   importe_fijo: number | null
   tarifa_hora: number | null
   refacturar_ia: boolean | null
-  dia_facturacion: number | null
   notas: string | null
 }
 
@@ -1705,41 +1695,34 @@ export type HoraRegistroRow = {
   descripcion: string | null
   origen: OrigenHoras
   facturable: boolean
-  factura_id: string | null
+  evoluteia_documento_id: string | null
+  evoluteia_numero: string | null
   creado_el: string
 }
 
-export type FacturaRow = {
-  id: string
+/** Caché local de las facturas que viven en EvoluteIA. */
+export type FacturaEvoluteiaRow = {
+  documento_id: string
   user_id: string
   proyecto_id: string | null
+  proyectos?: { nombre: string; slug?: string | null; color?: string | null } | null
+  tercero_id: string | null
+  cliente?: string | null
   numero: string | null
-  estado: EstadoFactura
-  cliente: ClienteFactura | null
-  emisor: EmisorFacturacion | null
-  periodo_desde: string | null
-  periodo_hasta: string | null
-  lineas: LineaFactura[] | null
+  fecha: string | null
+  estado: EstadoFacturaEvoluteia
   base: number
-  iva_pct: number
-  iva: number
-  irpf_pct: number
-  irpf: number
+  cuota_iva: number
   total: number
-  moneda: string
+  pendiente: number
+  vencido: boolean
+  verifactu: boolean
   horas: number
   coste_ia: number
-  fecha_emision: string | null
-  vence_el: string | null
-  pagada_el: string | null
-  enviada_el: string | null
-  html: string | null
-  ruta_remota: string | null
-  notas: string | null
-  error: string | null
-  creado_el: string
-  actualizado_el: string | null
+  origen: "nexdeveloper" | "evoluteia"
+  url: string | null
 }
+
 
 /* ------------------------------ Habilidades ------------------------------ */
 
