@@ -40,6 +40,7 @@ import { Route as UsuariosClientesRouteImport } from './routes/usuarios-clientes
 import { Route as VigilanciaRouteImport } from './routes/vigilancia'
 import { Route as VozRouteImport } from './routes/voz'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
+import { Route as ClienteTokenRouteImport } from './routes/cliente.$token'
 import { Route as ManualesManualIdRouteImport } from './routes/manuales_.$manualId'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
@@ -200,6 +201,11 @@ const AjustesProveedoresRoute = AjustesProveedoresRouteImport.update({
   path: '/ajustes/proveedores',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClienteTokenRoute = ClienteTokenRouteImport.update({
+  id: '/cliente/$token',
+  path: '/cliente/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManualesManualIdRoute = ManualesManualIdRouteImport.update({
   id: '/manuales_/$manualId',
   path: '/manuales/$manualId',
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/cliente/$token': typeof ClienteTokenRoute
   '/manuales/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -291,6 +298,7 @@ export interface FileRoutesByTo {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/cliente/$token': typeof ClienteTokenRoute
   '/manuales/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
@@ -329,6 +337,7 @@ export interface FileRoutesById {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/cliente/$token': typeof ClienteTokenRoute
   '/manuales_/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -368,6 +377,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
+    | '/cliente/$token'
     | '/manuales/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
+    | '/cliente/$token'
     | '/manuales/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos'
@@ -442,6 +453,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes_/proveedores'
+    | '/cliente/$token'
     | '/manuales_/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -480,6 +492,7 @@ export interface RootRouteChildren {
   VigilanciaRoute: typeof VigilanciaRoute
   VozRoute: typeof VozRoute
   AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
+  ClienteTokenRoute: typeof ClienteTokenRoute
   ManualesManualIdRoute: typeof ManualesManualIdRoute
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
@@ -704,6 +717,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AjustesProveedoresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cliente/$token': {
+      id: '/cliente/$token'
+      path: '/cliente/$token'
+      fullPath: '/cliente/$token'
+      preLoaderRoute: typeof ClienteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manuales_/$manualId': {
       id: '/manuales_/$manualId'
       path: '/manuales/$manualId'
@@ -778,6 +798,7 @@ const rootRouteChildren: RootRouteChildren = {
   VigilanciaRoute: VigilanciaRoute,
   VozRoute: VozRoute,
   AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
+  ClienteTokenRoute: ClienteTokenRoute,
   ManualesManualIdRoute: ManualesManualIdRoute,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
