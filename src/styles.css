@@ -160,11 +160,23 @@
     border-color: var(--color-border);
   }
 
+  html {
+    /* 15 px en móvil, 14 px en escritorio. */
+    font-size: 15px;
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: 14px;
+    }
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans-family);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
     background-image:
       radial-gradient(60rem 40rem at 100% -10%, oklch(0.78 0.13 188 / 8%), transparent 60%),
       radial-gradient(50rem 40rem at -10% 110%, oklch(0.72 0.13 300 / 7%), transparent 60%);
@@ -178,6 +190,35 @@
     font-family: var(--font-display-family);
     letter-spacing: -0.015em;
   }
+
+  /* Alto mínimo táctil en móvil y tableta. */
+  @media (max-width: 1023px) {
+    button:not([data-compacto]),
+    a[role="button"],
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      min-height: 44px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@keyframes deslizar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @utility panel {
@@ -186,3 +227,12 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-elevated);
 }
+
+/** Envoltura para tablas anchas: nunca desbordan la pantalla. */
+@utility tabla-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
