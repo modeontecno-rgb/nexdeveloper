@@ -28,6 +28,7 @@ import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as GastoIaRouteImport } from './routes/gasto-ia'
 import { Route as HabilidadesRouteImport } from './routes/habilidades'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
+import { Route as ManualesRouteImport } from './routes/manuales'
 import { Route as MesaRouteImport } from './routes/mesa'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
@@ -136,6 +137,11 @@ const IntegracionesRoute = IntegracionesRouteImport.update({
   path: '/integraciones',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManualesRoute = ManualesRouteImport.update({
+  id: '/manuales',
+  path: '/manuales',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MesaRoute = MesaRouteImport.update({
   id: '/mesa',
   path: '/mesa',
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
+  '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
+  '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
+  '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
+    | '/manuales'
     | '/mesa'
     | '/nueva-orden'
     | '/referencia'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
+    | '/manuales'
     | '/mesa'
     | '/nueva-orden'
     | '/referencia'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
+    | '/manuales'
     | '/mesa'
     | '/nueva-orden'
     | '/referencia'
@@ -420,6 +432,7 @@ export interface RootRouteChildren {
   GastoIaRoute: typeof GastoIaRoute
   HabilidadesRoute: typeof HabilidadesRoute
   IntegracionesRoute: typeof IntegracionesRoute
+  ManualesRoute: typeof ManualesRoute
   MesaRoute: typeof MesaRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
@@ -568,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IntegracionesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manuales': {
+      id: '/manuales'
+      path: '/manuales'
+      fullPath: '/manuales'
+      preLoaderRoute: typeof ManualesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mesa': {
       id: '/mesa'
       path: '/mesa'
@@ -686,6 +706,7 @@ const rootRouteChildren: RootRouteChildren = {
   GastoIaRoute: GastoIaRoute,
   HabilidadesRoute: HabilidadesRoute,
   IntegracionesRoute: IntegracionesRoute,
+  ManualesRoute: ManualesRoute,
   MesaRoute: MesaRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,
