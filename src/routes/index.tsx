@@ -13,6 +13,7 @@ import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 import { TarjetaResumenHoy } from "@/routes/resumenes";
 import { TarjetaGastoIa } from "@/routes/gasto-ia";
 import { TarjetaSalud } from "@/routes/salud";
+import { TarjetaAuditoriaMes } from "@/routes/auditoria";
 import { TarjetaAvisos } from "@/components/nex/tarjeta-avisos";
 import { CajaRapidaAsistente } from "@/routes/asistente";
 import {
@@ -213,6 +214,8 @@ function Inicio() {
           <TarjetaAvisos />
 
           <TarjetaSalud />
+
+          <TarjetaAuditoriaMes />
 
           <TarjetaDominios dominios={dominios} />
 

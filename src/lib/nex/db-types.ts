@@ -230,6 +230,8 @@ export type ProyectoRow = {
   ultima_ejecucion_calidad_id: string | null
   semaforo_salud: Semaforo
   salud_comprobada_el: string | null
+  puntuacion_auditoria: number | null
+  auditoria_el: string | null
   sentry_slug: string | null
   resumen_automatico: string | null
   resumen_actualizado_el: string | null
@@ -1459,6 +1461,61 @@ export type ManualesConfigRow = {
   max_capitulos: number
 }
 
+/* ------------------------- Auditoría mensual (0.26.0) -------------------- */
+
+export type EstadoAuditoria = "pendiente" | "analizando" | "terminada" | "error"
+export type SeveridadHallazgoAuditoria = "critica" | "alta" | "media" | "baja"
+export type AreaAuditoria = "accesibilidad" | "rendimiento" | "seguridad" | "textos" | "codigo" | "datos"
+
+export type PuntuacionesAuditoria = Partial<Record<AreaAuditoria, number>>
+
+export type HallazgoAuditoria = {
+  area: AreaAuditoria | string
+  severidad: SeveridadHallazgoAuditoria
+  titulo: string
+  detalle?: string | null
+  donde?: string | null
+  solucion?: string | null
+  tarea_id?: string | null
+}
+
+export type AuditoriaRow = {
+  id: string
+  user_id: string
+  lote: string
+  proyecto_id: string
+  origen: string | null
+  estado: EstadoAuditoria
+  paso: string | null
+  puntuacion: number | null
+  semaforo: Semaforo
+  resumen: string | null
+  puntuaciones: PuntuacionesAuditoria | null
+  hallazgos: HallazgoAuditoria[] | null
+  material: Record<string, Json> | null
+  tareas_creadas: number | null
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  coste: number | null
+  error: string | null
+  creado_el: string
+  terminada_el: string | null
+}
+
+export type AuditoriaConfigRow = {
+  id: string
+  user_id: string
+  activa: boolean
+  dia_mes: number
+  areas: Partial<Record<AreaAuditoria, boolean>> | null
+  crear_tareas: boolean
+  solo_criticas_y_altas: boolean
+  max_hallazgos_por_proyecto: number
+  proyectos_excluidos: string[] | null
+}
+
+
+
 /* ------------------------------ Habilidades ------------------------------ */
 
 export type OrigenHabilidad = "propia" | "experto" | "externa"
@@ -1964,6 +2021,8 @@ export type Database = {
       documentos_nex: Tabla<DocumentoNexRow>
       manuales: Tabla<ManualRow, Partial<SinUsuario<ManualRow>> & { proyecto_id: string; titulo: string }, Partial<SinUsuario<ManualRow>>>
       manuales_config: Tabla<ManualesConfigRow, Partial<SinUsuario<ManualesConfigRow>>, Partial<SinUsuario<ManualesConfigRow>>>
+      auditorias: Tabla<AuditoriaRow, Partial<SinUsuario<AuditoriaRow>> & { proyecto_id: string; lote: string }, Partial<SinUsuario<AuditoriaRow>>>
+      auditoria_config: Tabla<AuditoriaConfigRow, Partial<SinUsuario<AuditoriaConfigRow>>, Partial<SinUsuario<AuditoriaConfigRow>>>
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },

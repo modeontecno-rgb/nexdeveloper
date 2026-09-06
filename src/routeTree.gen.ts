@@ -14,6 +14,7 @@ import { Route as AgentesRouteImport } from './routes/agentes'
 import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as AprobacionesRouteImport } from './routes/aprobaciones'
 import { Route as AsistenteRouteImport } from './routes/asistente'
+import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AvisosRouteImport } from './routes/avisos'
 import { Route as BandejaRouteImport } from './routes/bandeja'
 import { Route as CalidadRouteImport } from './routes/calidad'
@@ -66,6 +67,11 @@ const AprobacionesRoute = AprobacionesRouteImport.update({
 const AsistenteRoute = AsistenteRouteImport.update({
   id: '/asistente',
   path: '/asistente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditoriaRoute = AuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AvisosRoute = AvisosRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/ajustes': typeof AjustesRoute
   '/aprobaciones': typeof AprobacionesRoute
   '/asistente': typeof AsistenteRoute
+  '/auditoria': typeof AuditoriaRoute
   '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/ajustes': typeof AjustesRoute
   '/aprobaciones': typeof AprobacionesRoute
   '/asistente': typeof AsistenteRoute
+  '/auditoria': typeof AuditoriaRoute
   '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
@@ -287,6 +295,7 @@ export interface FileRoutesById {
   '/ajustes': typeof AjustesRoute
   '/aprobaciones': typeof AprobacionesRoute
   '/asistente': typeof AsistenteRoute
+  '/auditoria': typeof AuditoriaRoute
   '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
@@ -324,6 +333,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/aprobaciones'
     | '/asistente'
+    | '/auditoria'
     | '/avisos'
     | '/bandeja'
     | '/calidad'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/aprobaciones'
     | '/asistente'
+    | '/auditoria'
     | '/avisos'
     | '/bandeja'
     | '/calidad'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/ajustes'
     | '/aprobaciones'
     | '/asistente'
+    | '/auditoria'
     | '/avisos'
     | '/bandeja'
     | '/calidad'
@@ -430,6 +442,7 @@ export interface RootRouteChildren {
   AjustesRoute: typeof AjustesRoute
   AprobacionesRoute: typeof AprobacionesRoute
   AsistenteRoute: typeof AsistenteRoute
+  AuditoriaRoute: typeof AuditoriaRoute
   AvisosRoute: typeof AvisosRoute
   BandejaRoute: typeof BandejaRoute
   CalidadRoute: typeof CalidadRoute
@@ -494,6 +507,13 @@ declare module '@tanstack/react-router' {
       path: '/asistente'
       fullPath: '/asistente'
       preLoaderRoute: typeof AsistenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auditoria': {
+      id: '/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuditoriaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/avisos': {
@@ -712,6 +732,7 @@ const rootRouteChildren: RootRouteChildren = {
   AjustesRoute: AjustesRoute,
   AprobacionesRoute: AprobacionesRoute,
   AsistenteRoute: AsistenteRoute,
+  AuditoriaRoute: AuditoriaRoute,
   AvisosRoute: AvisosRoute,
   BandejaRoute: BandejaRoute,
   CalidadRoute: CalidadRoute,
