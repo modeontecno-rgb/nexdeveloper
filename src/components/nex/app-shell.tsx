@@ -14,6 +14,8 @@ import {
   Users,
   GitBranch,
   Globe,
+  Newspaper,
+  Radar,
   Settings,
   ShieldCheck,
   Sparkle,

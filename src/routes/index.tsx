@@ -9,6 +9,8 @@ import type { BandejaEntradaRow, DominioRow, EstadoProyecto, Prioridad } from "@
 import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_PRIORIDAD, desde, formatoDinero } from "@/lib/nex/labels";
 import { useDominios } from "@/lib/nex/queries/dominios";
 import { useEntradasBandeja } from "@/lib/nex/queries/bandeja";
+import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
+import { TarjetaResumenHoy } from "@/routes/resumenes";
 import {
   useAjustes,
   useAlertas,
@@ -194,7 +196,11 @@ function Inicio() {
             </ul>
           </div>
 
+          <TarjetaResumenHoy />
+
           <TarjetaBandeja entradas={entradasBandeja} />
+
+          <TarjetaVigilancia />
 
           <TarjetaDominios dominios={dominios} />
 
