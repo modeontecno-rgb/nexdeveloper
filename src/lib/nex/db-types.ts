@@ -1611,6 +1611,131 @@ export type PortalPeticionRow = {
 
 
 
+
+/* --------------------- Facturación y horas (0.29.0) ---------------------- */
+
+export type ContratoCliente = "horas" | "mensual" | "fijo" | "sin_facturar"
+export type OrigenHoras = "manual" | "cronometro" | "tarea" | "ejecucion"
+export type EstadoFactura = "borrador" | "emitida" | "enviada" | "pagada" | "vencida" | "anulada"
+export type TipoLineaFactura = "cuota" | "horas" | "fijo" | "ia" | "otro"
+
+export type EmisorFacturacion = {
+  nombre?: string
+  nif?: string
+  direccion?: string
+  cp?: string
+  ciudad?: string
+  email?: string
+  telefono?: string
+  iban?: string
+  logo_url?: string
+  pie?: string
+}
+
+export type ClienteFactura = {
+  nombre_fiscal?: string
+  nif?: string
+  direccion?: string
+  email?: string
+  telefono?: string
+}
+
+export type LineaFactura = {
+  tipo: TipoLineaFactura
+  concepto: string
+  detalle?: string | null
+  cantidad: number
+  unidad?: string | null
+  precio: number
+  importe: number
+}
+
+export type FacturacionConfigRow = {
+  id: string
+  user_id: string
+  emisor: EmisorFacturacion | null
+  serie: string
+  siguiente_numero: number
+  moneda: string
+  iva_pct: number
+  irpf_pct: number
+  tarifa_hora: number
+  refacturar_ia: boolean
+  recargo_ia_pct: number
+  dias_vencimiento: number
+  redondeo_min: number
+  generar_borradores_mes: boolean
+  texto_legal: string | null
+}
+
+export type FacturacionClienteRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  nombre_fiscal: string | null
+  nif: string | null
+  direccion: string | null
+  email: string | null
+  telefono: string | null
+  contrato: ContratoCliente
+  cuota_mensual: number | null
+  horas_incluidas: number | null
+  importe_fijo: number | null
+  tarifa_hora: number | null
+  refacturar_ia: boolean | null
+  dia_facturacion: number | null
+  notas: string | null
+}
+
+export type HoraRegistroRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  tarea_id: string | null
+  ejecucion_id: string | null
+  fecha: string
+  inicio: string | null
+  fin: string | null
+  horas: number
+  descripcion: string | null
+  origen: OrigenHoras
+  facturable: boolean
+  factura_id: string | null
+  creado_el: string
+}
+
+export type FacturaRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  numero: string | null
+  estado: EstadoFactura
+  cliente: ClienteFactura | null
+  emisor: EmisorFacturacion | null
+  periodo_desde: string | null
+  periodo_hasta: string | null
+  lineas: LineaFactura[] | null
+  base: number
+  iva_pct: number
+  iva: number
+  irpf_pct: number
+  irpf: number
+  total: number
+  moneda: string
+  horas: number
+  coste_ia: number
+  fecha_emision: string | null
+  vence_el: string | null
+  pagada_el: string | null
+  enviada_el: string | null
+  html: string | null
+  ruta_remota: string | null
+  notas: string | null
+  error: string | null
+  creado_el: string
+  actualizado_el: string | null
+}
+
 /* ------------------------------ Habilidades ------------------------------ */
 
 export type OrigenHabilidad = "propia" | "experto" | "externa"
@@ -2134,6 +2259,18 @@ export type Database = {
         Partial<SinUsuario<PortalPeticionRow>> & { portal_id: string; proyecto_id: string; texto: string },
         Partial<SinUsuario<PortalPeticionRow>>
       >
+      facturacion_config: Tabla<FacturacionConfigRow, Partial<SinUsuario<FacturacionConfigRow>>, Partial<SinUsuario<FacturacionConfigRow>>>
+      facturacion_clientes: Tabla<
+        FacturacionClienteRow,
+        Partial<SinUsuario<FacturacionClienteRow>> & { proyecto_id: string },
+        Partial<SinUsuario<FacturacionClienteRow>>
+      >
+      horas_registro: Tabla<
+        HoraRegistroRow,
+        Partial<SinUsuario<HoraRegistroRow>> & { proyecto_id: string; horas: number },
+        Partial<SinUsuario<HoraRegistroRow>>
+      >
+      facturas: Tabla<FacturaRow, Partial<SinUsuario<FacturaRow>>, Partial<SinUsuario<FacturaRow>>>
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },
