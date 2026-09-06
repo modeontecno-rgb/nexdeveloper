@@ -89,7 +89,7 @@ export function useEstadoManuales(habilitado = true) {
   });
 }
 
-export function useManuales(proyectoId?: string, publico?: string) {
+export function useManuales(proyectoId?: string, publico?: PublicoManual) {
   return useQuery({
     queryKey: [...clavesManuales.lista, proyectoId ?? "todos", publico ?? "todos"],
     queryFn: async () => {

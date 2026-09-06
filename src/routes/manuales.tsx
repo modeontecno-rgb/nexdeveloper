@@ -156,7 +156,7 @@ function ManualesPantalla() {
   const { data: proyectos = [] } = useProyectos();
   const [filtroProyecto, setFiltroProyecto] = React.useState(proyectoUrl ?? "");
   const [filtroPublico, setFiltroPublico] = React.useState(publicoUrl ?? "");
-  const { data: manuales = [] } = useManuales(filtroProyecto || undefined, filtroPublico || undefined);
+  const { data: manuales = [] } = useManuales(filtroProyecto || undefined, (filtroPublico || undefined) as PublicoManual | undefined);
   const [panelAbierto, setPanelAbierto] = React.useState(Boolean(nuevo));
   const [configAbierta, setConfigAbierta] = React.useState(false);
 
@@ -338,7 +338,7 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
         ))}
       </div>
 
-      <Campo etiqueta="Título" pista={tituloPorDefecto ? `Por defecto: ${tituloPorDefecto}` : undefined}>
+      <Campo etiqueta="Título" pista={tituloPorDefecto ? `Por defecto: ${tituloPorDefecto}` : ""}>
         <input className={claseCampo} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder={tituloPorDefecto} />
       </Campo>
 
