@@ -1669,19 +1669,20 @@ function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente:
 }
 
 function DialogoEnlazar({
-
   proyecto,
   cliente,
   abierto,
   onCerrar,
 }: {
   proyecto: ProyectoRow;
-  cliente: FacturacionClienteRow | null;
+  cliente: ClienteFacturacion | null;
   abierto: boolean;
   onCerrar: () => void;
 }) {
+  const { catalogo, porDefecto } = useEmpresasEmisoras();
   const [modo, setModo] = React.useState<"buscar" | "crear">("buscar");
   const [busqueda, setBusqueda] = React.useState("");
+  const [tenantId, setTenantId] = React.useState<string>(cliente?.evoluteia_tenant_id ?? "");
   const [terceroId, setTerceroId] = React.useState<string | null>(cliente?.tercero_id ?? null);
   const [contratoId, setContratoId] = React.useState<string>(cliente?.contrato_id ?? "");
   const [contrato, setContrato] = React.useState<ContratoCliente>((cliente?.contrato ?? "horas") as ContratoCliente);
@@ -1692,10 +1693,16 @@ function DialogoEnlazar({
   const [refacturarIa, setRefacturarIa] = React.useState(cliente?.refacturar_ia ?? true);
   const [nuevo, setNuevo] = React.useState({ razon_social: "", nif: "", email: "", telefono: "", poblacion: "" });
 
-  const { data: terceros = [], isFetching } = useTercerosEvoluteia(busqueda, abierto && modo === "buscar");
-  const { data: contratos = [] } = useContratosEvoluteia(abierto ? terceroId : null);
+  const tenantElegido = tenantId || porDefecto?.tenant_id || "";
+  const { data: terceros = [], isFetching } = useTercerosEvoluteia(
+    busqueda,
+    abierto && modo === "buscar",
+    tenantElegido || null,
+  );
+  const { data: contratos = [] } = useContratosEvoluteia(abierto ? terceroId : null, tenantElegido || null);
   const crear = useCrearTercero();
   const enlazar = useEnlazarCliente();
+
 
   const numero = (v: string) => (v.trim() === "" ? null : Number(v));
 
