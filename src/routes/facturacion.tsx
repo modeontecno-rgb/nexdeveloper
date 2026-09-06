@@ -1005,6 +1005,10 @@ function BloqueFacturas() {
                   <td className="p-3 text-muted-foreground">{f.fecha ? formatoFecha(f.fecha) : "—"}</td>
                   <td className="p-3">{f.proyectos?.nombre ?? proyectos.find((p) => p.id === f.proyecto_id)?.nombre ?? "—"}</td>
                   <td className="p-3">{f.cliente ?? "—"}</td>
+                  <td className="p-3">
+                    <InsigniaEmpresa nombre={f.empresa} corto />
+                  </td>
+
                   <td className="p-3 text-right tabular-nums">{formatoDinero(Number(f.base ?? 0))}</td>
                   <td className="p-3 text-right tabular-nums">{formatoDinero(Number(f.total ?? 0))}</td>
                   <td className={`p-3 text-right tabular-nums ${f.vencido ? "text-destructive" : ""}`}>
