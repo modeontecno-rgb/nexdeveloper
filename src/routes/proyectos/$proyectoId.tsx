@@ -1,5 +1,6 @@
 import { ChipGastoIa } from "@/routes/gasto-ia";
 import { BloqueVersionDocumentos } from "@/routes/documentacion";
+import { SelectorHabilidad } from "@/routes/habilidades";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
@@ -132,6 +133,7 @@ function DetalleProyecto() {
                   {ETIQUETA_PLATAFORMA[c.plataforma]} v{c.version} · {c.estado === "ok" ? "correcta" : c.estado}
                 </Link>
               ))}
+            <SelectorHabilidad proyectoId={proyectoId} />
             <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
             <ChipGastoIa proyectoId={proyectoId} />

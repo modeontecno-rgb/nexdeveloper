@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.17.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Habilidades»: el catálogo con tus 82 habilidades propias, los 11 expertos y las encontradas en la red, todo en un sitio.
+- Pestañas Propias, Expertos, Externas (activas, candidatas o archivadas) y Todas, con buscador, filtro por categoría, orden por nombre, uso o valoración, y vista en tarjetas o en lista.
+- Ficha completa de cada habilidad: cuándo usarla, sus instrucciones, los archivos de la carpeta con enlace a GitHub, la muestra, el historial de usos y botón para copiar el SKILL.md.
+- Botón «Usar» en cualquier habilidad: eliges proyecto, añades instrucciones, marcas si requiere tu atención y la prioridad, y se crea la tarea con el texto listo para copiar.
+- «Nueva habilidad» para escribir la tuya en Markdown con vista previa; se guarda en el catálogo y en tu repositorio.
+- Las habilidades encontradas en la red se pueden adoptar o descartar con un clic.
+- Botones «Sincronizar» y «Buscar en la red», además del repaso automático de cada miércoles.
+- En cada proyecto, botón «Aplicar habilidad»; en Nueva orden, «Añadir habilidad» añade la indicación al texto de la orden.
+- Apartado de configuración con los repositorios, el interruptor de la búsqueda semanal y sus temas.
+- Estado del sistema: nuevos semáforos para las habilidades.
+
 ## 0.16.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Documentación» para cerrar cada versión y guardar los documentos de tus proyectos.
