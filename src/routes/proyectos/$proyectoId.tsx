@@ -3,6 +3,7 @@ import { BloqueVersionDocumentos } from "@/routes/documentacion";
 import { BloqueDemo } from "@/routes/voz";
 import { SelectorHabilidad } from "@/routes/habilidades";
 import { BotonConvocarMesa } from "@/routes/mesa";
+import { ChipSalud } from "@/routes/salud";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
@@ -141,6 +142,7 @@ function DetalleProyecto() {
 
             <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
+            <ChipSalud semaforo={proyecto.semaforo_salud ?? "gris"} fecha={proyecto.salud_comprobada_el} />
             <ChipGastoIa proyectoId={proyectoId} />
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
             <EstadoProyectoBadge estado={proyecto.estado} />

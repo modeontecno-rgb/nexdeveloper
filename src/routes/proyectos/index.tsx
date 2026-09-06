@@ -5,6 +5,7 @@ import * as React from "react";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
+import { PuntoSalud } from "@/routes/salud";
 import { desde, formatoDinero } from "@/lib/nex/labels";
 import { useAjustes, useChats, useOrdenes, useProyectos, useResumenProyectos } from "@/lib/nex/queries/datos";
 import { useCrearProyecto } from "@/lib/nex/queries/mutaciones";
@@ -135,7 +136,10 @@ function Proyectos() {
                 className="panel block p-4 transition hover:border-primary/40"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-display text-base font-semibold">{p.nombre}</h2>
+                  <h2 className="flex items-center gap-2 font-display text-base font-semibold">
+                    <PuntoSalud semaforo={p.semaforo_salud ?? "gris"} />
+                    {p.nombre}
+                  </h2>
                   <PrioridadBadge prioridad={p.prioridad} />
                 </div>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.descripcion}</p>

@@ -20,6 +20,7 @@ import {
   Wand2,
   GitBranch,
   Globe,
+  HeartPulse,
   Newspaper,
   Radar,
   Settings,
@@ -68,6 +69,7 @@ const NAVEGACION = [
   { to: "/gasto-ia", etiqueta: "Gasto de IA", icono: Coins },
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/dominios", etiqueta: "Dominios", icono: Globe },
+  { to: "/salud", etiqueta: "Salud", icono: HeartPulse },
 
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },

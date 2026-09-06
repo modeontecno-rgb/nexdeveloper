@@ -228,8 +228,12 @@ export type ProyectoRow = {
   lovable_project_id: string | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
+  semaforo_salud: Semaforo
+  salud_comprobada_el: string | null
+  sentry_slug: string | null
   resumen_automatico: string | null
   resumen_actualizado_el: string | null
+
   creado_el: string
   actualizado_el: string
 }
@@ -1540,7 +1544,96 @@ export type LovableConexionRow = {
 
 
 
+/* ------------------------------ Salud (0.21.0) ----------------------------- */
+
+/** Semáforo de salud de un proyecto. */
+export type Semaforo = "verde" | "ambar" | "rojo" | "gris"
+
+export type OrigenSaludInforme = "programado" | "manual"
+export type EstadoSaludInforme = "en_curso" | "terminado" | "error"
+
+export type ServicioSupabase = { name: string; status: string }
+
+export type AdvisorSalud = {
+  tipo: "seguridad" | "rendimiento"
+  nivel: "ERROR" | "WARN"
+  nombre: string
+  titulo: string
+  detalle: string
+  url?: string | null
+}
+
+export type IncidenciaSentry = {
+  titulo: string
+  nivel?: string | null
+  veces?: number | null
+  usuarios?: number | null
+  url?: string | null
+  ultima?: string | null
+}
+
+export type SaludInformeRow = {
+  id: string
+  user_id: string
+  origen: OrigenSaludInforme
+  estado: EstadoSaludInforme
+  total: number
+  verdes: number
+  ambar: number
+  rojos: number
+  grises: number
+  resumen: string | null
+  error: string | null
+  iniciado_el: string
+  terminado_el: string | null
+}
+
+export type SaludProyectoRow = {
+  id: string
+  user_id: string
+  informe_id: string
+  proyecto_id: string | null
+  supabase_ref: string | null
+  nombre: string
+  semaforo: Semaforo
+  pendiente: boolean
+  estado_supabase: string | null
+  servicios: ServicioSupabase[] | null
+  advisors_seguridad: number
+  advisors_rendimiento: number
+  advisors: AdvisorSalud[] | null
+  tablas_sin_rls: number
+  tablas_sin_rls_lista: string[] | null
+  funciones_sin_search_path: number
+  errores_api_24h: number
+  errores_bd_24h: number
+  errores_funciones_24h: number
+  bd_mb: number | null
+  usuarios: number | null
+  ultimo_acceso: string | null
+  sentry_errores_24h: number
+  sentry_incidencias: IncidenciaSentry[] | null
+  motivos: string[] | null
+  error: string | null
+  comprobado_el: string | null
+}
+
+export type SaludConfigRow = {
+  id: string
+  user_id: string
+  activo: boolean
+  avisar_solo_rojo: boolean
+  umbral_bd_mb: number
+  umbral_bd_rojo_mb: number
+  umbral_errores_ambar: number
+  umbral_errores_rojo: number
+  sentry_org: string | null
+  incluir_rendimiento: boolean
+}
+
 export type Database = {
+
+
 
 
 
@@ -1684,6 +1777,10 @@ export type Database = {
         Partial<SinUsuario<EjecucionConfigRow>>
       >
       lovable_conexion: Tabla<LovableConexionRow>
+      salud_informes: Tabla<SaludInformeRow>
+      salud_proyectos: Tabla<SaludProyectoRow>
+      salud_config: Tabla<SaludConfigRow, Partial<SinUsuario<SaludConfigRow>>, Partial<SinUsuario<SaludConfigRow>>>
+
 
 
 

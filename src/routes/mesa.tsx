@@ -233,6 +233,7 @@ export function DialogoNuevaMesa({
   ordenId,
   tareaId,
   preguntaInicial,
+  contextoInicial,
 }: {
   abierto: boolean;
   onCerrar: () => void;
@@ -241,21 +242,22 @@ export function DialogoNuevaMesa({
   ordenId?: string;
   tareaId?: string;
   preguntaInicial?: string;
+  contextoInicial?: string;
 }) {
   const { data: proyectos = [] } = useProyectos();
   const recomendar = useRecomendarMesa();
   const [proyecto, setProyecto] = React.useState(proyectoId ?? "");
   const [pregunta, setPregunta] = React.useState(preguntaInicial ?? "");
-  const [contexto, setContexto] = React.useState("");
+  const [contexto, setContexto] = React.useState(contextoInicial ?? "");
   const [modo, setModo] = React.useState<ModoMesa>("equilibrado");
 
   React.useEffect(() => {
     if (!abierto) return;
     setProyecto(proyectoId ?? "");
     setPregunta(preguntaInicial ?? "");
-    setContexto("");
+    setContexto(contextoInicial ?? "");
     setModo("equilibrado");
-  }, [abierto, proyectoId, preguntaInicial]);
+  }, [abierto, proyectoId, preguntaInicial, contextoInicial]);
 
   const convocar = async () => {
     const r = await recomendar.mutateAsync({
@@ -346,6 +348,7 @@ export function BotonConvocarMesa({
   ordenId,
   tareaId,
   pregunta,
+  contextoInicial,
   etiqueta = "Convocar mesa",
   variante = "suave",
   className,
@@ -354,6 +357,7 @@ export function BotonConvocarMesa({
   ordenId?: string;
   tareaId?: string;
   pregunta?: string;
+  contextoInicial?: string;
   etiqueta?: string;
   variante?: "principal" | "suave";
   className?: string;
@@ -373,6 +377,7 @@ export function BotonConvocarMesa({
         {...(ordenId ? { ordenId } : {})}
         {...(tareaId ? { tareaId } : {})}
         {...(pregunta ? { preguntaInicial: pregunta } : {})}
+        {...(contextoInicial ? { contextoInicial } : {})}
       />
     </>
   );

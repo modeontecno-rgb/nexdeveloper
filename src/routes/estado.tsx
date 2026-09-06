@@ -94,6 +94,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         compilaciones,
         plantillasCompilacion,
         funcionCompilar,
+        saludInformes,
+        saludProyectos,
+        saludConfig,
+        funcionSalud,
         dominios,
         dominiosHistorial,
         funcionDominios,
@@ -155,6 +159,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("compilaciones"),
         verificarTabla("plantillas_compilacion"),
         verificarFuncion("compilar-app"),
+        verificarTabla("salud_informes"),
+        verificarTabla("salud_proyectos"),
+        verificarTabla("salud_config"),
+        verificarFuncion("salud"),
         verificarTabla("dominios"),
         verificarTabla("dominios_historial"),
         verificarFuncion("dominios-comprobar"),
@@ -286,6 +294,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         compilaciones,
         plantillasCompilacion,
         funcionCompilar,
+        saludInformes,
+        saludProyectos,
+        saludConfig,
+        funcionSalud,
         dominios,
         dominiosHistorial,
         funcionDominios,
@@ -385,6 +397,42 @@ function EstadoSistema() {
           ? "aviso"
           : "ok",
       detalle: `${alertas.data?.length ?? 0} sin resolver`,
+    },
+    {
+      nombre: "Tabla de informes de salud",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.saludInformes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.saludInformes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 021)",
+    },
+    {
+      nombre: "Tabla de salud por proyecto",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.saludProyectos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.saludProyectos
+          ? "Conectado / OK"
+          : "No responde o falta (migración 021)",
+    },
+    {
+      nombre: "Configuración de salud",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.saludConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.saludConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 021)",
+    },
+    {
+      nombre: "Función de salud",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionSalud ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionSalud
+          ? "Responde correctamente"
+          : "No responde (función «salud»)",
     },
     {
       nombre: "Tabla de dominios",
