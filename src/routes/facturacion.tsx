@@ -2319,12 +2319,16 @@ export function TarjetaFacturacionProyecto({ proyectoId }: { proyectoId: string 
 
   return (
     <div className="panel p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-sm font-semibold">Facturación</h2>
-        <span className="text-xs text-muted-foreground">
-          {ETIQUETA_CONTRATO[(cliente?.contrato ?? fila?.contrato ?? "horas") as ContratoCliente]}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <InsigniaEmpresa nombre={fila?.empresa} corto />
+          <span className="text-xs text-muted-foreground">
+            {ETIQUETA_CONTRATO[(cliente?.contrato ?? fila?.contrato ?? "horas") as ContratoCliente]}
+          </span>
+        </div>
       </div>
+
       <p className="mt-2 text-xs">
         {enlazado ? (
           <span className="text-muted-foreground">
