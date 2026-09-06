@@ -113,6 +113,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         presupuestosIa,
         gastoConfig,
         funcionGasto,
+        cierresVersion,
+        documentosNex,
+        funcionDocumentar,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -159,7 +162,19 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("presupuestos_ia"),
         verificarTabla("gasto_ia_config"),
         verificarFuncion("gasto-ia"),
+        verificarTabla("cierres_version"),
+        verificarTabla("documentos_nex"),
+        verificarFuncion("documentar"),
       ]);
+      const pingDocumentar = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("documentar", { body: {} });
+          const r = data as { almacen?: boolean; proyectian?: boolean; github?: boolean } | null;
+          return { almacen: Boolean(r?.almacen), proyectian: Boolean(r?.proyectian), github: Boolean(r?.github) };
+        } catch {
+          return { almacen: false, proyectian: false, github: false };
+        }
+      })();
       const pingGasto = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("gasto-ia", { body: {} });
@@ -243,6 +258,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         gastoConfig,
         funcionGasto,
         pingGasto,
+        cierresVersion,
+        documentosNex,
+        funcionDocumentar,
+        pingDocumentar,
       };
     },
   });
@@ -434,6 +453,41 @@ function EstadoSistema() {
         : verificaciones.data?.funcionResumenes
           ? "Conectado / OK"
           : "No encontrada",
+    },
+    {
+      nombre: "Tablas de documentación",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.cierresVersion && verificaciones.data?.documentosNex
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.cierresVersion && verificaciones.data?.documentosNex
+          ? "Conectado / OK"
+          : "No responden o faltan (migración 016)",
+    },
+    {
+      nombre: "Edge Function documentar",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionDocumentar
+          ? "error"
+          : verificaciones.data?.pingDocumentar?.almacen && verificaciones.data?.pingDocumentar?.proyectian
+            ? "ok"
+            : "aviso",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionDocumentar
+          ? "No encontrada"
+          : verificaciones.data?.pingDocumentar?.almacen && verificaciones.data?.pingDocumentar?.proyectian
+            ? "Conectado / OK (almacén y Proyectian)"
+            : `Falta: ${[
+                verificaciones.data?.pingDocumentar?.almacen ? null : "almacén",
+                verificaciones.data?.pingDocumentar?.proyectian ? null : "Proyectian",
+              ]
+                .filter(Boolean)
+                .join(" y ")}`,
     },
     {
       nombre: "Tablas de gasto de IA",

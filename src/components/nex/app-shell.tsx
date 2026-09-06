@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
+  BookMarked,
   BookOpen,
   Boxes,
   Coins,
@@ -39,6 +40,7 @@ const NAVEGACION = [
   { to: "/", etiqueta: "Inicio", icono: LayoutDashboard },
   { to: "/bandeja", etiqueta: "Bandeja", icono: Inbox },
   { to: "/resumenes", etiqueta: "Resúmenes", icono: Newspaper },
+  { to: "/documentacion", etiqueta: "Documentación", icono: BookMarked },
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },
   { to: "/nueva-orden", etiqueta: "Nueva orden", icono: Sparkle },
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },
