@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
+import { TarjetaPlaudConexion } from "@/routes/pideme";
 import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { useAuth } from "@/lib/nex/auth";
@@ -97,6 +98,8 @@ function Ajustes() {
             <Cpu className="size-4" /> Abrir proveedores de IA
           </Link>
         </section>
+
+        <TarjetaPlaudConexion />
 
         <section className="panel p-5">
           <h2 className="font-display text-sm font-semibold">Versión</h2>

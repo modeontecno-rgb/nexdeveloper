@@ -19,6 +19,7 @@ import { TarjetaCobrosPendientes } from "@/routes/facturacion";
 import { ContadorPeticionesClientes } from "@/routes/modo-cliente";
 import { TarjetaAvisos } from "@/components/nex/tarjeta-avisos";
 import { CajaRapidaAsistente } from "@/routes/asistente";
+import { BloquePideme } from "@/routes/pideme";
 import {
   useAjustes,
   useAlertas,
@@ -89,6 +90,8 @@ function Inicio() {
           </Link>
         }
       />
+
+      <BloquePideme />
 
       <BandaInfraPanel />
 

@@ -232,6 +232,8 @@ export type ProyectoRow = {
   salud_comprobada_el: string | null
   semaforo_infra: Semaforo | null
   semaforo_sincronizacion: Semaforo | null
+  alias: string[] | null
+  guia_estilo: string | null
 
   puntuacion_auditoria: number | null
   auditoria_el: string | null
@@ -2257,8 +2259,186 @@ export type InfraConfigRow = {
   resolver_dns: boolean
 }
 
+/* ------------------------- Mi IA: peticiones y Plaud ------------------------ */
+
+export type OrigenPeticion = "texto" | "voz"
+export type DestinoPeticion = "proyecto" | "personal"
+export type TipoPeticion = "consulta" | "modificacion" | "tareas" | "personal"
+export type EstadoPeticion =
+  | "nueva"
+  | "clasificada"
+  | "respondida"
+  | "propuesta"
+  | "aprobada"
+  | "descartada"
+  | "error"
+
+export type ClasificacionPeticion = {
+  destino?: DestinoPeticion
+  proyecto_id?: string | null
+  proyecto_nombre?: string | null
+  confianza?: number | null
+  tipo?: TipoPeticion
+  titulo?: string | null
+  motivo?: string | null
+}
+
+export type RevisionPropuesta = {
+  area?: string
+  experto?: string
+  veredicto?: string
+  observaciones?: string[]
+  riesgos?: string[]
+  requisitos?: string[]
+  cambios_sugeridos?: string | null
+}
+
+export type PropuestaPeticion = {
+  sintesis?: string
+  plan?: string[]
+  requisitos_obligatorios?: string[]
+  riesgos?: string[]
+  decisiones_para_javier?: string[]
+  horas_estimadas?: number | null
+  coste_estimado_eur?: number | null
+  riesgo?: string | null
+  recomendacion?: string | null
+  orden_para_la_ia?: string | null
+  revisiones?: RevisionPropuesta[]
+  areas?: string[]
+  coste?: number | null
+}
+
+export type PeticionDirectaRow = {
+  id: string
+  user_id: string
+  texto: string
+  origen: OrigenPeticion
+  clasificacion: ClasificacionPeticion | null
+  destino: DestinoPeticion | null
+  proyecto_id: string | null
+  chat_id: string | null
+  conversacion_id: string | null
+  estado: EstadoPeticion
+  respuesta: string | null
+  propuesta: PropuestaPeticion | null
+  error: string | null
+  creado_el: string
+}
+
+export type EstadoGrabacionPlaud = "importada" | "clasificada" | "procesada" | "descartada"
+
+export type PlaudGrabacionRow = {
+  id: string
+  user_id: string
+  plaud_id: string
+  nombre: string | null
+  fecha: string | null
+  duracion_seg: number | null
+  transcripcion: string | null
+  resumen: string | null
+  destacados: Json | null
+  estado: EstadoGrabacionPlaud
+  destino: DestinoPeticion | null
+  proyecto_id: string | null
+  tareas_creadas: number | null
+  error: string | null
+  peticion_id: string | null
+  creado_el: string
+}
+
+/* ------------------------------- Personal --------------------------------- */
+
+export type ModoPersonal = "fusion" | "rapido" | "comparar"
+export type RolMensajePersonal = "usuario" | "asistente"
+export type ModoReescritura = "mi_voz" | "marca" | "tutor"
+
+export type RespuestaProveedorPersonal = {
+  proveedor?: string
+  nombre?: string
+  modelo?: string
+  texto?: string
+  coste?: number | null
+  ms?: number | null
+  error?: string | null
+}
+
+export type PersonalConversacionRow = {
+  id: string
+  user_id: string
+  titulo: string | null
+  fijada: boolean
+  archivada: boolean
+  creado_el: string
+  actualizado_el: string
+}
+
+export type PersonalMensajeRow = {
+  id: string
+  user_id: string
+  conversacion_id: string
+  rol: RolMensajePersonal
+  texto: string | null
+  respuestas: RespuestaProveedorPersonal[] | null
+  juez: string | null
+  discrepancias: string | null
+  coste: number | null
+  fecha: string
+}
+
+export type PersonalDocumentoRow = {
+  id: string
+  user_id: string
+  conversacion_id: string | null
+  titulo: string | null
+  tipo: string | null
+  contenido_md: string | null
+  html: string | null
+  ruta_mac: string | null
+  url: string | null
+  etiquetas: string[] | null
+  creado_el: string
+}
+
+export type PersonalConfigRow = {
+  id: string
+  user_id: string
+  proveedores: string[] | null
+  max_proveedores: number
+  juez: string | null
+  modo: ModoPersonal
+  guardar_en_almacen: boolean
+  carpeta_almacen: string | null
+  carpeta_mac: string | null
+  instrucciones: string | null
+  muestras_estilo: string[] | null
+  perfil_estilo: string | null
+  actualizado_el: string
+}
+
+export type EstiloReescrituraRow = {
+  id: string
+  user_id: string
+  modo: ModoReescritura
+  proyecto_id: string | null
+  tono: string | null
+  texto_original: string | null
+  texto_resultado: string | null
+  notas: Json | null
+  creado_el: string
+}
+
+export type NotasTutor = {
+  valoracion?: string
+  esquema_sugerido?: string[]
+  correcciones?: { fragmento?: string; problema?: string; sugerencia?: string }[]
+  preguntas_para_profundizar?: string[]
+  fuentes_sugeridas?: string[]
+  siguiente_paso?: string
+}
 
 export type Database = {
+
 
 
 
@@ -2466,6 +2646,13 @@ export type Database = {
       infra_incidencias: Tabla<InfraIncidenciaRow>
       infra_sincronizacion: Tabla<InfraSincronizacionRow>
       infra_config: Tabla<InfraConfigRow, Partial<SinUsuario<InfraConfigRow>>, Partial<SinUsuario<InfraConfigRow>>>
+      peticiones_directas: Tabla<PeticionDirectaRow>
+      plaud_grabaciones: Tabla<PlaudGrabacionRow>
+      personal_conversaciones: Tabla<PersonalConversacionRow>
+      personal_mensajes: Tabla<PersonalMensajeRow>
+      personal_documentos: Tabla<PersonalDocumentoRow>
+      personal_config: Tabla<PersonalConfigRow, Partial<SinUsuario<PersonalConfigRow>>, Partial<SinUsuario<PersonalConfigRow>>>
+      estilo_reescrituras: Tabla<EstiloReescrituraRow>
 
 
 

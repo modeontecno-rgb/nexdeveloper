@@ -20,6 +20,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
+import { BotonImportarPlaud } from "@/routes/pideme";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
 import type {
@@ -183,6 +184,7 @@ function PantallaBandeja() {
             <Boton variante="suave" onClick={() => setDialogoTexto(true)}>
               <Plus className="size-4" /> Añadir texto
             </Boton>
+            <BotonImportarPlaud />
             <Boton onClick={() => setPanelFuentes(true)}>
               <Settings2 className="size-4" /> Fuentes
             </Boton>

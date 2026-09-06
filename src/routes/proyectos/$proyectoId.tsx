@@ -9,6 +9,7 @@ import { BotonPreguntarAsistente } from "@/routes/asistente";
 import { BloqueManualProyecto } from "@/routes/manuales";
 import { ChipAuditoriaProyecto } from "@/routes/auditoria";
 import { ChipInfraestructura, TarjetaInfraProyecto } from "@/routes/infraestructura";
+import { CampoGuiaEstiloProyecto } from "@/routes/personal";
 import { TarjetaPortalProyecto } from "@/routes/modo-cliente";
 import { TarjetaFacturacionProyecto } from "@/routes/facturacion";
 import { BloqueUsuariosProyecto, ChipUsuariosProyecto } from "@/routes/usuarios-clientes";
@@ -167,6 +168,7 @@ function DetalleProyecto() {
       <TarjetaPortalProyecto proyecto={proyecto} />
       <TarjetaFacturacionProyecto proyectoId={proyectoId} />
       <TarjetaInfraProyecto proyectoId={proyectoId} />
+      <CampoGuiaEstiloProyecto proyectoId={proyectoId} valor={proyecto.guia_estilo ?? null} />
 
       <BloqueMensajes proyectoId={proyectoId} />
 

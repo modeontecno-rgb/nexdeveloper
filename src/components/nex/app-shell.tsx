@@ -18,6 +18,7 @@ import {
   Menu,
   Moon,
   Plug,
+  User,
   Users,
   Wand2,
   GitBranch,
@@ -51,9 +52,11 @@ import { useAuth } from "@/lib/nex/auth";
 import { usePerfil } from "@/lib/nex/queries/datos";
 import { pendientes, useEntradasBandeja } from "@/lib/nex/queries/bandeja";
 import { useAvisosSinLeer } from "@/lib/nex/queries/avisos";
+import { usePropuestasPendientes } from "@/routes/pideme";
 import { cn } from "@/lib/utils";
 
 const NAVEGACION = [
+  { to: "/pideme", etiqueta: "Pídeme qué quieres", icono: Wand2 },
   { to: "/asistente", etiqueta: "Asistente", icono: Sparkles },
   { to: "/", etiqueta: "Inicio", icono: LayoutDashboard },
   { to: "/bandeja", etiqueta: "Bandeja", icono: Inbox },
@@ -90,6 +93,7 @@ const NAVEGACION = [
 
   { to: "/avisos", etiqueta: "Avisos", icono: Bell },
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
+  { to: "/personal", etiqueta: "Personal", icono: User },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },
   { to: "/ajustes", etiqueta: "Ajustes", icono: Settings },
 ] as const;
@@ -102,6 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: entradasBandeja = [] } = useEntradasBandeja();
   const pendientesBandeja = pendientes(entradasBandeja);
   const avisosSinLeer = useAvisosSinLeer();
+  const propuestasPendientes = usePropuestasPendientes();
 
   React.useEffect(() => {
     setAbierto(false);
@@ -163,6 +168,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {to === "/bandeja" && pendientesBandeja > 0 ? (
                   <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
                     {pendientesBandeja}
+                  </span>
+                ) : null}
+                {to === "/pideme" && propuestasPendientes > 0 ? (
+                  <span className="ml-auto rounded-full bg-destructive/20 px-2 py-0.5 text-xs text-destructive">
+                    {propuestasPendientes}
                   </span>
                 ) : null}
                 {to === "/avisos" && avisosSinLeer > 0 ? (
