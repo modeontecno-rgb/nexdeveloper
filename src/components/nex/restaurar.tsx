@@ -16,7 +16,7 @@ import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
 import type { ModoRestauracion, RestauracionRow } from "@/lib/nex/db-types";
 import { formatoFechaHora } from "@/lib/nex/labels";
-import { tamanoLegible } from "@/lib/nex/queries/copias";
+import { tamanoLegible, useOrigenesCopias } from "@/lib/nex/queries/copias";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
   ETIQUETA_ESTADO_RESTAURACION,
@@ -667,6 +667,13 @@ export function PanelPruebas() {
 }
 
 /* ================== Botón para la ficha de cada proyecto =================== */
+
+export function ChipRestaurarProyecto({ proyectoId }: { proyectoId: string }) {
+  const { data: origenes = [] } = useOrigenesCopias();
+  const objetivos = origenes.filter((o) => o.proyecto_id === proyectoId).map((o) => o.objetivo);
+  if (objetivos.length === 0) return null;
+  return <BotonRestaurarUltimaCopia objetivos={objetivos} />;
+}
 
 export function BotonRestaurarUltimaCopia({ objetivos }: { objetivos: string[] }) {
   const { data: copias = [] } = useCopiasRestaurables();

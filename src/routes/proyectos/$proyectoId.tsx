@@ -3,6 +3,7 @@ import { BloqueVersionDocumentos } from "@/routes/documentacion";
 import { BloqueDemo } from "@/routes/voz";
 import { SelectorHabilidad } from "@/routes/habilidades";
 import { BotonConvocarMesa } from "@/routes/mesa";
+import { ChipRestaurarProyecto } from "@/components/nex/restaurar";
 import { ChipSalud } from "@/routes/salud";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -142,6 +143,7 @@ function DetalleProyecto() {
 
             <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
+            <ChipRestaurarProyecto proyectoId={proyectoId} />
             <ChipSalud semaforo={proyecto.semaforo_salud ?? "gris"} fecha={proyecto.salud_comprobada_el} />
             <ChipGastoIa proyectoId={proyectoId} />
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
