@@ -1875,6 +1875,13 @@ export type Database = {
       avisos: Tabla<AvisoRow, Partial<SinUsuario<AvisoRow>>, Partial<AvisoRow>>
       avisos_suscripciones: Tabla<AvisoSuscripcionRow, Partial<SinUsuario<AvisoSuscripcionRow>>, Partial<AvisoSuscripcionRow>>
       avisos_config: Tabla<AvisosConfigRow, Partial<SinUsuario<AvisosConfigRow>>, Partial<SinUsuario<AvisosConfigRow>>>
+      asistente_conversaciones: Tabla<
+        AsistenteConversacionRow,
+        Partial<SinUsuario<AsistenteConversacionRow>>,
+        Partial<SinUsuario<AsistenteConversacionRow>>
+      >
+      asistente_mensajes: Tabla<AsistenteMensajeRow, Partial<SinUsuario<AsistenteMensajeRow>>, Partial<AsistenteMensajeRow>>
+
 
       plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
       compilaciones: Tabla<CompilacionRow>
