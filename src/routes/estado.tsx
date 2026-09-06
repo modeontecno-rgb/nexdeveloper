@@ -410,6 +410,43 @@ function EstadoSistema() {
           : "No encontrada",
     },
     {
+      nombre: "Tablas de gasto de IA",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.gastoDiario &&
+            verificaciones.data?.gastosManuales &&
+            verificaciones.data?.presupuestosIa &&
+            verificaciones.data?.gastoConfig
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.gastoDiario &&
+            verificaciones.data?.gastosManuales &&
+            verificaciones.data?.presupuestosIa &&
+            verificaciones.data?.gastoConfig
+          ? "Conectado / OK"
+          : "No responden o faltan (migración 015)",
+    },
+    {
+      nombre: "Edge Function gasto-ia",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionGasto
+          ? "error"
+          : verificaciones.data?.pingGasto?.anthropic || verificaciones.data?.pingGasto?.openai
+            ? "ok"
+            : "aviso",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionGasto
+          ? "No encontrada"
+          : verificaciones.data?.pingGasto?.anthropic || verificaciones.data?.pingGasto?.openai
+            ? "Conectado / OK (coste real disponible)"
+            : "Sin claves de administración: cifras estimadas",
+    },
+
+    {
       nombre: "Tabla de acciones",
       nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.acciones ? "ok" : "error",
       detalle: verificaciones.isPending
