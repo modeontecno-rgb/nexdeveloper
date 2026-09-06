@@ -9,6 +9,8 @@ import type { BandejaEntradaRow, DominioRow, EstadoProyecto, Prioridad } from "@
 import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_PRIORIDAD, desde, formatoDinero } from "@/lib/nex/labels";
 import { useDominios } from "@/lib/nex/queries/dominios";
 import { useEntradasBandeja } from "@/lib/nex/queries/bandeja";
+import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
+import { TarjetaResumenHoy } from "@/routes/resumenes";
 import {
   useAjustes,
   useAlertas,
@@ -194,7 +196,11 @@ function Inicio() {
             </ul>
           </div>
 
+          <TarjetaResumenHoy />
+
           <TarjetaBandeja entradas={entradasBandeja} />
+
+          <TarjetaVigilancia />
 
           <TarjetaDominios dominios={dominios} />
 
@@ -225,6 +231,33 @@ function Inicio() {
         </aside>
       </section>
     </>
+  );
+}
+
+function TarjetaVigilancia() {
+  const { data: hallazgos = [] } = useVigilanciaHallazgos();
+  const nuevos = hallazgos.filter((h) => h.estado === "nuevo" && h.relevancia === "alta").slice(0, 5);
+  return (
+    <div className="panel p-4">
+      <h2 className="font-display text-sm font-semibold">Vigilancia</h2>
+      {nuevos.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">Sin novedades importantes.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {nuevos.map((h) => (
+            <li key={h.id} className="text-sm">
+              <p className="line-clamp-2 text-foreground">{h.titulo}</p>
+              <p className="text-xs text-muted-foreground">
+                {h.fuente_nombre ?? "Fuente desconocida"} · {desde(h.creado_el)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to="/vigilancia" className="mt-3 inline-flex text-xs text-primary hover:underline">
+        Ver la vigilancia
+      </Link>
+    </div>
   );
 }
 

@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { peorResultado, useDominios } from "@/lib/nex/queries/dominios";
 import { useEntradasBandeja } from "@/lib/nex/queries/bandeja";
+import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge } from "@/components/nex/badges";
 import { SemaforoBadge } from "@/components/nex/semaforo";
@@ -129,6 +130,7 @@ function DetalleProyecto() {
                   {ETIQUETA_PLATAFORMA[c.plataforma]} v{c.version} · {c.estado === "ok" ? "correcta" : c.estado}
                 </Link>
               ))}
+            <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
             <EstadoProyectoBadge estado={proyecto.estado} />
@@ -317,6 +319,24 @@ function BloqueMensajes({ proyectoId }: { proyectoId: string }) {
         ))}
       </ul>
     </section>
+  );
+}
+
+function ChipVigilancia({ proyectoId }: { proyectoId: string }) {
+  const { data: hallazgos = [] } = useVigilanciaHallazgos();
+  const nuevos = hallazgos.filter((h) => h.proyecto_id === proyectoId && h.estado === "nuevo");
+  if (nuevos.length === 0) return null;
+  const alta = nuevos.some((h) => h.relevancia === "alta");
+  return (
+    <Link
+      to="/vigilancia"
+      search={{ proyecto: proyectoId }}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition hover:opacity-80 ${
+        alta ? "border-warning/40 bg-warning/10 text-warning" : "border-border bg-surface text-muted-foreground"
+      }`}
+    >
+      {nuevos.length} novedad{nuevos.length === 1 ? "" : "es"}
+    </Link>
   );
 }
 

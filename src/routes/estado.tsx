@@ -100,6 +100,14 @@ function useVerificacionesBackend(habilitado: boolean) {
         bandejaEntradas,
         bandejaFuentes,
         funcionBandeja,
+        vigilanciaConfig,
+        vigilanciaLotes,
+        vigilanciaHallazgos,
+        competidores,
+        funcionVigilar,
+        tablaResumenes,
+        tablaResumenesConfig,
+        funcionResumenes,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -132,7 +140,23 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("bandeja_entradas"),
         verificarTabla("bandeja_fuentes"),
         verificarFuncion("bandeja"),
+        verificarTabla("vigilancia_config"),
+        verificarTabla("vigilancia_lotes"),
+        verificarTabla("vigilancia_hallazgos"),
+        verificarTabla("competidores"),
+        verificarFuncion("vigilar"),
+        verificarTabla("resumenes"),
+        verificarTabla("resumenes_config"),
+        verificarFuncion("resumenes"),
       ]);
+      const pingVigilar = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("vigilar", { body: {} });
+          return (data as { buscador?: string | null } | null)?.buscador ?? null;
+        } catch {
+          return null;
+        }
+      })();
       const pingBandeja = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("bandeja", { body: {} });
@@ -182,6 +206,15 @@ function useVerificacionesBackend(habilitado: boolean) {
         bandejaEntradas,
         bandejaFuentes,
         funcionBandeja,
+        vigilanciaConfig,
+        vigilanciaLotes,
+        vigilanciaHallazgos,
+        competidores,
+        funcionVigilar,
+        pingVigilar,
+        tablaResumenes,
+        tablaResumenesConfig,
+        funcionResumenes,
         pingBandeja,
         pingCompilar,
       };
@@ -305,6 +338,76 @@ function EstadoSistema() {
             : !verificaciones.data?.pingBandeja.googleOauth
               ? "Gmail sin credenciales OAuth"
               : "Conectado / OK",
+    },
+    {
+      nombre: "Tablas de vigilancia",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.vigilanciaConfig &&
+            verificaciones.data?.vigilanciaLotes &&
+            verificaciones.data?.vigilanciaHallazgos
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.vigilanciaConfig &&
+            verificaciones.data?.vigilanciaLotes &&
+            verificaciones.data?.vigilanciaHallazgos
+          ? "Conectado / OK"
+          : "No responden o faltan (migración 011)",
+    },
+    {
+      nombre: "Tabla de competidores",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.competidores ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.competidores
+          ? "Conectado / OK"
+          : "No responde o falta (migración 011)",
+    },
+    {
+      nombre: "Edge Function vigilar",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionVigilar
+          ? "error"
+          : verificaciones.data?.pingVigilar === null
+            ? "aviso"
+            : "ok",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionVigilar
+          ? "No encontrada"
+          : verificaciones.data?.pingVigilar === null
+            ? "Sin proveedor de búsqueda con clave"
+            : `Conectado / OK (${verificaciones.data?.pingVigilar})`,
+    },
+    {
+      nombre: "Tabla de resúmenes",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaResumenes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaResumenes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 014)",
+    },
+    {
+      nombre: "Configuración de resúmenes",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaResumenesConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaResumenesConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 014)",
+    },
+    {
+      nombre: "Edge Function resumenes",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionResumenes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionResumenes
+          ? "Conectado / OK"
+          : "No encontrada",
     },
     {
       nombre: "Tabla de acciones",

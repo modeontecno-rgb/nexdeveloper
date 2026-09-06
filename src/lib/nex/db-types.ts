@@ -1009,15 +1009,68 @@ export type VigilanciaResumenRow = {
   competidores: number
 }
 
-type SinUsuario<T> = Omit<T, "user_id">
+// ---- Resúmenes (0.14.0) ----
+export type TipoResumen = "diario" | "semanal"
+export type CanalResumen = "correo" | "whatsapp"
 
-
-type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
-  Row: Row
-  Insert: Ins
-  Update: Upd
-  Relationships: []
+export type IncluirResumen = {
+  atencion?: boolean
+  desatendidas?: boolean
+  compilaciones?: boolean
+  vigilancia?: boolean
+  dominios?: boolean
+  copias?: boolean
+  bandeja?: boolean
+  calidad?: boolean
+  consumo_ia?: boolean
+  actividad?: boolean
 }
+
+export type ResumenesConfigRow = {
+  id: string
+  user_id: string
+  diario_activo: boolean
+  semanal_activo: boolean
+  canales: CanalResumen[]
+  correo_destino: string | null
+  whatsapp_destino: string | null
+  incluir: IncluirResumen | null
+  usar_ia: boolean
+}
+
+export type CifrasResumen = {
+  requieren_atencion?: number
+  dominios_con_aviso?: number
+  copias_error?: number
+  hallazgos_vigilancia?: number
+  bandeja_pendiente?: number
+  proyectos_calidad_rojo?: number
+  coste_ia_eur?: number
+  llamadas_ia?: number
+  completadas?: number
+  compilaciones?: number
+  [clave: string]: number | undefined
+}
+
+export type ResumenRow = {
+  id: string
+  user_id: string
+  tipo: TipoResumen
+  fecha: string
+  periodo_desde: string | null
+  periodo_hasta: string | null
+  titulo: string
+  contenido_md: string | null
+  contenido_html: string | null
+  datos: CifrasResumen | null
+  redactado_por: string | null
+  enviado_por: string[] | null
+  enviado_el: string | null
+  error_envio: string | null
+  leido: boolean
+  creado_el: string
+}
+
 
 
 export type Database = {
@@ -1103,6 +1156,12 @@ export type Database = {
       dominios_historial: Tabla<DominioHistorialRow>
       bandeja_fuentes: Tabla<BandejaFuenteRow, Partial<BandejaFuenteRow>, Partial<BandejaFuenteRow>>
       bandeja_entradas: Tabla<BandejaEntradaRow>
+      vigilancia_config: Tabla<VigilanciaConfigRow, Partial<SinUsuario<VigilanciaConfigRow>>>
+      vigilancia_lotes: Tabla<VigilanciaLoteRow>
+      vigilancia_hallazgos: Tabla<VigilanciaHallazgoRow>
+      competidores: Tabla<CompetidorRow, Partial<SinUsuario<CompetidorRow>> & { nombre: string }>
+      resumenes: Tabla<ResumenRow>
+      resumenes_config: Tabla<ResumenesConfigRow, Partial<SinUsuario<ResumenesConfigRow>>>
 
 
     }
@@ -1116,6 +1175,7 @@ export type Database = {
       v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
       v_dominios_resumen: { Row: DominiosResumenRow; Relationships: [] }
       v_bandeja_fuentes: { Row: BandejaFuenteRow; Relationships: [] }
+      v_vigilancia_resumen: { Row: VigilanciaResumenRow; Relationships: [] }
 
 
     }
@@ -1170,8 +1230,7 @@ export type Database = {
       origen_ejecucion_calidad: OrigenEjecucionCalidad
       estado_ejecucion_calidad: EstadoEjecucionCalidad
       resultado_control: ResultadoControl
-      palabras_clave: string[] | null
-  semaforo_calidad: SemaforoCalidad
+      semaforo_calidad: SemaforoCalidad
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio
