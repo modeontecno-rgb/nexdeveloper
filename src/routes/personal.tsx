@@ -40,6 +40,7 @@ import {
   useEnlaceDocumentoPersonal,
   useEstadoPersonal,
   useGuardarMuestrasEstilo,
+  useGuiaEstiloProyecto,
   useMensajesPersonal,
   useNuevaConversacionPersonal,
   usePreguntarPersonal,
@@ -857,7 +858,7 @@ function PanelConfiguracion() {
 
 /** Campo de guía de estilo para la ficha del proyecto. */
 export function CampoGuiaEstiloProyecto({ proyectoId, valor }: { proyectoId: string; valor: string | null }) {
-  const guardar = useGuiaEstiloProyectoLocal();
+  const guardar = useGuiaEstiloProyecto();
   const [texto, setTexto] = React.useState(valor ?? "");
 
   React.useEffect(() => setTexto(valor ?? ""), [valor]);
@@ -895,9 +896,3 @@ export function CampoGuiaEstiloProyecto({ proyectoId, valor }: { proyectoId: str
   );
 }
 
-function useGuiaEstiloProyectoLocal() {
-  // Se separa para poder reutilizar el hook en la ficha del proyecto.
-  return useGuiaEstiloProyectoImportado();
-}
-
-import { useGuiaEstiloProyecto as useGuiaEstiloProyectoImportado } from "@/lib/nex/queries/personal";
