@@ -7,6 +7,7 @@ import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import type { CopiaOrigenRow, CopiaRow, EstadoCopia, TipoOrigenCopia } from "@/lib/nex/db-types";
 import { formatoFechaHora } from "@/lib/nex/labels";
+import { PanelPruebas, PanelRestaurar } from "@/components/nex/restaurar";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
   diasDesdeUltimaCorrecta,
