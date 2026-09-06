@@ -367,7 +367,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAvisosSuscripciones,
         tablaAvisosConfig,
         funcionAvisos,
+        tablaAsistenteConversaciones,
+        tablaAsistenteMensajes,
+        funcionAsistente,
       };
+
     },
   });
 }
