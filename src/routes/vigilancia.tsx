@@ -843,7 +843,7 @@ function PestanaConfiguracion({
   nombreProyecto: (id: string) => string;
 }) {
   const guardar = useGuardarVigilanciaConfig();
-  const cambiar = (proyectoId: string, cambios: Partial<import("@/lib/nex/db-types").VigilanciaConfigRow>) =>
+  const cambiar = (proyectoId: string, cambios: Partial<Omit<import("@/lib/nex/db-types").VigilanciaConfigRow, "user_id">>) =>
     guardar.mutate({ proyectoId, cambios }, { onError: (e) => toast.error(e.message) });
 
   return (

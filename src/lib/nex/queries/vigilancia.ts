@@ -185,7 +185,7 @@ export function useCambiarEstadoHallazgo() {
 export function useGuardarVigilanciaConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { proyectoId: string; cambios: Partial<VigilanciaConfigRow> }) => {
+    mutationFn: async (input: { proyectoId: string; cambios: Partial<Omit<VigilanciaConfigRow, "user_id">> }) => {
       const { error } = await supabase
         .from("vigilancia_config")
         .update(input.cambios)
@@ -203,7 +203,7 @@ export function useGuardarVigilanciaConfig() {
 export function useGuardarCompetidor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id?: string; proyectoId: string; datos: Partial<CompetidorRow> }) => {
+    mutationFn: async (input: { id?: string; proyectoId: string; datos: Partial<Omit<CompetidorRow, "user_id">> }) => {
       if (input.id) {
         const { error } = await supabase.from("competidores").update(input.datos).eq("id", input.id);
         if (error) throw new Error(error.message);
