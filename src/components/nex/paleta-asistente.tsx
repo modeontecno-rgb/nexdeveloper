@@ -6,7 +6,7 @@ import { Boton, claseCampo } from "@/components/nex/campos";
 import { SUGERENCIAS } from "@/routes/asistente";
 import { cn } from "@/lib/utils";
 
-/** Paleta rápida del asistente: se abre con Ctrl/Cmd + K desde cualquier pantalla. */
+/** Paleta rápida del asistente: se abre con Ctrl/Cmd + J desde cualquier pantalla. */
 export function PaletaAsistente() {
   const navegar = useNavigate();
   const [abierta, setAbierta] = React.useState(false);
@@ -14,7 +14,7 @@ export function PaletaAsistente() {
 
   React.useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
         e.preventDefault();
         setAbierta((v) => !v);
       }
