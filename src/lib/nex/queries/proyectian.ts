@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import type { Json, ProyectianSyncRow, TipoSyncProyectian } from "../db-types";
+import type { Json, ProyectianSyncRow, TareaRow, TipoSyncProyectian } from "../db-types";
 import { supabase } from "../supabase";
 import { claves } from "./claves";
 
@@ -178,7 +178,7 @@ function useCambioTarea(fn: (v: CambioEstado) => Promise<void>, mensaje: string)
   });
 }
 
-async function actualizarTarea(id: string, campos: Record<string, unknown>) {
+async function actualizarTarea(id: string, campos: Partial<TareaRow>) {
   const { error } = await supabase.from("tareas").update(campos).eq("id", id);
   if (error) throw new Error(error.message);
 }
