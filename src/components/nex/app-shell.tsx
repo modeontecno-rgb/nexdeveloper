@@ -77,6 +77,7 @@ const NAVEGACION = [
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/dominios", etiqueta: "Dominios", icono: Globe },
   { to: "/salud", etiqueta: "Salud", icono: HeartPulse },
+  { to: "/auditoria", etiqueta: "Auditoría", icono: Stamp },
 
   { to: "/avisos", etiqueta: "Avisos", icono: Bell },
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
