@@ -41,7 +41,7 @@ import {
 
 /* ============================ Pestaña «Restaurar» ========================== */
 
-export function PanelRestaurar({ copiaInicial }: { copiaInicial?: string }) {
+export function PanelRestaurar({ copiaInicial }: { copiaInicial?: string | undefined }) {
   const { data: proyectos = [] } = useProyectos();
   const [objetivo, setObjetivo] = React.useState<string>("");
   const { data: copias = [], isPending } = useCopiasRestaurables(objetivo || undefined);
@@ -192,7 +192,7 @@ export function AsistenteRestauracion({ copia, onCerrar }: { copia: CopiaRestaur
     const r = await restaurar
       .mutateAsync({
         copiaId: copia.id,
-        destino: destino.trim() || undefined,
+        ...(destino.trim() ? { destino: destino.trim() } : {}),
         modo,
         ...(esBd ? {} : { rama: rama.trim() || undefined }),
       })
