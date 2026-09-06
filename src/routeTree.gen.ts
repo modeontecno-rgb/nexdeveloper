@@ -23,6 +23,7 @@ import { Route as IntegracionesRouteImport } from './routes/integraciones'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as RepositoriosRouteImport } from './routes/repositorios'
+import { Route as VigilanciaRouteImport } from './routes/vigilancia'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
@@ -98,6 +99,11 @@ const RepositoriosRoute = RepositoriosRouteImport.update({
   path: '/repositorios',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VigilanciaRoute = VigilanciaRouteImport.update({
+  id: '/vigilancia',
+  path: '/vigilancia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AjustesProveedoresRoute = AjustesProveedoresRouteImport.update({
   id: '/ajustes_/proveedores',
   path: '/ajustes/proveedores',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
+  '/vigilancia': typeof VigilanciaRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
+  '/vigilancia': typeof VigilanciaRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
+  '/vigilancia': typeof VigilanciaRoute
   '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
+    | '/vigilancia'
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
+    | '/vigilancia'
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
+    | '/vigilancia'
     | '/ajustes_/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
   RepositoriosRoute: typeof RepositoriosRoute
+  VigilanciaRoute: typeof VigilanciaRoute
   AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RepositoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vigilancia': {
+      id: '/vigilancia'
+      path: '/vigilancia'
+      fullPath: '/vigilancia'
+      preLoaderRoute: typeof VigilanciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ajustes_/proveedores': {
       id: '/ajustes_/proveedores'
       path: '/ajustes/proveedores'
@@ -421,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,
   RepositoriosRoute: RepositoriosRoute,
+  VigilanciaRoute: VigilanciaRoute,
   AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
