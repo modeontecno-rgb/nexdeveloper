@@ -111,7 +111,7 @@ function Bloque({
             <Progreso className="mt-3" valor={Number(t.progreso)} />
 
             {t.bloque === "requiere_atencion" ? (
-              <div className="mt-3">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <Boton
                   variante="suave"
                   className="px-2.5 py-1 text-xs"
@@ -120,8 +120,16 @@ function Bloque({
                 >
                   <Check className="size-3.5" /> Ya lo he hecho
                 </Boton>
+                <BotonConvocarMesa
+                  etiqueta="Pedir opinión a la mesa"
+                  className="px-2.5 py-1 text-xs"
+                  tareaId={t.id}
+                  pregunta={`${t.titulo}${t.motivo_atencion ? `\n\nMotivo: ${t.motivo_atencion}` : ""}`}
+                  {...(t.proyecto_id ? { proyectoId: t.proyecto_id } : {})}
+                />
               </div>
             ) : null}
+
           </li>
         ))}
         {tareas.length === 0 && <li className="px-4 py-6 text-sm text-muted-foreground">{vacio}</li>}
