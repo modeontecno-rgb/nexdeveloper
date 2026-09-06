@@ -3,6 +3,7 @@ import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
 
 import { peorResultado, useDominios } from "@/lib/nex/queries/dominios";
+import { useEntradasBandeja } from "@/lib/nex/queries/bandeja";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge } from "@/components/nex/badges";
 import { SemaforoBadge } from "@/components/nex/semaforo";
@@ -135,6 +136,8 @@ function DetalleProyecto() {
           </div>
         }
       />
+
+      <BloqueMensajes proyectoId={proyectoId} />
 
       <section className="grid gap-3 sm:grid-cols-4">
         <Dato titulo="Tareas" valor={`${Number(resumen?.completadas ?? 0)}/${Number(resumen?.total_tareas ?? 0)}`} />
@@ -288,6 +291,32 @@ function DetalleProyecto() {
         })()
       ) : null}
     </>
+  );
+}
+
+function BloqueMensajes({ proyectoId }: { proyectoId: string }) {
+  const { data: entradas = [] } = useEntradasBandeja();
+  const propias = entradas.filter((e) => e.proyecto_id === proyectoId).slice(0, 8);
+  if (propias.length === 0) return null;
+  return (
+    <section className="panel mb-6 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold">Mensajes</h2>
+        <Link to="/bandeja" className="text-xs text-primary hover:underline">
+          Ver la bandeja
+        </Link>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {propias.map((e) => (
+          <li key={e.id} className="rounded-lg border border-border bg-surface p-3 text-sm">
+            <p className="truncate text-foreground">{e.asunto ?? (e.texto ?? "").slice(0, 70)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {e.remitente_nombre ?? e.remitente ?? "Sin remitente"} · {formatoFechaHora(e.fecha ?? e.creado_el)}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
