@@ -4,6 +4,7 @@ import {
   BookOpen,
   Boxes,
   Cpu,
+  Inbox,
   LayoutDashboard,
   ListTodo,
   LogOut,
@@ -28,10 +29,12 @@ import { PastillaVersion } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
 import { useAuth } from "@/lib/nex/auth";
 import { usePerfil } from "@/lib/nex/queries/datos";
+import { pendientes, useEntradasBandeja } from "@/lib/nex/queries/bandeja";
 import { cn } from "@/lib/utils";
 
 const NAVEGACION = [
   { to: "/", etiqueta: "Inicio", icono: LayoutDashboard },
+  { to: "/bandeja", etiqueta: "Bandeja", icono: Inbox },
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },
   { to: "/nueva-orden", etiqueta: "Nueva orden", icono: Sparkle },
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },
@@ -55,6 +58,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const ruta = useRouterState({ select: (s) => s.location.pathname });
   const { usuario, salir } = useAuth();
   const { data: perfil } = usePerfil();
+  const { data: entradasBandeja = [] } = useEntradasBandeja();
+  const pendientesBandeja = pendientes(entradasBandeja);
 
   React.useEffect(() => {
     setAbierto(false);
@@ -99,6 +104,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <Icono className={cn("size-4", activo && "text-sidebar-primary")} />
                 {etiqueta}
+                {to === "/bandeja" && pendientesBandeja > 0 ? (
+                  <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+                    {pendientesBandeja}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
