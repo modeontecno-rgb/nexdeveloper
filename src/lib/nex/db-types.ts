@@ -1009,7 +1009,70 @@ export type VigilanciaResumenRow = {
   competidores: number
 }
 
+// ---- Resúmenes (0.14.0) ----
+export type TipoResumen = "diario" | "semanal"
+export type CanalResumen = "correo" | "whatsapp"
+
+export type IncluirResumen = {
+  atencion?: boolean
+  desatendidas?: boolean
+  compilaciones?: boolean
+  vigilancia?: boolean
+  dominios?: boolean
+  copias?: boolean
+  bandeja?: boolean
+  calidad?: boolean
+  consumo_ia?: boolean
+  actividad?: boolean
+}
+
+export type ResumenesConfigRow = {
+  id: string
+  user_id: string
+  diario_activo: boolean
+  semanal_activo: boolean
+  canales: CanalResumen[]
+  correo_destino: string | null
+  whatsapp_destino: string | null
+  incluir: IncluirResumen | null
+  usar_ia: boolean
+}
+
+export type CifrasResumen = {
+  requieren_atencion?: number
+  dominios_con_aviso?: number
+  copias_error?: number
+  hallazgos_vigilancia?: number
+  bandeja_pendiente?: number
+  proyectos_calidad_rojo?: number
+  coste_ia_eur?: number
+  llamadas_ia?: number
+  completadas?: number
+  compilaciones?: number
+  [clave: string]: number | undefined
+}
+
+export type ResumenRow = {
+  id: string
+  user_id: string
+  tipo: TipoResumen
+  fecha: string
+  periodo_desde: string | null
+  periodo_hasta: string | null
+  titulo: string
+  contenido_md: string | null
+  contenido_html: string | null
+  datos: CifrasResumen | null
+  redactado_por: string | null
+  enviado_por: string[] | null
+  enviado_el: string | null
+  error_envio: string | null
+  leido: boolean
+  creado_el: string
+}
+
 type SinUsuario<T> = Omit<T, "user_id">
+
 
 
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
