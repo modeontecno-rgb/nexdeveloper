@@ -870,6 +870,10 @@ export type Database = {
       copias_config: Tabla<CopiaConfigRow, Partial<SinUsuario<CopiaConfigRow>>>
       copias_origenes: Tabla<CopiaOrigenRow>
       copias: Tabla<CopiaRow>
+      plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
+      compilaciones: Tabla<CompilacionRow>
+      firmas_compilacion: Tabla<FirmaCompilacionRow>
+
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
