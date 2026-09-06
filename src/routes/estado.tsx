@@ -108,7 +108,13 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaResumenes,
         tablaResumenesConfig,
         funcionResumenes,
+        gastoDiario,
+        gastosManuales,
+        presupuestosIa,
+        gastoConfig,
+        funcionGasto,
       ] = await Promise.all([
+
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
         verificarFuncion("ejecutar-accion"),
