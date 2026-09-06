@@ -1459,6 +1459,61 @@ export type ManualesConfigRow = {
   max_capitulos: number
 }
 
+/* ------------------------- Auditoría mensual (0.26.0) -------------------- */
+
+export type EstadoAuditoria = "pendiente" | "analizando" | "terminada" | "error"
+export type SeveridadHallazgoAuditoria = "critica" | "alta" | "media" | "baja"
+export type AreaAuditoria = "accesibilidad" | "rendimiento" | "seguridad" | "textos" | "codigo" | "datos"
+
+export type PuntuacionesAuditoria = Partial<Record<AreaAuditoria, number>>
+
+export type HallazgoAuditoria = {
+  area: AreaAuditoria | string
+  severidad: SeveridadHallazgoAuditoria
+  titulo: string
+  detalle?: string | null
+  donde?: string | null
+  solucion?: string | null
+  tarea_id?: string | null
+}
+
+export type AuditoriaRow = {
+  id: string
+  user_id: string
+  lote: string
+  proyecto_id: string
+  origen: string | null
+  estado: EstadoAuditoria
+  paso: string | null
+  puntuacion: number | null
+  semaforo: Semaforo
+  resumen: string | null
+  puntuaciones: PuntuacionesAuditoria | null
+  hallazgos: HallazgoAuditoria[] | null
+  material: Record<string, Json> | null
+  tareas_creadas: number | null
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  coste: number | null
+  error: string | null
+  creado_el: string
+  terminada_el: string | null
+}
+
+export type AuditoriaConfigRow = {
+  id: string
+  user_id: string
+  activa: boolean
+  dia_mes: number
+  areas: Partial<Record<AreaAuditoria, boolean>> | null
+  crear_tareas: boolean
+  solo_criticas_y_altas: boolean
+  max_hallazgos_por_proyecto: number
+  proyectos_excluidos: string[] | null
+}
+
+
+
 /* ------------------------------ Habilidades ------------------------------ */
 
 export type OrigenHabilidad = "propia" | "experto" | "externa"
