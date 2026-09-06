@@ -20,6 +20,7 @@ import { Route as CompilacionesRouteImport } from './routes/compilaciones'
 import { Route as CopiasRouteImport } from './routes/copias'
 import { Route as DocumentacionRouteImport } from './routes/documentacion'
 import { Route as DominiosRouteImport } from './routes/dominios'
+import { Route as EjecucionRouteImport } from './routes/ejecucion'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as GastoIaRouteImport } from './routes/gasto-ia'
@@ -90,6 +91,11 @@ const DocumentacionRoute = DocumentacionRouteImport.update({
 const DominiosRoute = DominiosRouteImport.update({
   id: '/dominios',
   path: '/dominios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EjecucionRoute = EjecucionRouteImport.update({
+  id: '/ejecucion',
+  path: '/ejecucion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstadoRoute = EstadoRouteImport.update({
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/copias': typeof CopiasRoute
   '/documentacion': typeof DocumentacionRoute
   '/dominios': typeof DominiosRoute
+  '/ejecucion': typeof EjecucionRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/gasto-ia': typeof GastoIaRoute
@@ -215,6 +222,7 @@ export interface FileRoutesByTo {
   '/copias': typeof CopiasRoute
   '/documentacion': typeof DocumentacionRoute
   '/dominios': typeof DominiosRoute
+  '/ejecucion': typeof EjecucionRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/gasto-ia': typeof GastoIaRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/copias': typeof CopiasRoute
   '/documentacion': typeof DocumentacionRoute
   '/dominios': typeof DominiosRoute
+  '/ejecucion': typeof EjecucionRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/gasto-ia': typeof GastoIaRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/copias'
     | '/documentacion'
     | '/dominios'
+    | '/ejecucion'
     | '/estado'
     | '/expertos'
     | '/gasto-ia'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/copias'
     | '/documentacion'
     | '/dominios'
+    | '/ejecucion'
     | '/estado'
     | '/expertos'
     | '/gasto-ia'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/copias'
     | '/documentacion'
     | '/dominios'
+    | '/ejecucion'
     | '/estado'
     | '/expertos'
     | '/gasto-ia'
@@ -364,6 +376,7 @@ export interface RootRouteChildren {
   CopiasRoute: typeof CopiasRoute
   DocumentacionRoute: typeof DocumentacionRoute
   DominiosRoute: typeof DominiosRoute
+  EjecucionRoute: typeof EjecucionRoute
   EstadoRoute: typeof EstadoRoute
   ExpertosRoute: typeof ExpertosRoute
   GastoIaRoute: typeof GastoIaRoute
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       path: '/dominios'
       fullPath: '/dominios'
       preLoaderRoute: typeof DominiosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ejecucion': {
+      id: '/ejecucion'
+      path: '/ejecucion'
+      fullPath: '/ejecucion'
+      preLoaderRoute: typeof EjecucionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/estado': {
@@ -598,6 +618,7 @@ const rootRouteChildren: RootRouteChildren = {
   CopiasRoute: CopiasRoute,
   DocumentacionRoute: DocumentacionRoute,
   DominiosRoute: DominiosRoute,
+  EjecucionRoute: EjecucionRoute,
   EstadoRoute: EstadoRoute,
   ExpertosRoute: ExpertosRoute,
   GastoIaRoute: GastoIaRoute,
