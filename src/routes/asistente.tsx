@@ -671,7 +671,7 @@ export function CajaRapidaAsistente() {
         className={cn(claseCampo, "mt-3")}
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">Atajo: Ctrl/Cmd + K</span>
+        <span className="text-xs text-muted-foreground">Atajo: Ctrl/Cmd + J</span>
         <Boton type="submit" className="px-3 py-1.5 text-xs" disabled={!texto.trim()}>
           Preguntar
         </Boton>

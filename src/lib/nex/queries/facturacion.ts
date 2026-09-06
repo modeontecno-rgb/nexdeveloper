@@ -145,7 +145,10 @@ export type ResumenProyectoFacturacion = {
   color: string | null;
   enlazado: boolean;
   cliente: string | null;
+  empresa?: string | null;
+  tenant_id?: string | null;
   contrato: ContratoCliente;
+
   horas: number;
   horas_sin_facturar: number;
   facturado: number;
@@ -173,11 +176,56 @@ export type ConexionEvoluteia = {
   ultima_comprobacion?: string | null;
 };
 
+/* --------------------------- Empresas emisoras ---------------------------- */
+
+/** Solo estas dos empresas pueden facturar, aunque en EvoluteIA existan más. */
+export const AVISO_EMPRESAS_PERMITIDAS =
+  "Solo pueden facturar MODEONTECNO S.L. y SOLUCIONES EVOLUTEIA S.L.";
+
+export type EmpresaEmisora = {
+  tenant_id: string;
+  nombre: string;
+  nif?: string | null;
+  por_defecto?: boolean;
+  activa?: boolean;
+  empresa_id?: string | null;
+  sede_id?: string | null;
+  forma_pago_id?: string | null;
+  impuesto_id?: string | null;
+};
+
+export type PruebaEmpresa = {
+  tenant_id: string;
+  nombre: string;
+  por_defecto?: boolean;
+  modulo_activo?: boolean;
+  empresa?: { razon_social?: string; nif?: string; verifactu_activo?: boolean; verifactu_modo?: string } | null;
+  serie?: { codigo?: string; siguiente_num?: number; ejercicio?: number } | null;
+  error?: string | null;
+};
+
+/** Color propio de cada empresa emisora, para distinguirlas de un vistazo. */
+export function tonoEmpresa(nombre?: string | null) {
+  if (!nombre) return "border-border bg-muted text-muted-foreground";
+  return /modeon/i.test(nombre)
+    ? "border-primary/40 bg-primary/10 text-primary"
+    : "border-warning/40 bg-warning/10 text-warning";
+}
+
+/** Nombre corto de la empresa, para insignias estrechas. */
+export function nombreCortoEmpresa(nombre?: string | null) {
+  if (!nombre) return "Sin empresa";
+  if (/modeon/i.test(nombre)) return "MODEONTECNO";
+  if (/evoluteia/i.test(nombre)) return "EVOLUTEIA";
+  return nombre;
+}
+
 export type EstadoFacturacion = {
   ok?: boolean;
   config?: FacturacionConfigRow | null;
   evoluteia?: ConexionEvoluteia | null;
   proyectian?: boolean;
+  empresas?: EmpresaEmisora[];
   resumen?: ResumenFacturacion | null;
 };
 
@@ -186,11 +234,13 @@ export type PruebaEvoluteia = {
   usuario?: string | null;
   empresa?: { razon_social?: string; nif?: string; verifactu_activo?: boolean; verifactu_modo?: string } | null;
   serie?: { codigo?: string; siguiente_num?: number; ejercicio?: number } | null;
+  empresas?: PruebaEmpresa[];
   facturas_sincronizadas?: number;
   error?: string;
 };
 
 export type OpcionEvoluteia = { id: string; nombre?: string; razon_social?: string; codigo?: string; [k: string]: unknown };
+
 
 export type TerceroEvoluteia = {
   id: string;
@@ -297,12 +347,16 @@ export function useEmpresasEvoluteia() {
     queryKey: clavesFacturacion.empresas,
     queryFn: async () => {
       const r = await llamar<{
+        catalogo?: EmpresaEmisora[];
+        permitidas?: Record<string, string>;
         empresas?: OpcionEvoluteia[];
         sedes?: OpcionEvoluteia[];
         formas_pago?: OpcionEvoluteia[];
         impuestos?: OpcionEvoluteia[];
       }>({ accion: "empresas" });
       return {
+        catalogo: r.catalogo ?? [],
+        permitidas: r.permitidas ?? {},
         empresas: r.empresas ?? [],
         sedes: r.sedes ?? [],
         formas_pago: r.formas_pago ?? [],
@@ -312,23 +366,50 @@ export function useEmpresasEvoluteia() {
   });
 }
 
-export function useTercerosEvoluteia(q: string, activo = true) {
+/** Marca una empresa como la de por defecto, la activa o cambia sus identificadores. */
+export function useConfigurarEmpresa() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      tenant_id: string;
+      por_defecto?: true;
+      activa?: boolean;
+      sede_id?: string | null;
+      forma_pago_id?: string | null;
+      impuesto_id?: string | null;
+    }) => llamar<{ empresas?: EmpresaEmisora[] }>({ accion: "empresa_configurar", ...input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: clavesFacturacion.empresas });
+      void qc.invalidateQueries({ queryKey: ["facturacion"] });
+    },
+  });
+}
+
+export function useTercerosEvoluteia(q: string, activo = true, tenantId?: string | null) {
   return useQuery({
-    queryKey: clavesFacturacion.terceros(q),
+    queryKey: clavesFacturacion.terceros(`${tenantId ?? "defecto"}|${q}`),
     enabled: activo,
     queryFn: async () => {
-      const r = await llamar<{ terceros?: TerceroEvoluteia[] }>({ accion: "terceros", ...(q ? { q } : {}) });
+      const r = await llamar<{ terceros?: TerceroEvoluteia[] }>({
+        accion: "terceros",
+        ...(q ? { q } : {}),
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      });
       return r.terceros ?? [];
     },
   });
 }
 
-export function useContratosEvoluteia(terceroId: string | null) {
+export function useContratosEvoluteia(terceroId: string | null, tenantId?: string | null) {
   return useQuery({
-    queryKey: clavesFacturacion.contratos(terceroId ?? "ninguno"),
+    queryKey: clavesFacturacion.contratos(`${tenantId ?? "defecto"}|${terceroId ?? "ninguno"}`),
     enabled: Boolean(terceroId),
     queryFn: async () => {
-      const r = await llamar<{ contratos?: ContratoEvoluteia[] }>({ accion: "contratos", tercero_id: terceroId });
+      const r = await llamar<{ contratos?: ContratoEvoluteia[] }>({
+        accion: "contratos",
+        tercero_id: terceroId,
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      });
       return r.contratos ?? [];
     },
   });
@@ -347,15 +428,19 @@ export function useCrearTercero() {
       cp?: string;
       email?: string;
       telefono?: string;
-    }) => llamar<{ tercero?: TerceroEvoluteia }>({ accion: "tercero_crear", ...input }),
+      tenant_id?: string;
+    }) => llamar<{ tercero?: TerceroEvoluteia; tenant_id?: string }>({ accion: "tercero_crear", ...input }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["facturacion", "evoluteia", "terceros"] }),
   });
 }
 
 export function useSugerirEnlaces() {
   return useMutation({
-    mutationFn: async () => {
-      const r = await llamar<{ sugerencias?: SugerenciaEnlace[] }>({ accion: "sugerir_enlaces" });
+    mutationFn: async (tenantId?: string | null) => {
+      const r = await llamar<{ sugerencias?: SugerenciaEnlace[] }>({
+        accion: "sugerir_enlaces",
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      });
       return r.sugerencias ?? [];
     },
   });
@@ -363,13 +448,18 @@ export function useSugerirEnlaces() {
 
 /* -------------------------------- Clientes -------------------------------- */
 
+/** Cliente enlazado, con la empresa emisora desde la que se factura. */
+export type ClienteFacturacion = FacturacionClienteRow & {
+  evoluteia_tenant_id?: string | null;
+};
+
 export function useClientesFacturacion() {
   return useQuery({
     queryKey: clavesFacturacion.clientes,
     queryFn: async () => {
       const { data, error } = await supabase.from("facturacion_clientes").select("*");
       if (error) throw new Error(error.message);
-      return (data ?? []) as FacturacionClienteRow[];
+      return (data ?? []) as ClienteFacturacion[];
     },
   });
 }
@@ -388,7 +478,24 @@ export function useEnlazarCliente() {
       tarifa_hora?: number | null;
       refacturar_ia?: boolean;
       notas?: string;
+      tenant_id?: string;
     }) => llamar({ accion: "cliente_enlazar", ...input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: clavesFacturacion.clientes });
+      void qc.invalidateQueries({ queryKey: ["facturacion"] });
+    },
+  });
+}
+
+/** Pasa un proyecto a facturarse desde la otra empresa emisora. */
+export function useCambiarEmpresaCliente() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { proyecto_id: string; tenant_id: string }) =>
+      llamar<{ cliente?: ClienteFacturacion | null; empresa?: string | null; aviso?: string | null }>({
+        accion: "cliente_cambiar_empresa",
+        ...input,
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: clavesFacturacion.clientes });
       void qc.invalidateQueries({ queryKey: ["facturacion"] });
@@ -406,6 +513,7 @@ export function useDesenlazarCliente() {
     },
   });
 }
+
 
 /* ---------------------------------- Horas --------------------------------- */
 
@@ -497,14 +605,26 @@ export function usePararCronometro() {
 
 /* --------------------------------- Facturas ------------------------------- */
 
+/** Factura de EvoluteIA con la empresa emisora desde la que se hizo. */
+export type FacturaListada = FacturaEvoluteiaRow & {
+  tenant_id?: string | null;
+  empresa?: string | null;
+};
+
 export function useFacturas(
-  filtro: { proyecto_id?: string; estado?: string; limite?: number; sincronizar?: boolean } = {},
+  filtro: {
+    proyecto_id?: string;
+    estado?: string;
+    tenant_id?: string;
+    limite?: number;
+    sincronizar?: boolean;
+  } = {},
 ) {
   return useQuery({
     queryKey: [...clavesFacturacion.facturas, filtro],
     queryFn: async () => {
-      const r = await llamar<{ facturas?: FacturaEvoluteiaRow[] }>({ accion: "facturas", ...filtro });
-      return (r.facturas ?? []) as FacturaEvoluteiaRow[];
+      const r = await llamar<{ facturas?: FacturaListada[] }>({ accion: "facturas", ...filtro });
+      return (r.facturas ?? []) as FacturaListada[];
     },
   });
 }
@@ -534,6 +654,7 @@ export type ResultadoPreparar = {
   coste_ia?: number;
   lineas?: LineaFacturaEvoluteia[];
   de_contrato?: boolean;
+  empresa?: string | null;
   url?: string;
 };
 
@@ -549,10 +670,14 @@ export function useEmitirFactura() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { documento_id: string; forma_pago_id?: string }) =>
-      llamar<{ numero?: string; verifactu?: boolean; url?: string }>({ accion: "emitir", ...input }),
+      llamar<{ numero?: string; verifactu?: boolean; empresa?: string | null; url?: string }>({
+        accion: "emitir",
+        ...input,
+      }),
     onSuccess: () => invalidarFacturacion(qc),
   });
 }
+
 
 export function useDescartarBorrador() {
   const qc = useQueryClient();

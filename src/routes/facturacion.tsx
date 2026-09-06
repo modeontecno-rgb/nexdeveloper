@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BadgeCheck,
+  Building2,
+
   ExternalLink,
   Eye,
   Link2,
@@ -21,10 +23,11 @@ import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
 import { BotonCronometroProyecto } from "@/components/nex/cronometro";
 import { Dialogo } from "@/components/nex/dialogo";
-import type { ContratoCliente, FacturacionClienteRow, HoraRegistroRow, ProyectoRow } from "@/lib/nex/db-types";
+import type { ContratoCliente, HoraRegistroRow, ProyectoRow } from "@/lib/nex/db-types";
 import { formatoDinero, formatoFecha } from "@/lib/nex/labels";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
+  AVISO_EMPRESAS_PERMITIDAS,
   AVISO_SOLO_FABRICANTE,
   CONTRATOS,
   ESTADOS_FACTURA,
@@ -35,14 +38,18 @@ import {
   etiquetaEstadoFactura,
   formatoHoras,
   mesActualFacturacion,
+  nombreCortoEmpresa,
   nombreMesFacturacion,
   periodoMesAnterior,
+  tonoEmpresa,
   tonoEstadoFactura,
   transcurrido,
   ultimosMesesFacturacion,
   useActualizarHoras,
   useBorrarHoras,
+  useCambiarEmpresaCliente,
   useClientesFacturacion,
+  useConfigurarEmpresa,
   useContratosEvoluteia,
   useCrearTercero,
   useCronometro,
@@ -67,10 +74,13 @@ import {
   useSincronizarFacturas,
   useSugerirEnlaces,
   useTercerosEvoluteia,
+  type ClienteFacturacion,
+  type EmpresaEmisora,
   type PruebaEvoluteia,
   type SugerenciaEnlace,
   type TerceroEvoluteia,
 } from "@/lib/nex/queries/facturacion";
+
 
 export const Route = createFileRoute("/facturacion")({
   head: () => ({
@@ -105,6 +115,32 @@ const PESTANAS: { valor: Pestana; texto: string }[] = [
 ];
 
 const URL_EVOLUTEIA_POR_DEFECTO = "https://evoluteia.lovable.app";
+
+/* ---------------------------- Empresas emisoras --------------------------- */
+
+/** Catálogo de las dos empresas que pueden facturar y cuál es la de por defecto. */
+function useEmpresasEmisoras() {
+  const { data } = useEmpresasEvoluteia();
+  const catalogo = React.useMemo<EmpresaEmisora[]>(() => data?.catalogo ?? [], [data]);
+  const porDefecto = catalogo.find((e) => e.por_defecto) ?? catalogo[0] ?? null;
+  return { catalogo, porDefecto, opciones: data };
+}
+
+/** Insignia con la empresa emisora, con un color propio para cada una. */
+function InsigniaEmpresa({ nombre, corto }: { nombre?: string | null | undefined; corto?: boolean }) {
+  if (!nombre) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <span
+      title={nombre}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs whitespace-nowrap ${tonoEmpresa(nombre)}`}
+    >
+      <span className="size-1.5 rounded-full bg-current" aria-hidden />
+      {corto ? nombreCortoEmpresa(nombre) : nombre}
+    </span>
+  );
+}
+
+
 
 function Cifra({
   titulo,
@@ -181,12 +217,15 @@ function PantallaFacturacion() {
 function ChipConexionEvoluteia({ mes }: { mes: string }) {
   const { data: estado } = useEstadoFacturacion(mes);
   const { data: config } = useFacturacionConfig();
+  const { catalogo } = useEmpresasEmisoras();
   const probar = useProbarEvoluteia();
   const [prueba, setPrueba] = React.useState<PruebaEvoluteia | null>(null);
 
   const conexion = estado?.evoluteia;
   const conectada = conexion?.estado === "conectada";
   const url = config?.evoluteia_url || URL_EVOLUTEIA_POR_DEFECTO;
+  const empresas = estado?.empresas?.length ? estado.empresas : catalogo;
+  const pruebaDe = (tenantId: string) => prueba?.empresas?.find((e) => e.tenant_id === tenantId);
 
   return (
     <div className="panel mb-6 flex flex-wrap items-center gap-3 p-4">
@@ -200,6 +239,23 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
         <span className={`size-2 rounded-full ${conectada ? "bg-success" : "bg-destructive"}`} aria-hidden />
         {conectada ? `EvoluteIA conectada${conexion?.cuenta ? ` · ${conexion.cuenta}` : ""}` : "EvoluteIA sin conexión"}
       </span>
+
+      {empresas.map((e) => {
+        const r = pruebaDe(e.tenant_id);
+        const verde = r ? Boolean(r.modulo_activo) : conectada && e.activa !== false;
+        return (
+          <span
+            key={e.tenant_id}
+            title={r?.error ?? e.nombre}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs whitespace-nowrap ${tonoEmpresa(e.nombre)}`}
+          >
+            <span className={`size-2 rounded-full ${verde ? "bg-success" : "bg-destructive"}`} aria-hidden />
+            {nombreCortoEmpresa(e.nombre)}
+            {e.por_defecto ? <span className="opacity-70">· por defecto</span> : null}
+          </span>
+        );
+      })}
+
       {!conectada && conexion?.ultimo_error ? (
         <span className="text-xs text-destructive">{conexion.ultimo_error}</span>
       ) : null}
@@ -231,6 +287,7 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
       <Dialogo
         abierto={Boolean(prueba)}
         titulo="Prueba de conexión con EvoluteIA"
+        descripcion={AVISO_EMPRESAS_PERMITIDAS}
         onCerrar={() => setPrueba(null)}
         ancho="max-w-lg"
       >
@@ -239,28 +296,48 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
             {prueba.error ?? "No se ha podido conectar."}
           </p>
         ) : (
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-sm">
             <p className="rounded-lg border border-success/40 bg-success/10 p-3 text-success">Conexión correcta.</p>
             <p>
               <span className="text-muted-foreground">Usuario:</span> {prueba?.usuario ?? "—"}
             </p>
-            <p>
-              <span className="text-muted-foreground">Empresa:</span> {prueba?.empresa?.razon_social ?? "—"}
-              {prueba?.empresa?.nif ? ` · ${prueba.empresa.nif}` : ""}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Serie:</span> {prueba?.serie?.codigo ?? "—"} · siguiente número{" "}
-              {prueba?.serie?.siguiente_num ?? "—"}
-              {prueba?.serie?.ejercicio ? ` (${prueba.serie.ejercicio})` : ""}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Verifactu:</span>{" "}
-              {prueba?.empresa?.verifactu_activo ? (
-                <span className="text-success">activo{prueba.empresa.verifactu_modo ? ` (${prueba.empresa.verifactu_modo})` : ""}</span>
-              ) : (
-                <span className="text-warning">no activo</span>
-              )}
-            </p>
+            {(prueba?.empresas ?? []).map((e) => (
+              <div key={e.tenant_id} className="rounded-lg border border-border p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <InsigniaEmpresa nombre={e.nombre} />
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${
+                      e.modulo_activo
+                        ? "border-success/40 bg-success/10 text-success"
+                        : "border-destructive/40 bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    <span className={`size-1.5 rounded-full ${e.modulo_activo ? "bg-success" : "bg-destructive"}`} />
+                    {e.modulo_activo ? "Módulo activo" : "Módulo no activo"}
+                  </span>
+                  {e.por_defecto ? <span className="text-xs text-muted-foreground">Por defecto</span> : null}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {e.empresa?.razon_social ?? "—"}
+                  {e.empresa?.nif ? ` · ${e.empresa.nif}` : ""}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Serie {e.serie?.codigo ?? "—"} · siguiente número {e.serie?.siguiente_num ?? "—"}
+                  {e.serie?.ejercicio ? ` (${e.serie.ejercicio})` : ""}
+                </p>
+                <p className="mt-1 text-xs">
+                  <span className="text-muted-foreground">Verifactu:</span>{" "}
+                  {e.empresa?.verifactu_activo ? (
+                    <span className="text-success">
+                      activo{e.empresa.verifactu_modo ? ` (${e.empresa.verifactu_modo})` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-warning">no activo</span>
+                  )}
+                </p>
+                {e.error ? <p className="mt-1 text-xs text-destructive">{e.error}</p> : null}
+              </div>
+            ))}
             <p>
               <span className="text-muted-foreground">Facturas sincronizadas:</span>{" "}
               {prueba?.facturas_sincronizadas ?? 0}
@@ -271,6 +348,7 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
     </div>
   );
 }
+
 
 /* --------------------------------- Resumen -------------------------------- */
 
@@ -331,7 +409,9 @@ function BloqueResumen({ mes, onIrAClientes }: { mes: string; onIrAClientes: () 
             <tr className="border-b border-border">
               <th className="p-3">Proyecto</th>
               <th className="p-3">Cliente en EvoluteIA</th>
+              <th className="p-3">Empresa</th>
               <th className="p-3">Contrato</th>
+
               <th className="p-3 text-right">Horas</th>
               <th className="p-3 text-right">Sin facturar</th>
               <th className="p-3 text-right">Facturado</th>
@@ -346,13 +426,13 @@ function BloqueResumen({ mes, onIrAClientes }: { mes: string; onIrAClientes: () 
           <tbody>
             {isPending ? (
               <tr>
-                <td colSpan={12} className="p-4 text-muted-foreground">
+                <td colSpan={13} className="p-4 text-muted-foreground">
                   Cargando cifras...
                 </td>
               </tr>
             ) : proyectos.length === 0 ? (
               <tr>
-                <td colSpan={12} className="p-4 text-muted-foreground">
+                <td colSpan={13} className="p-4 text-muted-foreground">
                   Todavía no hay movimientos este mes.
                 </td>
               </tr>
@@ -378,7 +458,11 @@ function BloqueResumen({ mes, onIrAClientes }: { mes: string; onIrAClientes: () 
                       <span className="text-warning">Sin enlazar</span>
                     )}
                   </td>
+                  <td className="p-3">
+                    <InsigniaEmpresa nombre={p.empresa} corto />
+                  </td>
                   <td className="p-3 text-muted-foreground">{ETIQUETA_CONTRATO[p.contrato] ?? p.contrato}</td>
+
                   <td className="p-3 text-right tabular-nums">{formatoHoras(p.horas)}</td>
                   <td className="p-3 text-right tabular-nums">{formatoHoras(p.horas_sin_facturar)}</td>
                   <td className="p-3 text-right tabular-nums">{formatoDinero(p.facturado)}</td>
@@ -812,13 +896,17 @@ function PanelNuevasHoras({ abierto, onCerrar }: { abierto: boolean; onCerrar: (
 
 function BloqueFacturas() {
   const { data: proyectos = [] } = useProyectos();
+  const { catalogo } = useEmpresasEmisoras();
   const [filtroEstado, setFiltroEstado] = React.useState("todos");
   const [filtroProyecto, setFiltroProyecto] = React.useState("todos");
+  const [filtroEmpresa, setFiltroEmpresa] = React.useState("todas");
   const filtro = {
     ...(filtroEstado !== "todos" ? { estado: filtroEstado } : {}),
     ...(filtroProyecto !== "todos" ? { proyecto_id: filtroProyecto } : {}),
+    ...(filtroEmpresa !== "todas" ? { tenant_id: filtroEmpresa } : {}),
     limite: 200,
   };
+
   const { data: facturas = [], isPending } = useFacturas(filtro);
 
   const [verId, setVerId] = React.useState<string | null>(null);
@@ -847,6 +935,16 @@ function BloqueFacturas() {
           onChange={setFiltroProyecto}
           opciones={[{ valor: "todos", texto: "Todos" }, ...proyectos.map((p) => ({ valor: p.id, texto: p.nombre }))]}
         />
+        <Selector
+          etiqueta="Empresa"
+          valor={filtroEmpresa}
+          onChange={setFiltroEmpresa}
+          opciones={[
+            { valor: "todas", texto: "Todas" },
+            ...catalogo.map((e) => ({ valor: e.tenant_id, texto: e.nombre })),
+          ]}
+        />
+
         <Boton
           className="ml-auto"
           variante="suave"
@@ -872,8 +970,10 @@ function BloqueFacturas() {
               <th className="p-3">Fecha</th>
               <th className="p-3">Proyecto</th>
               <th className="p-3">Cliente</th>
+              <th className="p-3">Empresa</th>
               <th className="p-3 text-right">Base</th>
               <th className="p-3 text-right">Total</th>
+
               <th className="p-3 text-right">Pendiente</th>
               <th className="p-3">Estado</th>
               <th className="p-3" />
@@ -882,13 +982,13 @@ function BloqueFacturas() {
           <tbody>
             {isPending ? (
               <tr>
-                <td colSpan={9} className="p-4 text-muted-foreground">
+                <td colSpan={10} className="p-4 text-muted-foreground">
                   Cargando facturas...
                 </td>
               </tr>
             ) : facturas.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-4 text-muted-foreground">
+                <td colSpan={10} className="p-4 text-muted-foreground">
                   Todavía no hay facturas en EvoluteIA para estos filtros.
                 </td>
               </tr>
@@ -907,6 +1007,10 @@ function BloqueFacturas() {
                   <td className="p-3 text-muted-foreground">{f.fecha ? formatoFecha(f.fecha) : "—"}</td>
                   <td className="p-3">{f.proyectos?.nombre ?? proyectos.find((p) => p.id === f.proyecto_id)?.nombre ?? "—"}</td>
                   <td className="p-3">{f.cliente ?? "—"}</td>
+                  <td className="p-3">
+                    <InsigniaEmpresa nombre={f.empresa} corto />
+                  </td>
+
                   <td className="p-3 text-right tabular-nums">{formatoDinero(Number(f.base ?? 0))}</td>
                   <td className="p-3 text-right tabular-nums">{formatoDinero(Number(f.total ?? 0))}</td>
                   <td className={`p-3 text-right tabular-nums ${f.vencido ? "text-destructive" : ""}`}>
@@ -972,7 +1076,7 @@ function BloqueFacturas() {
                 const r = await emitir.mutateAsync({ documento_id: emitirId });
                 setEmitirId(null);
                 toast.success(
-                  `Factura ${r.numero ?? ""} emitida${r.verifactu ? " y registrada en Verifactu" : " (sin Verifactu)"}.`,
+                  `Factura ${r.numero ?? ""} emitida desde ${r.empresa ?? "la empresa por defecto"}${r.verifactu ? " y registrada en Verifactu" : " (sin Verifactu)"}.`,
                 );
               } catch (e) {
                 toast.error((e as Error).message);
@@ -1312,8 +1416,12 @@ function DialogoPreparar({
 function BloqueClientes() {
   const { data: proyectos = [] } = useProyectos();
   const { data: clientes = [] } = useClientesFacturacion();
+  const { catalogo, porDefecto } = useEmpresasEmisoras();
   const sugerir = useSugerirEnlaces();
   const [sugerencias, setSugerencias] = React.useState<SugerenciaEnlace[] | null>(null);
+  const [empresaSugerir, setEmpresaSugerir] = React.useState<string>("");
+
+  const tenantSugerir = empresaSugerir || porDefecto?.tenant_id || "";
 
   return (
     <div className="space-y-4">
@@ -1321,23 +1429,44 @@ function BloqueClientes() {
         <p className="text-sm text-muted-foreground">
           Cada proyecto se enlaza con un cliente («tercero») de EvoluteIA. Los datos fiscales se leen de EvoluteIA.
         </p>
-        <Boton
-          className="ml-auto"
-          variante="suave"
-          disabled={sugerir.isPending}
-          onClick={async () => {
-            try {
-              setSugerencias(await sugerir.mutateAsync());
-            } catch (e) {
-              toast.error((e as Error).message);
-            }
-          }}
-        >
-          <Wand2 className="size-3.5" /> Sugerir enlaces
-        </Boton>
+        <div className="ml-auto flex flex-wrap items-end gap-2">
+          <Campo etiqueta="Buscar en">
+            <select
+              value={tenantSugerir}
+              onChange={(e) => setEmpresaSugerir(e.target.value)}
+              className={claseCampo}
+            >
+              {catalogo.map((e) => (
+                <option key={e.tenant_id} value={e.tenant_id}>
+                  {e.nombre}
+                </option>
+              ))}
+            </select>
+          </Campo>
+          <Boton
+            variante="suave"
+            disabled={sugerir.isPending}
+            onClick={async () => {
+              try {
+                setSugerencias(await sugerir.mutateAsync(tenantSugerir || null));
+              } catch (e) {
+                toast.error((e as Error).message);
+              }
+            }}
+          >
+            <Wand2 className="size-3.5" /> Sugerir enlaces
+          </Boton>
+        </div>
       </div>
 
-      {sugerencias ? <PanelSugerencias sugerencias={sugerencias} onCerrar={() => setSugerencias(null)} /> : null}
+      {sugerencias ? (
+        <PanelSugerencias
+          sugerencias={sugerencias}
+          tenantId={tenantSugerir || null}
+          onCerrar={() => setSugerencias(null)}
+        />
+      ) : null}
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         {proyectos.map((p) => (
@@ -1348,8 +1477,17 @@ function BloqueClientes() {
   );
 }
 
-function PanelSugerencias({ sugerencias, onCerrar }: { sugerencias: SugerenciaEnlace[]; onCerrar: () => void }) {
+function PanelSugerencias({
+  sugerencias,
+  tenantId,
+  onCerrar,
+}: {
+  sugerencias: SugerenciaEnlace[];
+  tenantId: string | null;
+  onCerrar: () => void;
+}) {
   const enlazar = useEnlazarCliente();
+
 
   return (
     <div className="panel p-4">
@@ -1382,6 +1520,8 @@ function PanelSugerencias({ sugerencias, onCerrar }: { sugerencias: SugerenciaEn
                             proyecto_id: s.proyecto_id,
                             tercero_id: c.id,
                             contrato: "horas",
+                            ...(tenantId ? { tenant_id: tenantId } : {}),
+
                           });
                           toast.success("Proyecto enlazado con EvoluteIA.");
                         } catch (e) {
@@ -1402,17 +1542,27 @@ function PanelSugerencias({ sugerencias, onCerrar }: { sugerencias: SugerenciaEn
   );
 }
 
-function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente: FacturacionClienteRow | null }) {
+function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente: ClienteFacturacion | null }) {
   const [abierto, setAbierto] = React.useState(false);
+  const [cambiar, setCambiar] = React.useState(false);
   const desenlazar = useDesenlazarCliente();
+  const cambiarEmpresa = useCambiarEmpresaCliente();
+  const { catalogo } = useEmpresasEmisoras();
   const enlazado = Boolean(cliente?.tercero_id);
+  const empresaActual = catalogo.find((e) => e.tenant_id === cliente?.evoluteia_tenant_id) ?? null;
+  const otraEmpresa = catalogo.find((e) => e.tenant_id !== empresaActual?.tenant_id) ?? null;
 
   return (
+
     <div className="panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-sm font-semibold">{proyecto.nombre}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-sm font-semibold">{proyecto.nombre}</h2>
+            {enlazado ? <InsigniaEmpresa nombre={empresaActual?.nombre} corto /> : null}
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
+
             {enlazado ? (
               <>
                 {cliente?.nombre_fiscal ?? "Cliente de EvoluteIA"}
@@ -1432,7 +1582,13 @@ function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente:
           <Boton variante="suave" onClick={() => setAbierto(true)}>
             <Link2 className="size-3.5" /> {enlazado ? "Cambiar enlace" : "Enlazar con EvoluteIA"}
           </Boton>
+          {enlazado && otraEmpresa ? (
+            <Boton variante="suave" onClick={() => setCambiar(true)}>
+              <Building2 className="size-3.5" /> Cambiar empresa
+            </Boton>
+          ) : null}
           {enlazado ? (
+
             <Boton
               variante="peligro"
               disabled={desenlazar.isPending}
@@ -1474,6 +1630,42 @@ function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente:
         abierto={abierto}
         onCerrar={() => setAbierto(false)}
       />
+
+      <Dialogo
+        abierto={cambiar}
+        titulo="Cambiar la empresa emisora"
+        descripcion={`«${proyecto.nombre}» pasará a facturarse desde ${otraEmpresa?.nombre ?? "la otra empresa"}. Buscaremos el mismo cliente por su NIF en esa empresa.`}
+        onCerrar={() => setCambiar(false)}
+        ancho="max-w-md"
+      >
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{AVISO_EMPRESAS_PERMITIDAS}</p>
+          <div className="flex justify-end gap-2">
+            <Boton variante="suave" onClick={() => setCambiar(false)}>
+              Cancelar
+            </Boton>
+            <Boton
+              disabled={!otraEmpresa || cambiarEmpresa.isPending}
+              onClick={async () => {
+                if (!otraEmpresa) return;
+                try {
+                  const r = await cambiarEmpresa.mutateAsync({
+                    proyecto_id: proyecto.id,
+                    tenant_id: otraEmpresa.tenant_id,
+                  });
+                  setCambiar(false);
+                  if (r.aviso) toast.warning(r.aviso);
+                  else toast.success(`Ahora se factura desde ${r.empresa ?? otraEmpresa.nombre}.`);
+                } catch (e) {
+                  toast.error((e as Error).message);
+                }
+              }}
+            >
+              Cambiar empresa
+            </Boton>
+          </div>
+        </div>
+      </Dialogo>
     </div>
   );
 }
@@ -1485,12 +1677,14 @@ function DialogoEnlazar({
   onCerrar,
 }: {
   proyecto: ProyectoRow;
-  cliente: FacturacionClienteRow | null;
+  cliente: ClienteFacturacion | null;
   abierto: boolean;
   onCerrar: () => void;
 }) {
+  const { catalogo, porDefecto } = useEmpresasEmisoras();
   const [modo, setModo] = React.useState<"buscar" | "crear">("buscar");
   const [busqueda, setBusqueda] = React.useState("");
+  const [tenantId, setTenantId] = React.useState<string>(cliente?.evoluteia_tenant_id ?? "");
   const [terceroId, setTerceroId] = React.useState<string | null>(cliente?.tercero_id ?? null);
   const [contratoId, setContratoId] = React.useState<string>(cliente?.contrato_id ?? "");
   const [contrato, setContrato] = React.useState<ContratoCliente>((cliente?.contrato ?? "horas") as ContratoCliente);
@@ -1501,10 +1695,16 @@ function DialogoEnlazar({
   const [refacturarIa, setRefacturarIa] = React.useState(cliente?.refacturar_ia ?? true);
   const [nuevo, setNuevo] = React.useState({ razon_social: "", nif: "", email: "", telefono: "", poblacion: "" });
 
-  const { data: terceros = [], isFetching } = useTercerosEvoluteia(busqueda, abierto && modo === "buscar");
-  const { data: contratos = [] } = useContratosEvoluteia(abierto ? terceroId : null);
+  const tenantElegido = tenantId || porDefecto?.tenant_id || "";
+  const { data: terceros = [], isFetching } = useTercerosEvoluteia(
+    busqueda,
+    abierto && modo === "buscar",
+    tenantElegido || null,
+  );
+  const { data: contratos = [] } = useContratosEvoluteia(abierto ? terceroId : null, tenantElegido || null);
   const crear = useCrearTercero();
   const enlazar = useEnlazarCliente();
+
 
   const numero = (v: string) => (v.trim() === "" ? null : Number(v));
 
@@ -1517,7 +1717,27 @@ function DialogoEnlazar({
       ancho="max-w-3xl"
     >
       <div className="space-y-4">
+        <Campo etiqueta="Facturar desde" pista={AVISO_EMPRESAS_PERMITIDAS}>
+          <select
+            value={tenantElegido}
+            onChange={(e) => {
+              setTenantId(e.target.value);
+              setTerceroId(null);
+              setContratoId("");
+            }}
+            className={claseCampo}
+          >
+            {catalogo.map((e) => (
+              <option key={e.tenant_id} value={e.tenant_id}>
+                {e.nombre}
+                {e.por_defecto ? " (por defecto)" : ""}
+              </option>
+            ))}
+          </select>
+        </Campo>
+
         <div className="flex gap-2">
+
           {(["buscar", "crear"] as const).map((m) => (
             <button
               key={m}
@@ -1603,6 +1823,8 @@ function DialogoEnlazar({
                   try {
                     const r = await crear.mutateAsync({
                       razon_social: nuevo.razon_social,
+                      ...(tenantElegido ? { tenant_id: tenantElegido } : {}),
+
                       ...(nuevo.nif ? { nif: nuevo.nif } : {}),
                       ...(nuevo.email ? { email: nuevo.email } : {}),
                       ...(nuevo.telefono ? { telefono: nuevo.telefono } : {}),
@@ -1682,6 +1904,8 @@ function DialogoEnlazar({
                   importe_fijo: numero(importeFijo),
                   tarifa_hora: numero(tarifa),
                   refacturar_ia: refacturarIa,
+                  ...(tenantElegido ? { tenant_id: tenantElegido } : {}),
+
                 });
                 toast.success("Proyecto enlazado con EvoluteIA.");
                 onCerrar();
@@ -1709,6 +1933,171 @@ export function TarjetaSoloFabricante() {
     </div>
   );
 }
+
+/** Las dos empresas que pueden facturar, con su serie, Verifactu y semáforo del módulo. */
+function BloqueEmpresasEmisoras() {
+  const { data: opciones, refetch, isFetching } = useEmpresasEvoluteia();
+  const configurar = useConfigurarEmpresa();
+  const probar = useProbarEvoluteia();
+  const [prueba, setPrueba] = React.useState<PruebaEvoluteia | null>(null);
+
+  const catalogo = opciones?.catalogo ?? [];
+  const detalle = (tenantId: string) => prueba?.empresas?.find((e) => e.tenant_id === tenantId) ?? null;
+
+  return (
+    <div className="panel p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold">Empresas emisoras</h2>
+        <div className="flex flex-wrap gap-2">
+          <Boton
+            variante="suave"
+            disabled={probar.isPending}
+            onClick={async () => {
+              try {
+                setPrueba(await probar.mutateAsync());
+                toast.success("Comprobadas las dos empresas en EvoluteIA.");
+              } catch (e) {
+                toast.error((e as Error).message);
+              }
+            }}
+          >
+            <ShieldCheck className="size-3.5" /> Comprobar
+          </Boton>
+          <Boton
+            variante="suave"
+            disabled={isFetching}
+            onClick={async () => {
+              await refetch();
+              toast.success("Catálogo actualizado desde EvoluteIA.");
+            }}
+          >
+            <RefreshCw className="size-3.5" /> Refrescar desde EvoluteIA
+          </Boton>
+        </div>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">{AVISO_EMPRESAS_PERMITIDAS}</p>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {catalogo.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Todavía no se ha traído el catálogo. Pulsa «Refrescar desde EvoluteIA».
+          </p>
+        ) : (
+          catalogo.map((e) => {
+            const d = detalle(e.tenant_id);
+            return (
+              <div key={e.tenant_id} className="rounded-lg border border-border p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <InsigniaEmpresa nombre={e.nombre} />
+                  {d ? (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${
+                        d.modulo_activo
+                          ? "border-success/40 bg-success/10 text-success"
+                          : "border-destructive/40 bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      <span className={`size-1.5 rounded-full ${d.modulo_activo ? "bg-success" : "bg-destructive"}`} />
+                      {d.modulo_activo ? "Módulo activo" : "Módulo no activo"}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {d?.empresa?.razon_social ?? e.nombre}
+                  {(d?.empresa?.nif ?? e.nif) ? ` · ${d?.empresa?.nif ?? e.nif}` : ""}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Serie {d?.serie?.codigo ?? "—"} · siguiente número {d?.serie?.siguiente_num ?? "—"}
+                  {d?.serie?.ejercicio ? ` (${d.serie.ejercicio})` : ""}
+                </p>
+                <p className="mt-1 text-xs">
+                  <span className="text-muted-foreground">Verifactu:</span>{" "}
+                  {d?.empresa?.verifactu_activo ? (
+                    <span className="text-success">
+                      activo{d.empresa.verifactu_modo ? ` (${d.empresa.verifactu_modo})` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-warning">no activo</span>
+                  )}
+                </p>
+                {d?.error ? <p className="mt-1 text-xs text-destructive">{d.error}</p> : null}
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <SelectorEmpresa
+                    etiqueta="Sede"
+                    valor={e.sede_id ?? ""}
+                    lista={opciones?.sedes ?? []}
+                    onChange={(v) => configurar.mutate({ tenant_id: e.tenant_id, sede_id: v || null })}
+                  />
+                  <SelectorEmpresa
+                    etiqueta="Forma de pago"
+                    valor={e.forma_pago_id ?? ""}
+                    lista={opciones?.formas_pago ?? []}
+                    onChange={(v) => configurar.mutate({ tenant_id: e.tenant_id, forma_pago_id: v || null })}
+                  />
+                  <SelectorEmpresa
+                    etiqueta="Impuesto"
+                    valor={e.impuesto_id ?? ""}
+                    lista={opciones?.impuestos ?? []}
+                    onChange={(v) => configurar.mutate({ tenant_id: e.tenant_id, impuesto_id: v || null })}
+                  />
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="empresa-por-defecto"
+                      checked={Boolean(e.por_defecto)}
+                      disabled={configurar.isPending}
+                      onChange={() => configurar.mutate({ tenant_id: e.tenant_id, por_defecto: true })}
+                    />
+                    Por defecto
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={e.activa !== false}
+                      disabled={configurar.isPending}
+                      onChange={(ev) => configurar.mutate({ tenant_id: e.tenant_id, activa: ev.target.checked })}
+                    />
+                    Activa
+                  </label>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SelectorEmpresa({
+  etiqueta,
+  valor,
+  lista,
+  onChange,
+}: {
+  etiqueta: string;
+  valor: string;
+  lista: { id: string; nombre?: string; razon_social?: string; codigo?: string }[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Campo etiqueta={etiqueta}>
+      <select value={valor} onChange={(e) => onChange(e.target.value)} className={claseCampo}>
+        <option value="">Sin elegir</option>
+        {lista.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.nombre ?? o.razon_social ?? o.codigo ?? o.id}
+          </option>
+        ))}
+      </select>
+    </Campo>
+  );
+}
+
 
 function BloqueConfiguracion() {
   const { data: config } = useFacturacionConfig();
@@ -1771,6 +2160,10 @@ function BloqueConfiguracion() {
   return (
     <div className="space-y-4">
       <TarjetaSoloFabricante />
+
+      <BloqueEmpresasEmisoras />
+
+
 
       <div className="panel p-4">
         <h2 className="font-display text-sm font-semibold">Horas y gasto de IA</h2>
@@ -1926,12 +2319,16 @@ export function TarjetaFacturacionProyecto({ proyectoId }: { proyectoId: string 
 
   return (
     <div className="panel p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-sm font-semibold">Facturación</h2>
-        <span className="text-xs text-muted-foreground">
-          {ETIQUETA_CONTRATO[(cliente?.contrato ?? fila?.contrato ?? "horas") as ContratoCliente]}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <InsigniaEmpresa nombre={fila?.empresa} corto />
+          <span className="text-xs text-muted-foreground">
+            {ETIQUETA_CONTRATO[(cliente?.contrato ?? fila?.contrato ?? "horas") as ContratoCliente]}
+          </span>
+        </div>
       </div>
+
       <p className="mt-2 text-xs">
         {enlazado ? (
           <span className="text-muted-foreground">
