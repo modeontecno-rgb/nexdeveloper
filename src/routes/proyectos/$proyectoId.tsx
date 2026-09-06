@@ -322,6 +322,24 @@ function BloqueMensajes({ proyectoId }: { proyectoId: string }) {
   );
 }
 
+function ChipVigilancia({ proyectoId }: { proyectoId: string }) {
+  const { data: hallazgos = [] } = useVigilanciaHallazgos();
+  const nuevos = hallazgos.filter((h) => h.proyecto_id === proyectoId && h.estado === "nuevo");
+  if (nuevos.length === 0) return null;
+  const alta = nuevos.some((h) => h.relevancia === "alta");
+  return (
+    <Link
+      to="/vigilancia"
+      search={{ proyecto: proyectoId }}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition hover:opacity-80 ${
+        alta ? "border-warning/40 bg-warning/10 text-warning" : "border-border bg-surface text-muted-foreground"
+      }`}
+    >
+      {nuevos.length} novedad{nuevos.length === 1 ? "" : "es"}
+    </Link>
+  );
+}
+
 function ChipDominios({ proyectoId }: { proyectoId: string }) {
   const { data: dominios = [] } = useDominios();
   const propios = dominios.filter((d) => d.proyecto_id === proyectoId);

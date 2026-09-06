@@ -132,7 +132,23 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("bandeja_entradas"),
         verificarTabla("bandeja_fuentes"),
         verificarFuncion("bandeja"),
+        verificarTabla("vigilancia_config"),
+        verificarTabla("vigilancia_lotes"),
+        verificarTabla("vigilancia_hallazgos"),
+        verificarTabla("competidores"),
+        verificarFuncion("vigilar"),
+        verificarTabla("resumenes"),
+        verificarTabla("resumenes_config"),
+        verificarFuncion("resumenes"),
       ]);
+      const pingVigilar = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("vigilar", { body: {} });
+          return (data as { buscador?: string | null } | null)?.buscador ?? null;
+        } catch {
+          return null;
+        }
+      })();
       const pingBandeja = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("bandeja", { body: {} });
