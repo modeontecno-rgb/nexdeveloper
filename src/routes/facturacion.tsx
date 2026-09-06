@@ -407,7 +407,9 @@ function BloqueResumen({ mes, onIrAClientes }: { mes: string; onIrAClientes: () 
             <tr className="border-b border-border">
               <th className="p-3">Proyecto</th>
               <th className="p-3">Cliente en EvoluteIA</th>
+              <th className="p-3">Empresa</th>
               <th className="p-3">Contrato</th>
+
               <th className="p-3 text-right">Horas</th>
               <th className="p-3 text-right">Sin facturar</th>
               <th className="p-3 text-right">Facturado</th>
