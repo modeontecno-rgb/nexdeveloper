@@ -1555,8 +1555,12 @@ function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente:
     <div className="panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-sm font-semibold">{proyecto.nombre}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-sm font-semibold">{proyecto.nombre}</h2>
+            {enlazado ? <InsigniaEmpresa nombre={empresaActual?.nombre} corto /> : null}
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
+
             {enlazado ? (
               <>
                 {cliente?.nombre_fiscal ?? "Cliente de EvoluteIA"}
