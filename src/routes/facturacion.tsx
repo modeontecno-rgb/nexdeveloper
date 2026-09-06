@@ -1628,11 +1628,48 @@ function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente:
         abierto={abierto}
         onCerrar={() => setAbierto(false)}
       />
+
+      <Dialogo
+        abierto={cambiar}
+        titulo="Cambiar la empresa emisora"
+        descripcion={`«${proyecto.nombre}» pasará a facturarse desde ${otraEmpresa?.nombre ?? "la otra empresa"}. Buscaremos el mismo cliente por su NIF en esa empresa.`}
+        onCerrar={() => setCambiar(false)}
+        ancho="max-w-md"
+      >
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{AVISO_EMPRESAS_PERMITIDAS}</p>
+          <div className="flex justify-end gap-2">
+            <Boton variante="suave" onClick={() => setCambiar(false)}>
+              Cancelar
+            </Boton>
+            <Boton
+              disabled={!otraEmpresa || cambiarEmpresa.isPending}
+              onClick={async () => {
+                if (!otraEmpresa) return;
+                try {
+                  const r = await cambiarEmpresa.mutateAsync({
+                    proyecto_id: proyecto.id,
+                    tenant_id: otraEmpresa.tenant_id,
+                  });
+                  setCambiar(false);
+                  if (r.aviso) toast.warning(r.aviso);
+                  else toast.success(`Ahora se factura desde ${r.empresa ?? otraEmpresa.nombre}.`);
+                } catch (e) {
+                  toast.error((e as Error).message);
+                }
+              }}
+            >
+              Cambiar empresa
+            </Boton>
+          </div>
+        </div>
+      </Dialogo>
     </div>
   );
 }
 
 function DialogoEnlazar({
+
   proyecto,
   cliente,
   abierto,
