@@ -113,6 +113,10 @@ function Ajustes() {
           <p className="mt-2 text-sm text-muted-foreground">NexDeveloper {VERSION_APP}</p>
         </section>
 
+        <AccesosRapidosMovil />
+
+
+
         <section className="panel p-5">
           <h2 className="font-display text-sm font-semibold">Aprobaciones</h2>
           <div className="mt-4 space-y-4">
