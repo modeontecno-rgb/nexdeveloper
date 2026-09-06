@@ -424,13 +424,13 @@ function BloqueResumen({ mes, onIrAClientes }: { mes: string; onIrAClientes: () 
           <tbody>
             {isPending ? (
               <tr>
-                <td colSpan={12} className="p-4 text-muted-foreground">
+                <td colSpan={13} className="p-4 text-muted-foreground">
                   Cargando cifras...
                 </td>
               </tr>
             ) : proyectos.length === 0 ? (
               <tr>
-                <td colSpan={12} className="p-4 text-muted-foreground">
+                <td colSpan={13} className="p-4 text-muted-foreground">
                   Todavía no hay movimientos este mes.
                 </td>
               </tr>
