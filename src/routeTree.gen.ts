@@ -28,6 +28,7 @@ import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as GastoIaRouteImport } from './routes/gasto-ia'
 import { Route as HabilidadesRouteImport } from './routes/habilidades'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
+import { Route as ManualesRouteImport } from './routes/manuales'
 import { Route as MesaRouteImport } from './routes/mesa'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
@@ -37,6 +38,7 @@ import { Route as SaludRouteImport } from './routes/salud'
 import { Route as VigilanciaRouteImport } from './routes/vigilancia'
 import { Route as VozRouteImport } from './routes/voz'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
+import { Route as ManualesManualIdRouteImport } from './routes/manuales_.$manualId'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
 import { Route as AjustesProveedoresCanvaRetornoRouteImport } from './routes/ajustes_.proveedores.canva.retorno'
@@ -136,6 +138,11 @@ const IntegracionesRoute = IntegracionesRouteImport.update({
   path: '/integraciones',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManualesRoute = ManualesRouteImport.update({
+  id: '/manuales',
+  path: '/manuales',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MesaRoute = MesaRouteImport.update({
   id: '/mesa',
   path: '/mesa',
@@ -181,6 +188,11 @@ const AjustesProveedoresRoute = AjustesProveedoresRouteImport.update({
   path: '/ajustes/proveedores',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManualesManualIdRoute = ManualesManualIdRouteImport.update({
+  id: '/manuales_/$manualId',
+  path: '/manuales/$manualId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProyectosIndexRoute = ProyectosIndexRouteImport.update({
   id: '/proyectos/',
   path: '/proyectos/',
@@ -218,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
+  '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -227,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/manuales/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
   '/ajustes/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
@@ -251,6 +265,7 @@ export interface FileRoutesByTo {
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
+  '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -260,6 +275,7 @@ export interface FileRoutesByTo {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/manuales/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
   '/ajustes/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
@@ -285,6 +301,7 @@ export interface FileRoutesById {
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
+  '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -294,6 +311,7 @@ export interface FileRoutesById {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/manuales_/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
   '/ajustes_/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
@@ -320,6 +338,7 @@ export interface FileRouteTypes {
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
+    | '/manuales'
     | '/mesa'
     | '/nueva-orden'
     | '/referencia'
@@ -329,6 +348,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
+    | '/manuales/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
     | '/ajustes/proveedores/canva/retorno'
@@ -353,6 +373,7 @@ export interface FileRouteTypes {
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
+    | '/manuales'
     | '/mesa'
     | '/nueva-orden'
     | '/referencia'
@@ -362,6 +383,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
+    | '/manuales/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos'
     | '/ajustes/proveedores/canva/retorno'
@@ -386,6 +408,7 @@ export interface FileRouteTypes {
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
+    | '/manuales'
     | '/mesa'
     | '/nueva-orden'
     | '/referencia'
@@ -395,6 +418,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes_/proveedores'
+    | '/manuales_/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
     | '/ajustes_/proveedores/canva/retorno'
@@ -420,6 +444,7 @@ export interface RootRouteChildren {
   GastoIaRoute: typeof GastoIaRoute
   HabilidadesRoute: typeof HabilidadesRoute
   IntegracionesRoute: typeof IntegracionesRoute
+  ManualesRoute: typeof ManualesRoute
   MesaRoute: typeof MesaRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
@@ -429,6 +454,7 @@ export interface RootRouteChildren {
   VigilanciaRoute: typeof VigilanciaRoute
   VozRoute: typeof VozRoute
   AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
+  ManualesManualIdRoute: typeof ManualesManualIdRoute
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
 }
@@ -568,6 +594,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IntegracionesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manuales': {
+      id: '/manuales'
+      path: '/manuales'
+      fullPath: '/manuales'
+      preLoaderRoute: typeof ManualesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mesa': {
       id: '/mesa'
       path: '/mesa'
@@ -631,6 +664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AjustesProveedoresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manuales_/$manualId': {
+      id: '/manuales_/$manualId'
+      path: '/manuales/$manualId'
+      fullPath: '/manuales/$manualId'
+      preLoaderRoute: typeof ManualesManualIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/proyectos/': {
       id: '/proyectos/'
       path: '/proyectos'
@@ -686,6 +726,7 @@ const rootRouteChildren: RootRouteChildren = {
   GastoIaRoute: GastoIaRoute,
   HabilidadesRoute: HabilidadesRoute,
   IntegracionesRoute: IntegracionesRoute,
+  ManualesRoute: ManualesRoute,
   MesaRoute: MesaRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,
@@ -695,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   VigilanciaRoute: VigilanciaRoute,
   VozRoute: VozRoute,
   AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
+  ManualesManualIdRoute: ManualesManualIdRoute,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
 }

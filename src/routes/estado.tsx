@@ -142,6 +142,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAsistenteConversaciones,
         tablaAsistenteMensajes,
         funcionAsistente,
+        tablaManuales,
+        tablaManualesConfig,
+        funcionManuales,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -217,6 +220,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("asistente_conversaciones"),
         verificarTabla("asistente_mensajes"),
         verificarFuncion("asistente"),
+        verificarTabla("manuales"),
+        verificarTabla("manuales_config"),
+        verificarFuncion("manuales"),
       ]);
       const pingMesa = await (async () => {
         try {
@@ -370,6 +376,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAsistenteConversaciones,
         tablaAsistenteMensajes,
         funcionAsistente,
+        tablaManuales,
+        tablaManualesConfig,
+        funcionManuales,
       };
 
     },
@@ -505,6 +514,33 @@ function EstadoSistema() {
         : verificaciones.data?.funcionAsistente
           ? "Conectado / OK"
           : "No responde o falta (migración 024)",
+    },
+    {
+      nombre: "Manuales",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaManuales ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaManuales
+          ? "Conectado / OK"
+          : "No responde o falta (migración 025)",
+    },
+    {
+      nombre: "Configuración de manuales",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaManualesConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaManualesConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 025)",
+    },
+    {
+      nombre: "Servicio de manuales",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionManuales ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionManuales
+          ? "Conectado / OK"
+          : "No responde o falta (migración 025)",
     },
     {
       nombre: "Aplicación instalable",

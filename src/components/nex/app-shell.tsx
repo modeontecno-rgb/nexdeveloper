@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  BookOpenText,
   Activity,
   BookMarked,
   BookOpen,
@@ -53,6 +54,7 @@ const NAVEGACION = [
   { to: "/bandeja", etiqueta: "Bandeja", icono: Inbox },
   { to: "/resumenes", etiqueta: "Resúmenes", icono: Newspaper },
   { to: "/documentacion", etiqueta: "Documentación", icono: BookMarked },
+  { to: "/manuales", etiqueta: "Manuales", icono: BookOpenText },
   { to: "/voz", etiqueta: "Voz y demos", icono: Clapperboard },
 
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },

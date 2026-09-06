@@ -1,5 +1,19 @@
 # Historial de cambios
 
+## 0.25.0 — 6 de septiembre de 2026 — Generador de manuales
+
+- Nueva pantalla «Manuales»: NexDeveloper recorre las pantallas de un proyecto, las captura y redacta el manual entero por ti.
+- Puedes elegir a quién va dirigido: usuario final, administrador o comercial, con el título y la versión que quieras.
+- Mientras se escribe ves el avance en directo: leyendo pantallas, índice, redactando capítulo a capítulo, componiendo y publicado.
+- Cada manual queda guardado en el almacén (carpeta 03-MANUALES), registrado en Proyectian y visible en Documentación como un documento más.
+- Desde la lista puedes ver el manual, guardarlo como PDF (se abre y se imprime), descargarlo en Markdown, regenerarlo con la versión actual o borrarlo, con filtros por proyecto y por público.
+- Editor del manual: vista previa a la izquierda y, a la derecha, los capítulos con su captura para cambiar el título, reescribir el texto, poner otra imagen o volver a redactar solo ese capítulo.
+- Configuración propia: estilo claro o técnico, capturas sí o no, servicio de capturas y número máximo de capítulos.
+- Cada semana se regeneran solos los manuales de los proyectos que hayan cambiado de versión (puedes desactivarlo).
+- En la ficha de cada proyecto tienes el botón «Generar manual» y el último manual a mano; y al cerrar una versión puedes pedir que se rehaga el manual de usuario con la versión nueva.
+- Nuevos semáforos de los manuales en «Estado del sistema».
+
+
 ## 0.24.0 — 6 de septiembre de 2026 — Asistente de cartera
 
 - Nueva pantalla «Asistente»: un chat dentro de NexDeveloper que conoce todos tus proyectos y te responde con cifras reales.
