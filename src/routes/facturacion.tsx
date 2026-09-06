@@ -114,6 +114,32 @@ const PESTANAS: { valor: Pestana; texto: string }[] = [
 
 const URL_EVOLUTEIA_POR_DEFECTO = "https://evoluteia.lovable.app";
 
+/* ---------------------------- Empresas emisoras --------------------------- */
+
+/** Catálogo de las dos empresas que pueden facturar y cuál es la de por defecto. */
+function useEmpresasEmisoras() {
+  const { data } = useEmpresasEvoluteia();
+  const catalogo = React.useMemo<EmpresaEmisora[]>(() => data?.catalogo ?? [], [data]);
+  const porDefecto = catalogo.find((e) => e.por_defecto) ?? catalogo[0] ?? null;
+  return { catalogo, porDefecto, opciones: data };
+}
+
+/** Insignia con la empresa emisora, con un color propio para cada una. */
+function InsigniaEmpresa({ nombre, corto }: { nombre?: string | null; corto?: boolean }) {
+  if (!nombre) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <span
+      title={nombre}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs whitespace-nowrap ${tonoEmpresa(nombre)}`}
+    >
+      <span className="size-1.5 rounded-full bg-current" aria-hidden />
+      {corto ? nombreCortoEmpresa(nombre) : nombre}
+    </span>
+  );
+}
+
+
+
 function Cifra({
   titulo,
   valor,
