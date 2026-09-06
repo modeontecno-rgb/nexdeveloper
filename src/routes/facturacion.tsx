@@ -21,10 +21,11 @@ import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
 import { BotonCronometroProyecto } from "@/components/nex/cronometro";
 import { Dialogo } from "@/components/nex/dialogo";
-import type { ContratoCliente, FacturacionClienteRow, HoraRegistroRow, ProyectoRow } from "@/lib/nex/db-types";
+import type { ContratoCliente, HoraRegistroRow, ProyectoRow } from "@/lib/nex/db-types";
 import { formatoDinero, formatoFecha } from "@/lib/nex/labels";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
+  AVISO_EMPRESAS_PERMITIDAS,
   AVISO_SOLO_FABRICANTE,
   CONTRATOS,
   ESTADOS_FACTURA,
@@ -35,14 +36,18 @@ import {
   etiquetaEstadoFactura,
   formatoHoras,
   mesActualFacturacion,
+  nombreCortoEmpresa,
   nombreMesFacturacion,
   periodoMesAnterior,
+  tonoEmpresa,
   tonoEstadoFactura,
   transcurrido,
   ultimosMesesFacturacion,
   useActualizarHoras,
   useBorrarHoras,
+  useCambiarEmpresaCliente,
   useClientesFacturacion,
+  useConfigurarEmpresa,
   useContratosEvoluteia,
   useCrearTercero,
   useCronometro,
@@ -67,10 +72,13 @@ import {
   useSincronizarFacturas,
   useSugerirEnlaces,
   useTercerosEvoluteia,
+  type ClienteFacturacion,
+  type EmpresaEmisora,
   type PruebaEvoluteia,
   type SugerenciaEnlace,
   type TerceroEvoluteia,
 } from "@/lib/nex/queries/facturacion";
+
 
 export const Route = createFileRoute("/facturacion")({
   head: () => ({
