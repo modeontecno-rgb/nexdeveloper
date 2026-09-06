@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.31.0 — 6 de septiembre de 2026 — Mi IA
+
+- Botón «Pídeme qué quieres» arriba del todo en la pantalla de inicio: escribe o dicta lo que necesitas y NexDeveloper decide solo si es de un proyecto o algo personal, y actúa. Atajo de teclado Ctrl/Cmd + J.
+- Según lo que pidas te responde, te crea las tareas o te prepara una propuesta completa: resumen, recomendación con color, plan por pasos, requisitos, riesgos, decisiones que dependen de ti y la revisión de cada experto por áreas. Con un clic la apruebas (tal cual o con cambios) o la rechazas.
+- Si se equivoca de destino, «No es eso» lo corrige y puedes guardar la palabra que usaste como nombre alternativo del proyecto para que la reconozca la próxima vez.
+- Nueva pantalla «Pídeme qué quieres» con todo el historial, filtros y un apartado de propuestas pendientes (con contador rojo en el menú).
+- Nuevo apartado «Personal», completamente separado de los proyectos: pregunta a varias IA a la vez y te da la mejor respuesta combinando todas, indicando qué IA han contestado, cuánto han tardado y cuánto ha costado, con la opción de ver cada respuesta por separado y en qué no coinciden.
+- Desde cualquier conversación personal puedes crear un documento (informe, resumen, carta o lista): se guarda en tu carpeta PERSONAL, lo puedes ver, imprimir en PDF o abrir desde el almacén.
+- «Editor de estilo propio»: pega entre tres y seis textos tuyos y aprende cómo escribes; luego puedes reescribir cualquier texto con tu voz, con la guía de estilo de un cliente, o pedir al tutor de redacción que te diga qué mejorar sin escribirlo por ti.
+- Cada proyecto tiene ahora su «Guía de estilo para textos del cliente», que puedes escribir a mano o generar con IA.
+- Nuevo botón «Plaud»: conectas tu grabadora una vez y traes las grabaciones con un clic (o cada media hora automáticamente). Pasan por el mismo clasificador, con transcripción, resumen y las tareas que salgan de ahí.
+- El estado del sistema incluye los semáforos de todo lo nuevo.
+
 ## 0.30.0 — 6 de septiembre de 2026 — Control total de infraestructura
 
 - Nueva pantalla «Infraestructura»: un semáforo grande que dice de un vistazo si todo funciona, con Mapa, Servicios, Incidencias, Sincronización, Ideas y Configuración.
