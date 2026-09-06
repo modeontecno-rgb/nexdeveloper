@@ -14,6 +14,7 @@ import { TarjetaResumenHoy } from "@/routes/resumenes";
 import { TarjetaGastoIa } from "@/routes/gasto-ia";
 import { TarjetaSalud } from "@/routes/salud";
 import { TarjetaAuditoriaMes } from "@/routes/auditoria";
+import { ContadorPeticionesClientes } from "@/routes/modo-cliente";
 import { TarjetaAvisos } from "@/components/nex/tarjeta-avisos";
 import { CajaRapidaAsistente } from "@/routes/asistente";
 import {
@@ -216,6 +217,8 @@ function Inicio() {
           <TarjetaSalud />
 
           <TarjetaAuditoriaMes />
+
+          <ContadorPeticionesClientes />
 
           <TarjetaDominios dominios={dominios} />
 

@@ -31,6 +31,7 @@ import { Route as HabilidadesRouteImport } from './routes/habilidades'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
 import { Route as ManualesRouteImport } from './routes/manuales'
 import { Route as MesaRouteImport } from './routes/mesa'
+import { Route as ModoClienteRouteImport } from './routes/modo-cliente'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as RepositoriosRouteImport } from './routes/repositorios'
@@ -40,6 +41,7 @@ import { Route as UsuariosClientesRouteImport } from './routes/usuarios-clientes
 import { Route as VigilanciaRouteImport } from './routes/vigilancia'
 import { Route as VozRouteImport } from './routes/voz'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
+import { Route as ClienteTokenRouteImport } from './routes/cliente.$token'
 import { Route as ManualesManualIdRouteImport } from './routes/manuales_.$manualId'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
@@ -155,6 +157,11 @@ const MesaRoute = MesaRouteImport.update({
   path: '/mesa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModoClienteRoute = ModoClienteRouteImport.update({
+  id: '/modo-cliente',
+  path: '/modo-cliente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NuevaOrdenRoute = NuevaOrdenRouteImport.update({
   id: '/nueva-orden',
   path: '/nueva-orden',
@@ -198,6 +205,11 @@ const VozRoute = VozRouteImport.update({
 const AjustesProveedoresRoute = AjustesProveedoresRouteImport.update({
   id: '/ajustes_/proveedores',
   path: '/ajustes/proveedores',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClienteTokenRoute = ClienteTokenRouteImport.update({
+  id: '/cliente/$token',
+  path: '/cliente/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManualesManualIdRoute = ManualesManualIdRouteImport.update({
@@ -245,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/integraciones': typeof IntegracionesRoute
   '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
+  '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
@@ -254,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/cliente/$token': typeof ClienteTokenRoute
   '/manuales/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -282,6 +296,7 @@ export interface FileRoutesByTo {
   '/integraciones': typeof IntegracionesRoute
   '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
+  '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
@@ -291,6 +306,7 @@ export interface FileRoutesByTo {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/cliente/$token': typeof ClienteTokenRoute
   '/manuales/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
@@ -320,6 +336,7 @@ export interface FileRoutesById {
   '/integraciones': typeof IntegracionesRoute
   '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
+  '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
@@ -329,6 +346,7 @@ export interface FileRoutesById {
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
+  '/cliente/$token': typeof ClienteTokenRoute
   '/manuales_/$manualId': typeof ManualesManualIdRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -359,6 +377,7 @@ export interface FileRouteTypes {
     | '/integraciones'
     | '/manuales'
     | '/mesa'
+    | '/modo-cliente'
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
@@ -368,6 +387,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
+    | '/cliente/$token'
     | '/manuales/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -396,6 +416,7 @@ export interface FileRouteTypes {
     | '/integraciones'
     | '/manuales'
     | '/mesa'
+    | '/modo-cliente'
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
@@ -405,6 +426,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
+    | '/cliente/$token'
     | '/manuales/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos'
@@ -433,6 +455,7 @@ export interface FileRouteTypes {
     | '/integraciones'
     | '/manuales'
     | '/mesa'
+    | '/modo-cliente'
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
@@ -442,6 +465,7 @@ export interface FileRouteTypes {
     | '/vigilancia'
     | '/voz'
     | '/ajustes_/proveedores'
+    | '/cliente/$token'
     | '/manuales_/$manualId'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -471,6 +495,7 @@ export interface RootRouteChildren {
   IntegracionesRoute: typeof IntegracionesRoute
   ManualesRoute: typeof ManualesRoute
   MesaRoute: typeof MesaRoute
+  ModoClienteRoute: typeof ModoClienteRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
   RepositoriosRoute: typeof RepositoriosRoute
@@ -480,6 +505,7 @@ export interface RootRouteChildren {
   VigilanciaRoute: typeof VigilanciaRoute
   VozRoute: typeof VozRoute
   AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
+  ClienteTokenRoute: typeof ClienteTokenRoute
   ManualesManualIdRoute: typeof ManualesManualIdRoute
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
@@ -641,6 +667,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MesaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/modo-cliente': {
+      id: '/modo-cliente'
+      path: '/modo-cliente'
+      fullPath: '/modo-cliente'
+      preLoaderRoute: typeof ModoClienteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/nueva-orden': {
       id: '/nueva-orden'
       path: '/nueva-orden'
@@ -702,6 +735,13 @@ declare module '@tanstack/react-router' {
       path: '/ajustes/proveedores'
       fullPath: '/ajustes/proveedores'
       preLoaderRoute: typeof AjustesProveedoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cliente/$token': {
+      id: '/cliente/$token'
+      path: '/cliente/$token'
+      fullPath: '/cliente/$token'
+      preLoaderRoute: typeof ClienteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manuales_/$manualId': {
@@ -769,6 +809,7 @@ const rootRouteChildren: RootRouteChildren = {
   IntegracionesRoute: IntegracionesRoute,
   ManualesRoute: ManualesRoute,
   MesaRoute: MesaRoute,
+  ModoClienteRoute: ModoClienteRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,
   RepositoriosRoute: RepositoriosRoute,
@@ -778,6 +819,7 @@ const rootRouteChildren: RootRouteChildren = {
   VigilanciaRoute: VigilanciaRoute,
   VozRoute: VozRoute,
   AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
+  ClienteTokenRoute: ClienteTokenRoute,
   ManualesManualIdRoute: ManualesManualIdRoute,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,

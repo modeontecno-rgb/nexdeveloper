@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Link,
+  Outlet,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -138,6 +140,9 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const ruta = useRouterState({ select: (s) => s.location.pathname });
+  // El portal del cliente es público: ni menús, ni sesión, ni datos internos.
+  const esPortalCliente = ruta.startsWith("/cliente/");
 
   // Trabajador de segundo plano: solo en la aplicación publicada y en el navegador.
   useEffect(() => {
@@ -146,7 +151,13 @@ function RootComponent() {
     void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
   }, []);
 
-
+  if (esPortalCliente) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

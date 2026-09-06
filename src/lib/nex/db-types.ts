@@ -1551,6 +1551,62 @@ export type UsuarioAccionRow = {
   creado_el: string
 }
 
+/* ----------------------- Modo cliente / portales (0.28.0) ---------------- */
+
+export type MarcaPortal = {
+  nombre?: string
+  color?: string
+  logo_url?: string
+  powered_by?: string
+  mensaje_bienvenida?: string
+  email_contacto?: string
+}
+
+export type SeccionesPortal = {
+  version?: boolean
+  cambios?: boolean
+  documentos?: boolean
+  peticiones?: boolean
+  estado?: boolean
+  contacto?: boolean
+}
+
+export type PortalClienteRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  token: string
+  nombre_cliente: string | null
+  contacto_email: string | null
+  marca: MarcaPortal | null
+  secciones: SeccionesPortal | null
+  activo: boolean
+  expira_el: string | null
+  visitas: number
+  ultimo_acceso: string | null
+  creado_el: string
+  actualizado_el: string | null
+}
+
+export type TipoPeticionPortal = "peticion" | "incidencia" | "pregunta"
+export type EstadoPeticionPortal = "nueva" | "vista" | "en_curso" | "hecha" | "descartada"
+
+export type PortalPeticionRow = {
+  id: string
+  user_id: string
+  portal_id: string
+  proyecto_id: string
+  texto: string
+  contacto: string | null
+  tipo: TipoPeticionPortal
+  estado: EstadoPeticionPortal
+  respuesta: string | null
+  respondida_el: string | null
+  tarea_id: string | null
+  creado_el: string
+}
+
+
 
 
 
@@ -2068,6 +2124,16 @@ export type Database = {
         Partial<SinUsuario<UsuarioClienteRow>>
       >
       usuarios_acciones: Tabla<UsuarioAccionRow, Partial<SinUsuario<UsuarioAccionRow>> & { accion: string }>
+      portales_cliente: Tabla<
+        PortalClienteRow,
+        Partial<SinUsuario<PortalClienteRow>> & { proyecto_id: string; token: string },
+        Partial<SinUsuario<PortalClienteRow>>
+      >
+      portal_peticiones: Tabla<
+        PortalPeticionRow,
+        Partial<SinUsuario<PortalPeticionRow>> & { portal_id: string; proyecto_id: string; texto: string },
+        Partial<SinUsuario<PortalPeticionRow>>
+      >
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },
