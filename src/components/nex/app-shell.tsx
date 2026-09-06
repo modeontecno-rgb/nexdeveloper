@@ -59,6 +59,7 @@ const NAVEGACION = [
   { to: "/voz", etiqueta: "Voz y demos", icono: Clapperboard },
 
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },
+  { to: "/usuarios-clientes", etiqueta: "Usuarios de clientes", icono: Users },
   { to: "/nueva-orden", etiqueta: "Nueva orden", icono: Sparkle },
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },
   { to: "/ejecucion", etiqueta: "Ejecución", icono: Zap },

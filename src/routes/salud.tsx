@@ -17,6 +17,7 @@ import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
 import { BotonConvocarMesa } from "@/routes/mesa";
+import { ChipUsuariosInactivos } from "@/routes/usuarios-clientes";
 import type {
   AdvisorSalud,
   SaludConfigRow,
@@ -460,6 +461,10 @@ function TarjetaProyecto({ fila, onDetalle }: { fila: SaludProyectoRow; onDetall
           Último acceso {desde(fila.ultimo_acceso)}
         </p>
       ) : null}
+
+      <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+        <ChipUsuariosInactivos proyectoId={fila.proyecto_id} />
+      </div>
 
       {(fila.motivos ?? []).length > 0 ? (
         <ul className="mt-3 space-y-1 text-xs text-muted-foreground">

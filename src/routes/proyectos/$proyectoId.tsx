@@ -8,6 +8,7 @@ import { ChipSalud } from "@/routes/salud";
 import { BotonPreguntarAsistente } from "@/routes/asistente";
 import { BloqueManualProyecto } from "@/routes/manuales";
 import { ChipAuditoriaProyecto } from "@/routes/auditoria";
+import { BloqueUsuariosProyecto, ChipUsuariosProyecto } from "@/routes/usuarios-clientes";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
@@ -148,6 +149,7 @@ function DetalleProyecto() {
             <ChipDominios proyectoId={proyectoId} />
             <BotonPreguntarAsistente proyectoId={proyectoId} />
             <ChipRestaurarProyecto proyectoId={proyectoId} />
+            <ChipUsuariosProyecto proyectoId={proyectoId} />
             <ChipAuditoriaProyecto proyecto={proyecto} />
             <ChipSalud semaforo={proyecto.semaforo_salud ?? "gris"} fecha={proyecto.salud_comprobada_el} />
             <ChipGastoIa proyectoId={proyectoId} />
@@ -255,6 +257,8 @@ function DetalleProyecto() {
 
         <aside className="space-y-4">
           <BloqueVersionDocumentos proyectoId={proyectoId} versionActual={proyecto.version_actual} />
+
+          <BloqueUsuariosProyecto proyectoId={proyectoId} />
 
           <BloqueManualProyecto proyectoId={proyectoId} />
 

@@ -1,5 +1,20 @@
 # Historial de cambios
 
+## 0.27.0 — 6 de septiembre de 2026 — Usuarios y accesos de los clientes
+
+- Nueva pantalla «Usuarios de clientes»: desde aquí ves quién tiene acceso a cada una de las aplicaciones de tus clientes, todo junto.
+- Buscador global por correo, nombre o rol en todos los proyectos, y filtro por proyecto.
+- Los usuarios se agrupan por aplicación, con su correo, nombre, rol, forma de entrar, si está confirmado o bloqueado, cuándo entró por última vez (en rojo si hace más de 90 días) y cuándo se dio de alta.
+- Puedes crear un usuario nuevo con contraseña (o dejar que se genere una segura), invitarlo por correo, cambiarle la contraseña, editar sus datos, bloquearlo, desbloquearlo y borrarlo.
+- Al crear un usuario o cambiar su contraseña se muestra una sola vez, con botón de copiar y un mensaje ya escrito para enviárselo al cliente por WhatsApp.
+- La contraseña queda siempre reflejada en Proyectian; con el botón del ojo puedes consultar la que hay guardada allí.
+- Botón «Sincronizar todo» para traer los usuarios de todas las aplicaciones, y «Ver en vivo» para refrescar los de una sola.
+- Pestaña «Histórico» con todo lo que se ha hecho, marcando en rojo lo que ha fallado y su motivo.
+- En la ficha de cada proyecto tienes la tarjeta «Usuarios» con el total, los últimos accesos y el acceso directo a gestionarlos.
+- En «Salud» se avisa cuando una aplicación tiene personas que llevan más de 90 días sin entrar.
+- Nuevos semáforos de usuarios en «Estado del sistema».
+
+
 ## 0.26.0 — 6 de septiembre de 2026 — Auditoría mensual con el Auditor jefe
 
 - Nueva pantalla «Auditoría»: el día 2 de cada mes se revisan todos tus proyectos y cada uno recibe una nota de 0 a 100.
