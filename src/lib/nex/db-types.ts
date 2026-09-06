@@ -1409,6 +1409,56 @@ export type DocumentoNexRow = {
   creado_el: string
 }
 
+/* -------------------------- Manuales (0.25.0) --------------------------- */
+
+export type PublicoManual = "usuario" | "administrador" | "comercial"
+export type EstadoManual = "borrador" | "preparando" | "redactando" | "publicando" | "listo" | "error"
+
+export type CapituloManual = {
+  orden: number
+  titulo: string
+  ruta?: string | null
+  objetivo?: string | null
+  elementos?: string[] | null
+  captura_url?: string | null
+  texto_md?: string | null
+}
+
+export type ManualRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  titulo: string
+  publico: PublicoManual
+  version_proyecto: string | null
+  estado: EstadoManual
+  paso: string | null
+  esquema: { titulo?: string; capitulos?: CapituloManual[] } | null
+  capitulos: CapituloManual[] | null
+  introduccion_md: string | null
+  html: string | null
+  markdown: string | null
+  ruta_remota_html: string | null
+  ruta_remota_md: string | null
+  documento_id: string | null
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  coste: number | null
+  error: string | null
+  creado_el: string
+  actualizado_el: string
+}
+
+export type ManualesConfigRow = {
+  id: string
+  user_id: string
+  regenerar_al_cambiar_version: boolean
+  estilo: "claro" | "tecnico"
+  incluir_capturas: boolean
+  servicio_capturas: string | null
+  max_capitulos: number
+}
+
 /* ------------------------------ Habilidades ------------------------------ */
 
 export type OrigenHabilidad = "propia" | "experto" | "externa"
@@ -1912,6 +1962,8 @@ export type Database = {
         Partial<SinUsuario<CierreVersionRow>>
       >
       documentos_nex: Tabla<DocumentoNexRow>
+      manuales: Tabla<ManualRow, Partial<SinUsuario<ManualRow>> & { proyecto_id: string; titulo: string }, Partial<SinUsuario<ManualRow>>>
+      manuales_config: Tabla<ManualesConfigRow, Partial<SinUsuario<ManualesConfigRow>>, Partial<SinUsuario<ManualesConfigRow>>>
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },
