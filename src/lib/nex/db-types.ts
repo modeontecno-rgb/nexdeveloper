@@ -222,6 +222,7 @@ export type ProyectoRow = {
   color: string | null
   es_favorito: boolean
   orden: number
+  palabras_clave: string[] | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
   resumen_automatico: string | null
@@ -842,7 +843,57 @@ export type DominiosResumenRow = {
   ultima_comprobacion: string | null
 }
 
+/* ------------------------------ Bandeja única ------------------------------ */
+
+export type OrigenBandeja = "gmail" | "whatsapp" | "plaud" | "manual"
+export type EstadoEntradaBandeja = "nueva" | "clasificada" | "convertida" | "archivada" | "descartada"
+
+export type BandejaFuenteRow = {
+  id: string
+  origen: "gmail" | "whatsapp" | "plaud"
+  activa: boolean
+  cuenta: string | null
+  configuracion: Json
+  conectada: boolean
+  ultima_sincronizacion: string | null
+  resultado: string | null
+}
+
+export type PropuestaTarea = {
+  titulo?: string
+  descripcion?: string
+  prioridad?: Prioridad
+  requiere_atencion?: boolean
+  instrucciones?: string
+}
+
+export type AdjuntoBandeja = { nombre: string; tipo?: string; bytes?: number }
+
+export type BandejaEntradaRow = {
+  id: string
+  user_id: string
+  origen: OrigenBandeja
+  id_externo: string | null
+  remitente: string | null
+  remitente_nombre: string | null
+  asunto: string | null
+  texto: string | null
+  resumen: string | null
+  fecha: string | null
+  proyecto_id: string | null
+  proyecto_confianza: number | null
+  proyecto_confirmado: boolean
+  propuesta: PropuestaTarea | null
+  estado: EstadoEntradaBandeja
+  tarea_id: string | null
+  adjuntos: AdjuntoBandeja[] | null
+  url_original: string | null
+  datos: Json
+  creado_el: string
+}
+
 type SinUsuario<T> = Omit<T, "user_id">
+
 
 
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
@@ -933,6 +984,8 @@ export type Database = {
       firmas_compilacion: Tabla<FirmaCompilacionRow>
       dominios: Tabla<DominioRow>
       dominios_historial: Tabla<DominioHistorialRow>
+      bandeja_fuentes: Tabla<BandejaFuenteRow, Partial<BandejaFuenteRow>, Partial<BandejaFuenteRow>>
+      bandeja_entradas: Tabla<BandejaEntradaRow>
 
 
     }
@@ -945,6 +998,7 @@ export type Database = {
       v_copias_destinos: { Row: CopiaDestinoRow; Relationships: [] }
       v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
       v_dominios_resumen: { Row: DominiosResumenRow; Relationships: [] }
+      v_bandeja_fuentes: { Row: BandejaFuenteRow; Relationships: [] }
 
 
     }
@@ -999,7 +1053,8 @@ export type Database = {
       origen_ejecucion_calidad: OrigenEjecucionCalidad
       estado_ejecucion_calidad: EstadoEjecucionCalidad
       resultado_control: ResultadoControl
-      semaforo_calidad: SemaforoCalidad
+      palabras_clave: string[] | null
+  semaforo_calidad: SemaforoCalidad
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio

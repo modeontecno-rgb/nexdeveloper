@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## 0.13.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Bandeja»: tus correos de Gmail, los mensajes de WhatsApp Business y las notas de voz de Plaud, todo en un mismo sitio.
+- Cada mensaje llega ya resumido y asignado al proyecto que le corresponde, con un indicador de lo segura que es esa asignación.
+- Puedes cambiar el proyecto a mano, ajustar el título, la prioridad y las instrucciones, y crear la tarea con un clic.
+- Botones para reclasificar, archivar o descartar, y acciones en bloque cuando seleccionas varias entradas.
+- Panel de fuentes: conectar Gmail con Google, configurar WhatsApp Business (con la dirección del webhook y el token listos para copiar) y ver cuántas notas de Plaud han llegado.
+- Palabras clave por proyecto: define las tuyas y los mensajes se reparten solos.
+- «Añadir texto» para pegar o dictar cualquier nota y que entre en la bandeja.
+- En Inicio, tarjeta con lo último sin revisar; en cada proyecto, sus mensajes; y un contador en el menú lateral.
+- Estado del sistema: nuevos semáforos para la bandeja y su clasificador.
+
 ## 0.12.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Dominios»: todos tus dominios y subdominios en una tabla, con su estado de un vistazo.
