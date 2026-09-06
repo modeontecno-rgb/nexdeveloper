@@ -1,0 +1,615 @@
+// NexDeveloper · Edge Function «ordenes-ejecutar» (0.20.0)
+// Ejecución real de las órdenes por la IA con dos motores:
+//  · Lovable: conexión OAuth (PKCE) con el servidor MCP de Lovable → send_message / get_message / deploy_project.
+//  · Claude + GitHub: agente de código (Anthropic) que lee y modifica el repositorio del proyecto por la API de GitHub,
+//    abre una rama y una solicitud de cambios; al aprobar, se fusiona y Lovable la sincroniza (GitHub en dos sentidos).
+// En ambos casos: sondeo programado cada 2 minutos, comprobación de la vista previa, tarea «Aprobar y publicar» y
+// publicación (Lovable) o aviso para publicar. Todo el estado es reanudable entre invocaciones.
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
+const CLAVE_SERVICIO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const GITHUB_TOKEN = Deno.env.get("GITHUB_TOKEN") ?? "";
+const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-token", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
+const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
+const html = (t: string, s = 200) => new Response(`<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:40px;background:#0f1419;color:#e6edf3"><h2>NexDeveloper</h2><p>${t}</p><p><a style="color:#22d3c5" href="javascript:window.close()">Cerrar esta ventana</a></p></body>`, { status: s, headers: { "Content-Type": "text/html; charset=utf-8" } });
+const servicio = () => createClient(URL_SUPABASE, CLAVE_SERVICIO, { auth: { persistSession: false } });
+type SB = ReturnType<typeof servicio>;
+const URL_FUNCION = `${URL_SUPABASE}/functions/v1/ordenes-ejecutar`;
+const OAUTH = { authorize: "https://lovable.dev/oauth/authorize", token: "https://lovable.dev/oauth/token", register: "https://lovable.dev/oauth/register" };
+const CLIENT_ID_DOC = `${URL_FUNCION}/cliente.json`;   // identificador por documento de metadatos (si Lovable lo admite)
+const URL_CALLBACK = `${URL_FUNCION}/callback`;
+const MCP_URL = "https://mcp.lovable.dev/";
+const SCOPES = "offline openid email profile projects:read projects:write workspaces:read";
+const documentoCliente = () => ({ client_id: CLIENT_ID_DOC, client_name: "NexDeveloper", client_uri: "https://nexdeveloper.lovable.app", logo_uri: "https://nexdeveloper.lovable.app/favicon.ico", redirect_uris: [URL_CALLBACK], grant_types: ["authorization_code", "refresh_token"], response_types: ["code"], token_endpoint_auth_method: "none", scope: SCOPES });
+const ahora = () => new Date().toISOString();
+const INICIO = Date.now();
+const PRESUPUESTO_MS = 95_000;   // tiempo máximo de trabajo por invocación (las Edge Functions tienen límite)
+
+// ---------- PKCE ----------
+const b64url = (b: ArrayBuffer | Uint8Array) => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const aleatorio = (n = 48) => b64url(crypto.getRandomValues(new Uint8Array(n)));
+async function desafio(verifier: string) { return b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))); }
+
+// ---------- Tokens de Lovable ----------
+async function tokenAcceso(sb: SB, userId: string): Promise<string> {
+  const { data, error } = await sb.rpc("leer_secretos_lovable", { p_user_id: userId });
+  if (error) throw new Error(`No se pudo leer la conexión: ${error.message}`);
+  const c = (data ?? [])[0];
+  if (!c?.refresh_token && !c?.access_token) throw new Error("Lovable no está conectado. Ve a Órdenes → Ejecución → Conectar con Lovable.");
+  const caduca = c.expira_el ? new Date(c.expira_el).getTime() : 0;
+  if (c.access_token && caduca - Date.now() > 60_000) return c.access_token;
+  if (!c.refresh_token) throw new Error("La sesión con Lovable ha caducado; vuelve a conectar.");
+  const r = await fetch(OAUTH.token, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: c.refresh_token, client_id: c.client_id ?? CLIENT_ID_DOC }) });
+  if (!r.ok) {
+    const t = await r.text();
+    await sb.from("lovable_conexion").update({ estado: "error", ultimo_error: `Renovación rechazada: ${t.slice(0, 200)}`, actualizado_el: ahora() }).eq("user_id", userId);
+    throw new Error(`Lovable rechazó la renovación del acceso (${r.status}). Vuelve a conectar.`);
+  }
+  const tok = await r.json();
+  const expira = new Date(Date.now() + Number(tok.expires_in ?? 3600) * 1000).toISOString();
+  await sb.rpc("guardar_secreto_lovable", { p_user_id: userId, p_refresh: tok.refresh_token ?? null, p_acceso: tok.access_token, p_expira: expira });
+  return tok.access_token;
+}
+
+// ---------- MCP de Lovable (Streamable HTTP) ----------
+function parsearMcp(texto: string, tipo: string) {
+  if (tipo.includes("text/event-stream")) {
+    let ultimo: any = null;
+    for (const linea of texto.split("\n")) { if (linea.startsWith("data:")) { try { const j = JSON.parse(linea.slice(5).trim()); if (j.result || j.error) ultimo = j; } catch { /* ignorar */ } } }
+    return ultimo;
+  }
+  try { return JSON.parse(texto); } catch { return null; }
+}
+async function llamadaMcp(token: string, sesion: string | null, cuerpo: unknown) {
+  const h: Record<string, string> = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json, text/event-stream", "MCP-Protocol-Version": "2025-06-18" };
+  if (sesion) h["Mcp-Session-Id"] = sesion;
+  const r = await fetch(MCP_URL, { method: "POST", headers: h, body: JSON.stringify(cuerpo) });
+  const nuevaSesion = r.headers.get("mcp-session-id") ?? sesion;
+  if (r.status === 202 || r.status === 204) return { sesion: nuevaSesion, datos: null, status: r.status };
+  const texto = await r.text();
+  if (!r.ok) throw new Error(`MCP de Lovable ${r.status}: ${texto.slice(0, 300)}`);
+  return { sesion: nuevaSesion, datos: parsearMcp(texto, r.headers.get("content-type") ?? ""), status: r.status };
+}
+async function herramientaLovable(token: string, nombre: string, argumentos: Record<string, unknown>) {
+  const ini = await llamadaMcp(token, null, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "NexDeveloper", version: "0.20.0" } } });
+  const sesion = ini.sesion;
+  try { await llamadaMcp(token, sesion, { jsonrpc: "2.0", method: "notifications/initialized" }); } catch { /* opcional */ }
+  const r = await llamadaMcp(token, sesion, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: nombre, arguments: argumentos } });
+  const d = r.datos;
+  if (!d) throw new Error(`Lovable no devolvió respuesta a ${nombre}`);
+  if (d.error) throw new Error(`Lovable (${nombre}): ${d.error.message ?? JSON.stringify(d.error)}`);
+  const res = d.result ?? {};
+  if (res.isError) throw new Error(`Lovable (${nombre}): ${(res.content ?? []).map((c: any) => c.text ?? "").join(" ").slice(0, 400)}`);
+  if (res.structuredContent) return res.structuredContent;
+  const texto = (res.content ?? []).map((c: any) => c.text ?? "").join("\n");
+  try { return JSON.parse(texto); } catch { return { texto }; }
+}
+const limpiarRespuesta = (t: string) => (t ?? "").replace(/<lov-tool-use[^>]*>[\s\S]*?<\/lov-tool-use>/g, "").replace(/<\/?lov-[^>]*>/g, "").trim();
+
+// ---------- GitHub ----------
+const GH = "https://api.github.com";
+async function gh(ruta: string, init: RequestInit = {}) {
+  if (!GITHUB_TOKEN) throw new Error("Falta el secreto GITHUB_TOKEN en las Edge Functions");
+  const r = await fetch(`${GH}${ruta}`, { ...init, headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "NexDeveloper", ...(init.body ? { "Content-Type": "application/json" } : {}), ...(init.headers ?? {}) } });
+  if (r.status === 204) return null;
+  const t = await r.text();
+  let j: any = null; try { j = JSON.parse(t); } catch { j = { raw: t }; }
+  if (!r.ok) throw new Error(`GitHub ${r.status} ${ruta}: ${String(j?.message ?? t).slice(0, 200)}`);
+  return j;
+}
+const utf8b64 = (s: string) => { const b = new TextEncoder().encode(s); let bin = ""; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(bin); };
+const b64utf8 = (s: string) => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, "")), (c) => c.charCodeAt(0)));
+async function ramaPorDefecto(repo: string) { const r = await gh(`/repos/${repo}`); return r.default_branch ?? "main"; }
+async function arbolRepo(repo: string, ref: string) {
+  const r = await gh(`/repos/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`);
+  return ((r.tree ?? []) as any[]).filter((n) => n.type === "blob").map((n) => ({ ruta: n.path as string, tam: n.size as number }));
+}
+async function leerArchivoRepo(repo: string, ruta: string, ref: string) {
+  const r = await gh(`/repos/${repo}/contents/${ruta.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(ref)}`);
+  if (Array.isArray(r)) throw new Error(`${ruta} es una carpeta`);
+  if (r.encoding !== "base64") throw new Error(`${ruta} no es un archivo de texto`);
+  return b64utf8(r.content);
+}
+const IGNORAR = /^(node_modules|dist|build|\.git|\.lovable|public\/fonts|bun\.lockb|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)|\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|mp3|mp4|pdf|lock)$/i;
+
+// ---------- Anthropic ----------
+async function claveAnthropic(sb: SB, userId: string) {
+  const { data: p } = await sb.from("proveedores_ia").select("id").eq("user_id", userId).eq("clave_slug", "anthropic").maybeSingle();
+  if (!p) return null;
+  const { data: clave } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: p.id });
+  return clave ? String(clave) : null;
+}
+const HERRAMIENTAS = [
+  { name: "listar_archivos", description: "Lista las rutas de los archivos del repositorio (opcionalmente filtradas por prefijo o texto en la ruta). Úsala primero para orientarte.", input_schema: { type: "object", properties: { filtro: { type: "string", description: "Prefijo o fragmento de ruta, p. ej. src/routes o Ajustes" } } } },
+  { name: "leer_archivo", description: "Devuelve el contenido completo de un archivo de texto del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
+  { name: "buscar", description: "Busca un texto literal en los archivos del repositorio (máximo 30 coincidencias con su ruta y línea).", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
+  { name: "escribir_archivo", description: "Crea o sustituye COMPLETAMENTE un archivo con el contenido indicado. Escribe siempre el archivo entero, nunca fragmentos.", input_schema: { type: "object", properties: { ruta: { type: "string" }, contenido: { type: "string" } }, required: ["ruta", "contenido"] } },
+  { name: "borrar_archivo", description: "Elimina un archivo del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
+  { name: "terminar", description: "Da por terminado el trabajo. Indica un resumen en español (3-6 líneas: qué has cambiado y por qué, archivos tocados, cómo probarlo) y, si procede, la nueva versión.", input_schema: { type: "object", properties: { resumen: { type: "string" }, version: { type: "string", description: "Nueva versión X.Y.Z si el proyecto muestra versión" }, sin_cambios: { type: "boolean", description: "true si has decidido no tocar nada (explica por qué en el resumen)" } }, required: ["resumen"] } },
+];
+async function llamarClaude(clave: string, modelo: string, sistema: string, mensajes: any[]) {
+  const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: modelo, max_tokens: 8000, system: sistema, tools: HERRAMIENTAS, messages: mensajes }) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(`Anthropic ${r.status}: ${String(j?.error?.message ?? JSON.stringify(j)).slice(0, 300)}`);
+  return j;
+}
+function recortarHistorial(mensajes: any[]) {
+  // Mantiene el primer mensaje (la orden) y acorta resultados antiguos de herramientas para no desbordar el contexto
+  if (mensajes.length <= 12) return mensajes;
+  const inicio = mensajes.slice(0, 1); const resto = mensajes.slice(1);
+  const antiguos = resto.slice(0, resto.length - 8).map((m) => {
+    if (m.role !== "user" || !Array.isArray(m.content)) return m;
+    return { ...m, content: m.content.map((c: any) => c.type === "tool_result" && typeof c.content === "string" && c.content.length > 600 ? { ...c, content: c.content.slice(0, 600) + "\n…(recortado)" } : c) };
+  });
+  return [...inicio, ...antiguos, ...resto.slice(resto.length - 8)];
+}
+
+// ---------- Utilidades de estado ----------
+async function config(sb: SB, userId: string) {
+  const { data } = await sb.from("ejecucion_config").select("*").eq("user_id", userId).maybeSingle();
+  if (data) return data;
+  const { data: n } = await sb.from("ejecucion_config").insert({ user_id: userId }).select("*").single();
+  return n!;
+}
+async function actualizar(sb: SB, id: string, cambios: Record<string, unknown>) {
+  await sb.from("ejecuciones_orden").update({ ...cambios, actualizado_el: ahora() }).eq("id", id);
+}
+async function sincronizarOrden(sb: SB, e: any, estadoOrden: string | null, comentario?: string) {
+  if (!e.orden_id) return;
+  const cambios: Record<string, unknown> = { actualizado_el: ahora() };
+  if (estadoOrden) cambios.estado = estadoOrden;
+  if (comentario) cambios.comentario = comentario;
+  if (estadoOrden === "completada") { cambios.resuelta_el = ahora(); cambios.resuelta_por = "NexDeveloper"; }
+  await sb.from("ordenes").update(cambios).eq("id", e.orden_id);
+}
+async function mensajeChat(sb: SB, e: any, texto: string) {
+  if (!e.orden_id) return;
+  const { data: o } = await sb.from("ordenes").select("chat_id").eq("id", e.orden_id).maybeSingle();
+  if (o?.chat_id) await sb.from("mensajes").insert({ user_id: e.user_id, chat_id: o.chat_id, proyecto_id: e.proyecto_id, autor: "sistema", texto: texto.slice(0, 2000) });
+}
+async function crearTareaAtencion(sb: SB, e: any, titulo: string, instrucciones: string, motivo = "Aprobar y publicar") {
+  const { data: t } = await sb.from("tareas").insert({ user_id: e.user_id, proyecto_id: e.proyecto_id, orden_id: e.orden_id, titulo, descripcion: String(e.resumen ?? e.texto ?? "").slice(0, 300), estado: "esperando_revision", prioridad: "alta", requiere_atencion: true, motivo_atencion: motivo, instrucciones, progreso: 90 }).select("id").single();
+  if (t) await actualizar(sb, e.id, { tarea_id: t.id });
+  return t?.id ?? null;
+}
+async function fallo(sb: SB, e: any, msg: string, comentario?: string) {
+  await actualizar(sb, e.id, { estado: "error", error: msg.slice(0, 500), terminada_el: ahora() });
+  await sincronizarOrden(sb, e, "aprobada", comentario ?? `Error: ${msg.slice(0, 200)}`);
+}
+async function comprobarPreview(sb: SB, cfg: any, userId: string, p: any) {
+  let previewUrl: string | null = p.espacio_trabajo_url ?? null; let previewOk: boolean | null = null;
+  try {
+    const { data: c } = await sb.from("lovable_conexion").select("estado").eq("user_id", userId).maybeSingle();
+    if (c?.estado === "conectada" && p.lovable_project_id) { const token = await tokenAcceso(sb, userId); const pr = await herramientaLovable(token, "get_project", { project_id: p.lovable_project_id }); previewUrl = pr.preview_url ?? pr.project?.preview_url ?? previewUrl; }
+    if (cfg.comprobar_preview && previewUrl) { const pv = await fetch(previewUrl, { method: "GET", redirect: "follow" }); previewOk = pv.ok; }
+  } catch { previewOk = null; }
+  return { previewUrl, previewOk };
+}
+async function pedirAprobacion(sb: SB, e: any, p: any, previewUrl: string | null, previewOk: boolean | null, resumen: string) {
+  await actualizar(sb, e.id, { estado: "esperando_aprobacion", preview_url: previewUrl, preview_ok: previewOk });
+  await sincronizarOrden(sb, e, "ejecutando", "Cambios hechos por la IA; esperando tu aprobación");
+  const donde = e.motor === "claude" ? `Revisa la solicitud de cambios en GitHub${e.pr_url ? ` (${e.pr_url})` : ""}` : `Revisa la vista previa${previewUrl ? ` (${previewUrl})` : ""}`;
+  await crearTareaAtencion(sb, e, `Aprobar y publicar: ${p.nombre}`, `${donde} y, si está bien, pulsa «Aprobar y publicar» en Órdenes → Ejecución. Resumen:\n${resumen}`);
+}
+
+// ---------- Motor Lovable ----------
+async function enviarLovable(sb: SB, e: any, p: any, cfg: any) {
+  const token = await tokenAcceso(sb, e.user_id);
+  const mensaje = `${e.texto}\n\n---\nInstrucciones fijas de NexDeveloper: responde en español; al terminar, resume en 3-5 líneas qué has cambiado y qué archivos has tocado; sube el número de versión visible en la esquina de la aplicación si el proyecto lo muestra; no toques la configuración de Supabase ni secretos.`;
+  const r = await herramientaLovable(token, "send_message", { project_id: p.lovable_project_id, message: mensaje, wait: false, plan_mode: e.modo === "planificar", max_mode: !!cfg.modo_max });
+  const mensajeId = r.message_id ?? r.messageId ?? r.id ?? null;
+  if (!mensajeId) throw new Error(`Lovable no devolvió el identificador del mensaje: ${JSON.stringify(r).slice(0, 300)}`);
+  await actualizar(sb, e.id, { estado: "construyendo", mensaje_id: mensajeId, thread_id: r.thread_id ?? null, error: null });
+  await sincronizarOrden(sb, e, "ejecutando", `Enviada a Lovable (${p.nombre})`);
+  await mensajeChat(sb, e, `Orden enviada a Lovable (${p.nombre}). Ejecución ${e.id.slice(0, 8)}.`);
+}
+async function sondearLovable(sb: SB, e: any, p: any, cfg: any) {
+  const token = await tokenAcceso(sb, e.user_id);
+  const r = await herramientaLovable(token, "get_message", { project_id: p.lovable_project_id, message_id: e.mensaje_id, ...(e.thread_id ? { thread_id: e.thread_id } : {}) });
+  const resp = r.response ?? r;
+  const estado = String(resp.status ?? r.status ?? "in_progress");
+  if (estado !== "completed" && estado !== "failed" && estado !== "error") {
+    if (e.iniciada_el && Date.now() - new Date(e.iniciada_el).getTime() > 45 * 60_000) await fallo(sb, e, "Lovable lleva más de 45 minutos sin terminar; revisa el proyecto en Lovable.", "Tiempo agotado en Lovable");
+    return;
+  }
+  const contenido = limpiarRespuesta(resp.content ?? resp.text ?? "");
+  const commit = resp.commit_sha ?? resp.commitSha ?? null;
+  const coste = resp.cost_credits ?? resp.credits ?? null;
+  if (estado !== "completed") { await actualizar(sb, e.id, { respuesta: contenido }); await fallo(sb, e, `Lovable terminó con error: ${contenido.slice(0, 400)}`, "Lovable terminó con error"); return; }
+  const resumen = contenido.split("\n").filter((l) => l.trim()).slice(-6).join("\n").slice(0, 900);
+  await actualizar(sb, e.id, { estado: "comprobando", respuesta: contenido.slice(0, 12000), resumen, commit_sha: commit, coste_creditos: coste });
+  if (coste != null) await sb.from("consumos_ia").insert({ user_id: e.user_id, proyecto_id: e.proyecto_id, tarea_id: e.tarea_id, tokens_entrada: 0, tokens_salida: 0, coste: Number(coste) * 0.2, duracion_ms: e.iniciada_el ? Date.now() - new Date(e.iniciada_el).getTime() : null, resultado: "ok" }).then(() => {}, () => {});
+  const { previewUrl, previewOk } = await comprobarPreview(sb, cfg, e.user_id, p);
+  if (e.modo === "planificar") { await actualizar(sb, e.id, { estado: "completada", preview_url: previewUrl, preview_ok: previewOk, terminada_el: ahora() }); await sincronizarOrden(sb, e, "completada", "Plan de Lovable recibido (sin cambios de código)"); return; }
+  if (cfg.comprobar_preview && previewOk === false) {
+    await actualizar(sb, e.id, { preview_url: previewUrl, preview_ok: false });
+    await fallo(sb, e, "La vista previa no responde tras los cambios; revisa el proyecto en Lovable antes de publicar.", "La vista previa no responde tras los cambios");
+    await crearTareaAtencion(sb, e, `Revisar en Lovable: la vista previa de ${p.nombre} no responde`, `Abre el proyecto en Lovable, comprueba el error de compilación y vuelve a lanzar la orden desde NexDeveloper.`, "Revisar error");
+    return;
+  }
+  if (Number(coste ?? 0) > Number(cfg.aviso_creditos ?? 20)) await crearTareaAtencion(sb, e, `Aviso: la orden de ${p.nombre} ha consumido ${coste} créditos de Lovable`, `Revisa el resultado en Órdenes → Ejecución antes de publicar.`, "Aviso de consumo");
+  if (cfg.auto_publicar) { await actualizar(sb, e.id, { preview_url: previewUrl, preview_ok: previewOk }); await publicar(sb, { ...e, resumen, preview_url: previewUrl }); return; }
+  await pedirAprobacion(sb, { ...e, resumen }, p, previewUrl, previewOk, resumen);
+}
+
+// ---------- Motor Claude + GitHub ----------
+function sistemaAgente(p: any, cfg: any) {
+  return `Eres el desarrollador senior de NexDeveloper trabajando para Javier (Soluciones EvoluteIA S.L. / Modeontecno S.L.). Trabajas sobre el repositorio GitHub «${p.repositorio}» del proyecto «${p.nombre}» (${p.descripcion ?? ""}; tecnologías: ${p.tecnologias ?? "Lovable, React, TypeScript, Tailwind, shadcn/ui, Supabase"}).
+Tu misión: ejecutar la orden recibida modificando el código con las herramientas, de forma completa y lista para producción.
+Reglas fijas:
+- Habla y comenta SIEMPRE en español de España; los textos de la interfaz también en español.
+- Antes de escribir, orienta: lista archivos y lee los que vas a tocar. Escribe archivos completos (nunca fragmentos ni marcadores «…»).
+- Respeta el estilo y la estructura existentes (rutas, componentes, hooks, tipos). No añadas dependencias nuevas salvo que sea imprescindible (si lo es, actualiza package.json).
+- No toques secretos, .env, configuración de Supabase ni migraciones destructivas. No borres funcionalidades ajenas a la orden.
+- Si el proyecto muestra la versión en una esquina (busca «version» en el código o en package.json), súbela (parche o menor) e indícala en «terminar».
+- Sé eficiente: máximo ${cfg.max_pasos ?? 40} pasos. Cuando termines, llama a «terminar» con un resumen claro para el cliente (qué cambia, archivos, cómo probarlo).`;
+}
+async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
+  const clave = await claveAnthropic(sb, e.user_id);
+  if (!clave) throw new Error("Falta la clave de Anthropic en Ajustes → Proveedores (necesaria para el motor Claude).");
+  const { data: permitido } = await sb.rpc("gasto_ia_permitido", { p_user_id: e.user_id, p_proveedor: null, p_proyecto_id: e.proyecto_id });
+  if (permitido === false) throw new Error("Presupuesto de IA superado con acción «bloquear». Revisa Gasto de IA → Presupuestos.");
+  const repo = p.repositorio;
+  let st = e.estado_agente ?? null;
+  if (!st) {
+    const base = await ramaPorDefecto(repo);
+    const ref = await gh(`/repos/${repo}/git/ref/heads/${base}`);
+    st = { base, base_sha: ref.object.sha, mensajes: [{ role: "user", content: `ORDEN:\n${e.texto}\n\nEmpieza orientándote con listar_archivos.` }], arbol: null };
+  }
+  const cambios: Record<string, string | null> = e.cambios ?? {};
+  let pasos = e.pasos ?? 0; let te = e.tokens_entrada ?? 0; let ts = e.tokens_salida ?? 0; let coste = Number(e.coste_ia ?? 0);
+  const modelo = cfg.modelo_claude ?? "claude-sonnet-4-5";
+  const { data: mod } = await sb.from("modelos_ia").select("id, coste_entrada, coste_salida").eq("user_id", e.user_id).eq("identificador", modelo).maybeSingle();
+  const guardar = async (extra: Record<string, unknown> = {}) => actualizar(sb, e.id, { estado_agente: st, cambios, pasos, tokens_entrada: te, tokens_salida: ts, coste_ia: coste, ...extra });
+  const arbol = async () => { if (!st.arbol) st.arbol = (await arbolRepo(repo, st.base_sha)).filter((n) => !IGNORAR.test(n.ruta)).map((n) => n.ruta); return st.arbol as string[]; };
+  const leer = async (ruta: string) => { if (ruta in cambios) { const c = cambios[ruta]; if (c === null) throw new Error(`${ruta} fue borrado`); return c; } return await leerArchivoRepo(repo, ruta, st.base_sha); };
+
+  while (Date.now() - INICIO < PRESUPUESTO_MS) {
+    if (pasos >= (cfg.max_pasos ?? 40)) { await guardar(); throw new Error(`Se alcanzó el máximo de ${cfg.max_pasos ?? 40} pasos sin terminar. Divide la orden en partes más pequeñas.`); }
+    if (coste > Number(cfg.max_coste_ia ?? 3)) { await guardar(); throw new Error(`La orden ha superado el coste máximo de IA (${cfg.max_coste_ia} €). Ajústalo en Órdenes → Ejecución → Configuración.`); }
+    st.mensajes = recortarHistorial(st.mensajes);
+    const r = await llamarClaude(clave, modelo, sistemaAgente(p, cfg), st.mensajes);
+    pasos++;
+    const ue = r.usage?.input_tokens ?? 0, us = r.usage?.output_tokens ?? 0; te += ue; ts += us;
+    const c = (ue * Number(mod?.coste_entrada ?? 3) + us * Number(mod?.coste_salida ?? 15)) / 1_000_000 * 0.92; coste += c;
+    await sb.from("consumos_ia").insert({ user_id: e.user_id, proyecto_id: e.proyecto_id, tarea_id: e.tarea_id, modelo_id: mod?.id ?? null, tokens_entrada: ue, tokens_salida: us, coste: c, resultado: "ok" }).then(() => {}, () => {});
+    st.mensajes.push({ role: "assistant", content: r.content });
+    const usos = (r.content ?? []).filter((b: any) => b.type === "tool_use");
+    if (!usos.length) {
+      const texto = (r.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
+      st.mensajes.push({ role: "user", content: `Si has terminado, llama a la herramienta «terminar» con el resumen. Si no, continúa con las herramientas.` });
+      if (pasos > 3 && !texto) { await guardar(); throw new Error("El agente dejó de responder con herramientas."); }
+      await guardar(); continue;
+    }
+    const resultados: any[] = [];
+    let terminado: any = null;
+    for (const u of usos) {
+      let out = "";
+      try {
+        const a = u.input ?? {};
+        if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
+        else if (u.name === "leer_archivo") { const t = await leer(String(a.ruta)); out = t.length > 60_000 ? t.slice(0, 60_000) + "\n…(archivo recortado a 60.000 caracteres)" : t; }
+        else if (u.name === "buscar") {
+          const q = String(a.texto ?? ""); const hits: string[] = [];
+          const candidatos = (await arbol()).filter((x) => /\.(tsx?|jsx?|css|json|md|sql|html|toml|ya?ml)$/i.test(x)).slice(0, 250);
+          for (const ruta of candidatos) { if (hits.length >= 30 || Date.now() - INICIO > PRESUPUESTO_MS - 15_000) break; try { const t = await leer(ruta); const lineas = t.split("\n"); lineas.forEach((l, i) => { if (hits.length < 30 && l.includes(q)) hits.push(`${ruta}:${i + 1}: ${l.trim().slice(0, 160)}`); }); } catch { /* seguir */ } }
+          out = hits.join("\n") || "(sin coincidencias)";
+        }
+        else if (u.name === "escribir_archivo") { const ruta = String(a.ruta).replace(/^\/+/, ""); if (!ruta || ruta.includes("..")) throw new Error("Ruta no válida"); const contenido = String(a.contenido ?? ""); const total = Object.values({ ...cambios, [ruta]: contenido }).reduce((s, v) => s + (v?.length ?? 0), 0); if (total > 900_000) throw new Error("Demasiados cambios acumulados (límite 900 KB); divide la orden."); cambios[ruta] = contenido; if (st.arbol && !st.arbol.includes(ruta)) st.arbol.push(ruta); out = `Guardado ${ruta} (${contenido.length} caracteres)`; }
+        else if (u.name === "borrar_archivo") { const ruta = String(a.ruta).replace(/^\/+/, ""); cambios[ruta] = null; out = `Marcado para borrar ${ruta}`; }
+        else if (u.name === "terminar") { terminado = a; out = "Trabajo registrado."; }
+        else out = `Herramienta desconocida ${u.name}`;
+      } catch (err) { out = `ERROR: ${String(err?.message ?? err)}`; }
+      resultados.push({ type: "tool_result", tool_use_id: u.id, content: out });
+    }
+    st.mensajes.push({ role: "user", content: resultados });
+    await guardar();
+    if (terminado) return { terminado, cambios, coste, pasos, st };
+  }
+  return null; // sin tiempo: se reanuda en la siguiente invocación
+}
+async function publicarRama(e: any, p: any, st: any, cambios: Record<string, string | null>, resumen: string, version?: string) {
+  const repo = p.repositorio; const rama = `nexdeveloper/orden-${e.id.slice(0, 8)}`;
+  const ref = await gh(`/repos/${repo}/git/ref/heads/${st.base}`); const baseSha = ref.object.sha;
+  const commitBase = await gh(`/repos/${repo}/git/commits/${baseSha}`);
+  const tree: any[] = [];
+  for (const [ruta, contenido] of Object.entries(cambios)) {
+    if (contenido === null) { tree.push({ path: ruta, mode: "100644", type: "blob", sha: null }); continue; }
+    const blob = await gh(`/repos/${repo}/git/blobs`, { method: "POST", body: JSON.stringify({ content: utf8b64(contenido), encoding: "base64" }) });
+    tree.push({ path: ruta, mode: "100644", type: "blob", sha: blob.sha });
+  }
+  const nuevoTree = await gh(`/repos/${repo}/git/trees`, { method: "POST", body: JSON.stringify({ base_tree: commitBase.tree.sha, tree }) });
+  const titulo = `NexDeveloper${version ? ` v${version}` : ""}: ${e.texto.split("\n")[0].slice(0, 60)}`;
+  const commit = await gh(`/repos/${repo}/git/commits`, { method: "POST", body: JSON.stringify({ message: `${titulo}\n\n${resumen}\n\nOrden ${e.id} ejecutada por NexDeveloper (motor Claude).`, tree: nuevoTree.sha, parents: [baseSha] }) });
+  try { await gh(`/repos/${repo}/git/refs`, { method: "POST", body: JSON.stringify({ ref: `refs/heads/${rama}`, sha: commit.sha }) }); }
+  catch { await gh(`/repos/${repo}/git/refs/heads/${rama}`, { method: "PATCH", body: JSON.stringify({ sha: commit.sha, force: true }) }); }
+  const pr = await gh(`/repos/${repo}/pulls`, { method: "POST", body: JSON.stringify({ title: titulo, head: rama, base: st.base, body: `## Orden\n${e.texto}\n\n## Resumen de la IA\n${resumen}\n\n## Archivos\n${Object.keys(cambios).map((k) => `- ${cambios[k] === null ? "(borrado) " : ""}${k}`).join("\n")}\n\n_Generado por NexDeveloper · motor Claude. «Aprobar y publicar» desde NexDeveloper fusiona esta solicitud._` }) });
+  return { rama, commit: commit.sha, pr_url: pr.html_url, pr_numero: pr.number };
+}
+async function ejecutarClaude(sb: SB, e: any, p: any, cfg: any) {
+  if (!p.repositorio) throw new Error("El proyecto no tiene repositorio de GitHub en su ficha.");
+  const r = await pasoAgente(sb, e, p, cfg);
+  if (!r) return; // continúa en el siguiente tic
+  const { terminado, cambios, coste, pasos, st } = r;
+  const resumen = String(terminado.resumen ?? "").slice(0, 3000);
+  const archivos = Object.keys(cambios);
+  if (terminado.sin_cambios || !archivos.length) {
+    await actualizar(sb, e.id, { estado: "completada", resumen, respuesta: resumen, terminada_el: ahora() });
+    await sincronizarOrden(sb, e, "completada", `Sin cambios de código: ${resumen.slice(0, 200)}`);
+    await mensajeChat(sb, e, `La IA no ha cambiado código. ${resumen}`);
+    return;
+  }
+  const pub = await publicarRama(e, p, st, cambios, resumen, terminado.version);
+  await actualizar(sb, e.id, { estado: "comprobando", resumen, respuesta: resumen, rama: pub.rama, commit_sha: pub.commit, pr_url: pub.pr_url, pr_numero: pub.pr_numero, coste_ia: coste, pasos });
+  await mensajeChat(sb, e, `Cambios preparados en GitHub (${pub.pr_url}). ${resumen}`);
+  const e2 = { ...e, motor: "claude", resumen, rama: pub.rama, pr_numero: pub.pr_numero, pr_url: pub.pr_url };
+  if (cfg.auto_publicar) { await publicar(sb, e2); return; }
+  await pedirAprobacion(sb, e2, p, null, null, `${resumen}\nArchivos: ${archivos.join(", ")}`);
+}
+
+// ---------- Publicación ----------
+async function publicar(sb: SB, e: any) {
+  await actualizar(sb, e.id, { estado: "publicando", aprobada_el: e.aprobada_el ?? ahora() });
+  const { data: p } = await sb.from("proyectos").select("lovable_project_id, nombre, slug, repositorio, espacio_trabajo_url").eq("id", e.proyecto_id).maybeSingle();
+  try {
+    if (e.motor === "claude" && e.pr_numero) {
+      const m = await gh(`/repos/${p!.repositorio}/pulls/${e.pr_numero}/merge`, { method: "PUT", body: JSON.stringify({ merge_method: "squash", commit_title: `NexDeveloper: ${String(e.texto).split("\n")[0].slice(0, 60)}` }) });
+      await actualizar(sb, e.id, { commit_sha: m?.sha ?? e.commit_sha });
+      try { await gh(`/repos/${p!.repositorio}/git/refs/heads/${e.rama}`, { method: "DELETE" }); } catch { /* opcional */ }
+    }
+    const { data: c } = await sb.from("lovable_conexion").select("estado").eq("user_id", e.user_id).maybeSingle();
+    if (c?.estado === "conectada" && p?.lovable_project_id) {
+      const token = await tokenAcceso(sb, e.user_id);
+      if (e.motor === "claude") await new Promise((r) => setTimeout(r, 20_000)); // dar tiempo a la sincronización GitHub → Lovable
+      const r = await herramientaLovable(token, "deploy_project", { project_id: p!.lovable_project_id });
+      const url = r.url ?? r.live_url ?? r.published_url ?? r.deployment?.url ?? null;
+      await actualizar(sb, e.id, { estado: "completada", publicado_url: url, terminada_el: ahora(), error: null });
+      await sincronizarOrden(sb, e, "completada", `Publicada por NexDeveloper${url ? ` en ${url}` : ""}`);
+      if (e.tarea_id) await sb.from("tareas").update({ estado: "completada", progreso: 100, completada_el: ahora(), completada_por: "NexDeveloper", requiere_atencion: false, atendida_el: ahora() }).eq("id", e.tarea_id);
+      await mensajeChat(sb, e, `Publicado${url ? `: ${url}` : ""}. ${e.resumen ?? ""}`);
+    } else {
+      // Sin conexión con Lovable: los cambios ya están en GitHub (Lovable los sincroniza); falta pulsar «Publicar» en Lovable
+      await actualizar(sb, e.id, { estado: "completada", terminada_el: ahora(), error: null });
+      await sincronizarOrden(sb, e, "completada", "Cambios fusionados en GitHub; pendiente de publicar en Lovable");
+      if (e.tarea_id) await sb.from("tareas").update({ estado: "completada", progreso: 100, completada_el: ahora(), completada_por: "NexDeveloper", requiere_atencion: false, atendida_el: ahora() }).eq("id", e.tarea_id);
+      await crearTareaAtencion(sb, e, `Publicar en Lovable: ${p!.nombre}`, `Los cambios ya están en GitHub y Lovable los sincroniza solo. Abre el proyecto en Lovable, comprueba la vista previa y pulsa «Publicar» (o conecta Lovable en Órdenes → Ejecución para que NexDeveloper publique solo).`, "Publicar");
+      await mensajeChat(sb, e, `Cambios fusionados en GitHub. Falta publicar en Lovable. ${e.resumen ?? ""}`);
+    }
+  } catch (err) {
+    await actualizar(sb, e.id, { estado: "esperando_aprobacion", error: `No se pudo publicar: ${String(err?.message ?? err).slice(0, 400)}` });
+  }
+}
+
+// ---------- Orquestación ----------
+async function elegirMotor(sb: SB, userId: string, cfg: any, p: any) {
+  const { data: c } = await sb.from("lovable_conexion").select("estado").eq("user_id", userId).maybeSingle();
+  const lov = c?.estado === "conectada" && !!p.lovable_project_id;
+  const pref = cfg.motor_preferido ?? "auto";
+  if (pref === "lovable") return lov ? "lovable" : null;
+  if (pref === "claude") return p.repositorio && GITHUB_TOKEN ? "claude" : null;
+  if (lov) return "lovable";
+  if (p.repositorio && GITHUB_TOKEN && (await claveAnthropic(sb, userId))) return "claude";
+  return null;
+}
+async function enviar(sb: SB, e: any) {
+  const { data: p } = await sb.from("proyectos").select("id, nombre, slug, descripcion, tecnologias, repositorio, lovable_project_id, espacio_trabajo_url").eq("id", e.proyecto_id).maybeSingle();
+  if (!p) { await fallo(sb, e, "Proyecto no encontrado"); return; }
+  const cfg = await config(sb, e.user_id);
+  const motor = e.motor && e.motor !== "auto" ? e.motor : await elegirMotor(sb, e.user_id, cfg, p);
+  if (!motor) { await fallo(sb, e, "No hay motor disponible: conecta Lovable (Órdenes → Ejecución) o pon la clave de Anthropic y el repositorio del proyecto.", "Sin motor de ejecución disponible"); return; }
+  await actualizar(sb, e.id, { estado: "enviando", motor, iniciada_el: e.iniciada_el ?? ahora(), intentos: (e.intentos ?? 0) + 1 });
+  try {
+    if (motor === "lovable") await enviarLovable(sb, e, p, cfg);
+    else { await actualizar(sb, e.id, { estado: "construyendo" }); await sincronizarOrden(sb, e, "ejecutando", `En ejecución por Claude sobre ${p.repositorio}`); await mensajeChat(sb, e, `Orden en ejecución por Claude sobre ${p.repositorio}. Ejecución ${e.id.slice(0, 8)}.`); await ejecutarClaude(sb, { ...e, motor }, p, cfg); }
+  } catch (err) { await fallo(sb, e, String(err?.message ?? err), `Error al ejecutar: ${String(err?.message ?? err).slice(0, 200)}`); }
+}
+async function sondear(sb: SB, e: any) {
+  const cfg = await config(sb, e.user_id);
+  const { data: p } = await sb.from("proyectos").select("id, nombre, slug, descripcion, tecnologias, repositorio, lovable_project_id, espacio_trabajo_url").eq("id", e.proyecto_id).maybeSingle();
+  if (!p) { await fallo(sb, e, "Proyecto no encontrado"); return; }
+  try {
+    if (e.motor === "lovable") await sondearLovable(sb, e, p, cfg);
+    else if (e.estado === "construyendo") await ejecutarClaude(sb, e, p, cfg);
+  } catch (err) {
+    const msg = String(err?.message ?? err);
+    const intentos = (e.intentos ?? 0) + 1;
+    const definitivo = e.motor === "claude" || intentos >= 5;
+    if (definitivo) await fallo(sb, e, msg, `Error: ${msg.slice(0, 200)}`);
+    else await actualizar(sb, e.id, { intentos, error: msg.slice(0, 500) });
+  }
+}
+async function encolarOrden(sb: SB, orden: any, modo = "construir", motor = "auto") {
+  const { data: e } = await sb.from("ejecuciones_orden").insert({ user_id: orden.user_id, orden_id: orden.id, proyecto_id: orden.proyecto_id, texto: orden.texto, modo, motor, estado: "en_cola" }).select("*").single();
+  await sb.from("ordenes").update({ ejecucion_id: e!.id, estado: "en_cola", actualizado_el: ahora() }).eq("id", orden.id);
+  return e!;
+}
+async function programado(sb: SB) {
+  const res: Record<string, number> = { enviadas: 0, sondeadas: 0, encoladas: 0 };
+  const { data: pendientes } = await sb.from("ordenes").select("*").eq("estado", "aprobada").is("ejecucion_id", null).neq("ejecutar_con", "manual").or("requiere_atencion.is.null,requiere_atencion.eq.false").not("proyecto_id", "is", null).limit(10);
+  for (const o of pendientes ?? []) {
+    const cfg = await config(sb, o.user_id); if (!cfg.auto_ejecutar) continue;
+    const { data: p } = await sb.from("proyectos").select("repositorio, lovable_project_id").eq("id", o.proyecto_id).maybeSingle();
+    if (!p || !(await elegirMotor(sb, o.user_id, cfg, p))) continue;
+    await encolarOrden(sb, o); res.encoladas++;
+  }
+  const { data: activas } = await sb.from("ejecuciones_orden").select("*").in("estado", ["construyendo", "comprobando"]).order("creado_el").limit(6);
+  for (const e of activas ?? []) { if (Date.now() - INICIO > PRESUPUESTO_MS) break; if (e.motor === "lovable" && !e.mensaje_id) continue; if (e.motor === "claude" && e.estado === "comprobando") continue; await sondear(sb, e); res.sondeadas++; }
+  const { data: cola } = await sb.from("ejecuciones_orden").select("*").eq("estado", "en_cola").order("creado_el").limit(10);
+  for (const e of cola ?? []) {
+    if (Date.now() - INICIO > PRESUPUESTO_MS) break;
+    const cfg = await config(sb, e.user_id);
+    const { count } = await sb.from("ejecuciones_orden").select("id", { count: "exact", head: true }).eq("user_id", e.user_id).in("estado", ["enviando", "construyendo", "comprobando"]);
+    if ((count ?? 0) >= (cfg.max_simultaneas ?? 2)) continue;
+    await enviar(sb, e); res.enviadas++;
+  }
+  return res;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const sb = servicio();
+  const url = new URL(req.url);
+  try {
+    // Documento de metadatos del cliente OAuth y callback (GET, sin sesión)
+    if (req.method === "GET" && url.pathname.endsWith("/cliente.json")) return new Response(JSON.stringify(documentoCliente()), { headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" } });
+    if (req.method === "GET" && (url.pathname.endsWith("/callback") || url.searchParams.get("accion") === "callback")) {
+      const code = url.searchParams.get("code"); const state = url.searchParams.get("state") ?? "";
+      const errorOauth = url.searchParams.get("error");
+      if (errorOauth) return html(`Lovable devolvió un error: ${errorOauth} ${url.searchParams.get("error_description") ?? ""}`, 400);
+      if (!code) return html("Lovable no devolvió el código de autorización.", 400);
+      const { data: st } = await sb.from("oauth_estados").select("*").eq("state", state).eq("proveedor", "lovable").maybeSingle();
+      if (!st) return html("Estado de autorización no válido o caducado. Vuelve a pulsar «Conectar con Lovable».", 400);
+      await sb.from("oauth_estados").delete().eq("state", state);
+      const { data: con } = await sb.from("lovable_conexion").select("client_id").eq("user_id", st.user_id).maybeSingle();
+      const r = await fetch(OAUTH.token, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: URL_CALLBACK, client_id: con?.client_id ?? CLIENT_ID_DOC, code_verifier: st.verifier }) });
+      if (!r.ok) { const t = await r.text(); await sb.from("lovable_conexion").update({ estado: "error", ultimo_error: t.slice(0, 300) }).eq("user_id", st.user_id); return html(`Lovable rechazó el intercambio: ${t.slice(0, 300)}`, 502); }
+      const tok = await r.json();
+      const expira = new Date(Date.now() + Number(tok.expires_in ?? 3600) * 1000).toISOString();
+      await sb.rpc("guardar_secreto_lovable", { p_user_id: st.user_id, p_refresh: tok.refresh_token ?? "", p_acceso: tok.access_token, p_expira: expira });
+      let cuenta: string | null = null;
+      try { const me = await herramientaLovable(tok.access_token, "get_me", {}); cuenta = me.email ?? me.user?.email ?? me.name ?? null; } catch { /* sin cuenta */ }
+      await sb.from("lovable_conexion").update({ estado: "conectada", cuenta, ultimo_error: null, ultima_comprobacion: ahora(), actualizado_el: ahora() }).eq("user_id", st.user_id);
+      return html(`Lovable conectado${cuenta ? ` (${cuenta})` : ""}. Ya puedes cerrar esta ventana y volver a NexDeveloper.`);
+    }
+
+    // Autenticación: cron (x-cron-token) o usuario (JWT)
+    const tokenCron = req.headers.get("x-cron-token") ?? "";
+    let esServicio = false; let userId: string | null = null;
+    if (tokenCron) { const { data } = await sb.rpc("comprobar_cron_token", { p_token: tokenCron }); esServicio = data === true; }
+    if (!esServicio) {
+      const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+      const { data: u } = await sb.auth.getUser(jwt);
+      if (!u?.user) return json({ ok: false, error: "No autorizado" }, 401);
+      userId = u.user.id;
+    }
+    const cuerpo = req.method === "POST" ? await req.json().catch(() => ({})) : Object.fromEntries(url.searchParams);
+    const accion = String(cuerpo.accion ?? url.searchParams.get("accion") ?? "estado");
+
+    switch (accion) {
+      case "programado": {
+        if (!esServicio) return json({ ok: false, error: "Solo el servicio" }, 403);
+        return json({ ok: true, ...(await programado(sb)) });
+      }
+      case "estado": {
+        const { data: c } = await sb.from("lovable_conexion").select("estado, cuenta, ultimo_error, ultima_comprobacion, expira_el").eq("user_id", userId!).maybeSingle();
+        const cfg = await config(sb, userId!);
+        const { count: sinId } = await sb.from("proyectos").select("id", { count: "exact", head: true }).eq("user_id", userId!).is("lovable_project_id", null);
+        const anthropic = !!(await claveAnthropic(sb, userId!));
+        return json({ ok: true, conexion: c ?? { estado: "desconectada" }, config: cfg, proyectos_sin_lovable: sinId ?? 0, motor_claude_listo: anthropic && !!GITHUB_TOKEN, github_token: !!GITHUB_TOKEN, clave_anthropic: anthropic, url_callback: URL_CALLBACK, client_id: CLIENT_ID_DOC });
+      }
+      case "conectar": {
+        // 1) Registro dinámico (funciona si Lovable ha autorizado nuestra URI de retorno); 2) si no, documento de metadatos
+        const { data: con } = await sb.from("lovable_conexion").select("user_id, client_id").eq("user_id", userId!).maybeSingle();
+        if (!con) await sb.from("lovable_conexion").insert({ user_id: userId! });
+        let clientId = con?.client_id && !String(con.client_id).startsWith("http") ? String(con.client_id) : null;
+        let aviso: string | null = null;
+        if (!clientId) {
+          try {
+            const r = await fetch(OAUTH.register, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ client_name: "NexDeveloper", redirect_uris: [URL_CALLBACK], grant_types: ["authorization_code", "refresh_token"], response_types: ["code"], token_endpoint_auth_method: "none", scope: SCOPES, client_uri: "https://nexdeveloper.lovable.app" }) });
+            if (r.ok) { const reg = await r.json(); clientId = reg.client_id; }
+            else aviso = `Lovable no admite todavía nuestra dirección de retorno en el registro (${r.status}). Se usará el identificador por documento de metadatos; si Lovable lo rechaza («Client Not Found»), pide en https://lovable.dev/support que autoricen la URI ${URL_CALLBACK}. Mientras tanto, las órdenes se ejecutan con el motor Claude + GitHub.`;
+          } catch (err) { aviso = String(err?.message ?? err); }
+        }
+        const idFinal = clientId ?? CLIENT_ID_DOC;
+        await sb.from("lovable_conexion").update({ client_id: idFinal, actualizado_el: ahora() }).eq("user_id", userId!);
+        const verifier = aleatorio(); const state = aleatorio(24);
+        await sb.from("oauth_estados").delete().eq("user_id", userId!).eq("proveedor", "lovable");
+        await sb.from("oauth_estados").insert({ state, user_id: userId!, proveedor: "lovable", verifier });
+        const p = new URLSearchParams({ response_type: "code", client_id: idFinal, redirect_uri: URL_CALLBACK, scope: SCOPES, state, code_challenge: await desafio(verifier), code_challenge_method: "S256" });
+        return json({ ok: true, url: `${OAUTH.authorize}?${p}`, aviso, registro_dinamico: !!clientId });
+      }
+      case "desconectar": {
+        await sb.rpc("guardar_secreto_lovable", { p_user_id: userId!, p_refresh: "", p_acceso: "", p_expira: null }).then(() => {}, () => {});
+        await sb.from("lovable_conexion").update({ estado: "desconectada", cuenta: null, actualizado_el: ahora() }).eq("user_id", userId!);
+        return json({ ok: true });
+      }
+      case "probar": {
+        // Prueba de conexión en VERDE/ROJO de los dos motores
+        const salida: Record<string, any> = {};
+        try { const token = await tokenAcceso(sb, userId!); const me = await herramientaLovable(token, "get_me", {}); const cuenta = me.email ?? me.user?.email ?? null; await sb.from("lovable_conexion").update({ estado: "conectada", cuenta: cuenta ?? undefined, ultimo_error: null, ultima_comprobacion: ahora() }).eq("user_id", userId!); salida.lovable = { ok: true, cuenta }; }
+        catch (err) { const msg = String(err?.message ?? err); await sb.from("lovable_conexion").update({ estado: msg.includes("no está conectado") ? "desconectada" : "error", ultimo_error: msg.slice(0, 300), ultima_comprobacion: ahora() }).eq("user_id", userId!).then(() => {}, () => {}); salida.lovable = { ok: false, error: msg }; }
+        try { if (!GITHUB_TOKEN) throw new Error("Falta GITHUB_TOKEN"); const u = await gh("/user"); salida.github = { ok: true, cuenta: u.login }; } catch (err) { salida.github = { ok: false, error: String(err?.message ?? err) }; }
+        try { const k = await claveAnthropic(sb, userId!); if (!k) throw new Error("Sin clave de Anthropic en Ajustes → Proveedores"); const r = await fetch("https://api.anthropic.com/v1/models?limit=1", { headers: { "x-api-key": k, "anthropic-version": "2023-06-01" } }); if (!r.ok) throw new Error(`Anthropic ${r.status}`); salida.anthropic = { ok: true }; } catch (err) { salida.anthropic = { ok: false, error: String(err?.message ?? err) }; }
+        return json({ ok: salida.lovable.ok || (salida.github.ok && salida.anthropic.ok), ...salida });
+      }
+      case "configurar": {
+        const permitidos = ["auto_ejecutar", "auto_publicar", "comprobar_preview", "max_simultaneas", "modo_max", "aviso_creditos", "motor_preferido", "modelo_claude", "max_pasos", "max_coste_ia"];
+        const cambios: Record<string, unknown> = { user_id: userId!, actualizado_el: ahora() };
+        for (const k of permitidos) if (k in cuerpo) cambios[k] = cuerpo[k];
+        const { data } = await sb.from("ejecucion_config").upsert(cambios).select("*").single();
+        return json({ ok: true, config: data });
+      }
+      case "asignar_lovable": {
+        const m = String(cuerpo.lovable ?? "").match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (!m) return json({ ok: false, error: "Pega el identificador del proyecto o la URL del editor de Lovable" });
+        await sb.from("proyectos").update({ lovable_project_id: m[0] }).eq("id", String(cuerpo.proyecto_id)).eq("user_id", userId!);
+        return json({ ok: true, lovable_project_id: m[0] });
+      }
+      case "ejecutar": {
+        let orden: any = null;
+        if (cuerpo.orden_id) { const { data } = await sb.from("ordenes").select("*").eq("id", String(cuerpo.orden_id)).eq("user_id", userId!).maybeSingle(); orden = data; if (!orden) return json({ ok: false, error: "Orden no encontrada" }); }
+        else {
+          if (!cuerpo.proyecto_id || !cuerpo.texto) return json({ ok: false, error: "Faltan proyecto y texto" });
+          const { data } = await sb.from("ordenes").insert({ user_id: userId!, proyecto_id: String(cuerpo.proyecto_id), texto: String(cuerpo.texto), modo: "equilibrado", prioridad: cuerpo.prioridad ?? "media", estado: "aprobada", ejecutar_con: "lovable", requiere_atencion: false }).select("*").single();
+          orden = data;
+        }
+        if (!orden.proyecto_id) return json({ ok: false, error: "La orden no tiene proyecto" });
+        const cfg = await config(sb, userId!);
+        const { data: p } = await sb.from("proyectos").select("repositorio, lovable_project_id").eq("id", orden.proyecto_id).maybeSingle();
+        const motorPedido = cuerpo.motor && cuerpo.motor !== "auto" ? String(cuerpo.motor) : "auto";
+        const motor = motorPedido !== "auto" ? motorPedido : await elegirMotor(sb, userId!, cfg, p ?? {});
+        if (!motor) return json({ ok: false, error: "No hay motor disponible: conecta Lovable o pon la clave de Anthropic (y el repositorio del proyecto en su ficha)." });
+        if (orden.ejecucion_id) { const { data: prev } = await sb.from("ejecuciones_orden").select("estado").eq("id", orden.ejecucion_id).maybeSingle(); if (prev && ["en_cola", "enviando", "construyendo", "comprobando", "publicando"].includes(prev.estado)) return json({ ok: false, error: "Esta orden ya se está ejecutando" }); }
+        const e = await encolarOrden(sb, orden, cuerpo.modo === "planificar" ? "planificar" : "construir", motor);
+        if (cuerpo.ahora !== false) await enviar(sb, e);
+        const { data: fin } = await sb.from("ejecuciones_orden").select("*").eq("id", e.id).single();
+        return json({ ok: true, ejecucion: fin });
+      }
+      case "sondear": {
+        const { data: e } = await sb.from("ejecuciones_orden").select("*").eq("id", String(cuerpo.ejecucion_id)).eq("user_id", userId!).maybeSingle();
+        if (!e) return json({ ok: false, error: "Ejecución no encontrada" });
+        if (["construyendo", "comprobando"].includes(e.estado) && (e.motor === "claude" ? e.estado === "construyendo" : !!e.mensaje_id)) await sondear(sb, e);
+        const { data: fin } = await sb.from("ejecuciones_orden").select("*").eq("id", e.id).single();
+        return json({ ok: true, ejecucion: fin });
+      }
+      case "aprobar_publicar": {
+        const { data: e } = await sb.from("ejecuciones_orden").select("*").eq("id", String(cuerpo.ejecucion_id)).eq("user_id", userId!).maybeSingle();
+        if (!e) return json({ ok: false, error: "Ejecución no encontrada" });
+        if (e.estado !== "esperando_aprobacion") return json({ ok: false, error: `La ejecución está en estado ${e.estado}` });
+        await publicar(sb, { ...e, aprobada_el: ahora() });
+        const { data: fin } = await sb.from("ejecuciones_orden").select("*").eq("id", e.id).single();
+        return json({ ok: fin!.estado === "completada", ejecucion: fin, error: fin!.error });
+      }
+      case "rechazar": {
+        const { data: e } = await sb.from("ejecuciones_orden").select("*").eq("id", String(cuerpo.ejecucion_id)).eq("user_id", userId!).maybeSingle();
+        if (!e) return json({ ok: false, error: "Ejecución no encontrada" });
+        if (e.motor === "claude" && e.pr_numero) { const { data: p } = await sb.from("proyectos").select("repositorio").eq("id", e.proyecto_id).maybeSingle(); try { await gh(`/repos/${p!.repositorio}/pulls/${e.pr_numero}`, { method: "PATCH", body: JSON.stringify({ state: "closed" }) }); await gh(`/repos/${p!.repositorio}/git/refs/heads/${e.rama}`, { method: "DELETE" }); } catch { /* opcional */ } }
+        await actualizar(sb, e.id, { estado: "cancelada", terminada_el: ahora(), error: cuerpo.motivo ? `Rechazada: ${String(cuerpo.motivo).slice(0, 300)}` : "Rechazada por Javier" });
+        await sincronizarOrden(sb, e, "aprobada", `Cambios no publicados${cuerpo.motivo ? `: ${String(cuerpo.motivo).slice(0, 200)}` : ""}`);
+        if (e.tarea_id) await sb.from("tareas").update({ estado: "cancelada", requiere_atencion: false, atendida_el: ahora() }).eq("id", e.tarea_id);
+        return json({ ok: true });
+      }
+      case "cancelar": {
+        const { data: e } = await sb.from("ejecuciones_orden").select("*").eq("id", String(cuerpo.ejecucion_id)).eq("user_id", userId!).maybeSingle();
+        if (!e) return json({ ok: false, error: "Ejecución no encontrada" });
+        await actualizar(sb, e.id, { estado: "cancelada", terminada_el: ahora() });
+        await sincronizarOrden(sb, e, "aprobada", "Ejecución cancelada");
+        return json({ ok: true });
+      }
+      case "reintentar": {
+        const { data: e } = await sb.from("ejecuciones_orden").select("*").eq("id", String(cuerpo.ejecucion_id)).eq("user_id", userId!).maybeSingle();
+        if (!e) return json({ ok: false, error: "Ejecución no encontrada" });
+        if (!["error", "cancelada"].includes(e.estado)) return json({ ok: false, error: "Solo se reintentan ejecuciones con error o canceladas" });
+        await actualizar(sb, e.id, { estado: "en_cola", error: null, mensaje_id: null, thread_id: null, terminada_el: null, estado_agente: null, cambios: null, pasos: 0, rama: null, pr_url: null, pr_numero: null });
+        await enviar(sb, { ...e, estado: "en_cola", estado_agente: null, cambios: null, pasos: 0 });
+        const { data: fin } = await sb.from("ejecuciones_orden").select("*").eq("id", e.id).single();
+        return json({ ok: true, ejecucion: fin });
+      }
+      default:
+        return json({ ok: false, error: `Acción desconocida: ${accion}` }, 400);
+    }
+  } catch (err) {
+    return json({ ok: false, error: String(err?.message ?? err) }, 500);
+  }
+});
