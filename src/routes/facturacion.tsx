@@ -1715,7 +1715,27 @@ function DialogoEnlazar({
       ancho="max-w-3xl"
     >
       <div className="space-y-4">
+        <Campo etiqueta="Facturar desde" pista={AVISO_EMPRESAS_PERMITIDAS}>
+          <select
+            value={tenantElegido}
+            onChange={(e) => {
+              setTenantId(e.target.value);
+              setTerceroId(null);
+              setContratoId("");
+            }}
+            className={claseCampo}
+          >
+            {catalogo.map((e) => (
+              <option key={e.tenant_id} value={e.tenant_id}>
+                {e.nombre}
+                {e.por_defecto ? " (por defecto)" : ""}
+              </option>
+            ))}
+          </select>
+        </Campo>
+
         <div className="flex gap-2">
+
           {(["buscar", "crear"] as const).map((m) => (
             <button
               key={m}
