@@ -19,6 +19,7 @@ import {
   X,
   BadgeCheck,
   DatabaseBackup,
+  Package,
 } from "lucide-react";
 import * as React from "react";
 
@@ -37,8 +38,9 @@ const NAVEGACION = [
   { to: "/agentes", etiqueta: "Agentes", icono: Cpu },
   { to: "/referencia", etiqueta: "Referencia de uso", icono: BookOpen },
   { to: "/expertos", etiqueta: "Expertos", icono: Users },
-  { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
   { to: "/repositorios", etiqueta: "Repositorios", icono: GitBranch },
+  { to: "/compilaciones", etiqueta: "Compilaciones", icono: Package },
+  { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },

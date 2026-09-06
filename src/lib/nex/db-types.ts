@@ -715,7 +715,78 @@ export type CopiaRow = {
 }
 
 
+// ---- Compilaciones (0.10.0) ----
+export type HerramientaCompilacion = "capacitor" | "flutter" | "tauri" | "web"
+export type PlataformaCompilacion = "android" | "ios" | "escritorio" | "web"
+export type EstadoCompilacion = "pendiente" | "enviada" | "en_curso" | "ok" | "error" | "cancelada"
+
+export type PlantillaCompilacionRow = {
+  id: string
+  herramienta: HerramientaCompilacion
+  plataforma: PlataformaCompilacion
+  nombre: string
+  descripcion: string | null
+  archivo_workflow: string
+  yaml: string
+  secretos_firma: string[]
+  ejecutor: string | null
+  minutos_estimados: number | null
+  orden: number
+}
+
+export type CompilacionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  repositorio: string | null
+  rama: string
+  plantilla_id: string
+  plataforma: PlataformaCompilacion
+  herramienta: HerramientaCompilacion
+  version: string
+  firmada: boolean
+  estado: EstadoCompilacion
+  run_id_github: string | null
+  url_run: string | null
+  artefacto_nombre: string | null
+  artefacto_bytes: number | null
+  artefacto_url_github: string | null
+  ruta_remota: string | null
+  destino_id: string | null
+  log_resumen: string | null
+  error: string | null
+  notas: string | null
+  duracion_seg: number | null
+  enviada_el: string | null
+  iniciada_el: string | null
+  terminada_el: string | null
+  creado_el: string
+  actualizado_el: string
+}
+
+export type FirmaCompilacionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  plataforma: PlataformaCompilacion
+  secretos_puestos: string[]
+  actualizado_el: string
+}
+
+export type CompilacionUltimaRow = {
+  proyecto_id: string
+  plataforma: PlataformaCompilacion
+  id: string
+  version: string
+  estado: EstadoCompilacion
+  url_run: string | null
+  artefacto_nombre: string | null
+  terminada_el: string | null
+  creado_el: string
+}
+
 type SinUsuario<T> = Omit<T, "user_id">
+
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
   Row: Row
   Insert: Ins
@@ -799,6 +870,10 @@ export type Database = {
       copias_config: Tabla<CopiaConfigRow, Partial<SinUsuario<CopiaConfigRow>>>
       copias_origenes: Tabla<CopiaOrigenRow>
       copias: Tabla<CopiaRow>
+      plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
+      compilaciones: Tabla<CompilacionRow>
+      firmas_compilacion: Tabla<FirmaCompilacionRow>
+
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
@@ -807,6 +882,8 @@ export type Database = {
       v_proveedores_ia: { Row: ProveedorIaRow; Relationships: [] }
       v_rendimiento_modelos: { Row: RendimientoModeloRow; Relationships: [] }
       v_copias_destinos: { Row: CopiaDestinoRow; Relationships: [] }
+      v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
+
     }
 
     Functions: {
@@ -863,6 +940,10 @@ export type Database = {
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio
+      herramienta_compilacion: HerramientaCompilacion
+      plataforma_compilacion: PlataformaCompilacion
+      estado_compilacion: EstadoCompilacion
+
     }
     CompositeTypes: { [_ in never]: never }
   }

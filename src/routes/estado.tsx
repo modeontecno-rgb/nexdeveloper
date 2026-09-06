@@ -91,6 +91,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionRepos,
         copias,
         funcionCopias,
+        compilaciones,
+        plantillasCompilacion,
+        funcionCompilar,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -114,7 +117,18 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarFuncion("github-repos"),
         verificarTabla("copias"),
         verificarFuncion("copias-generar"),
+        verificarTabla("compilaciones"),
+        verificarTabla("plantillas_compilacion"),
+        verificarFuncion("compilar-app"),
       ]);
+      const pingCompilar = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("compilar-app", { body: {} });
+          return Boolean((data as { github?: boolean } | null)?.github);
+        } catch {
+          return false;
+        }
+      })();
       return {
         acciones,
         plantillas,
@@ -138,6 +152,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionRepos,
         copias,
         funcionCopias,
+        compilaciones,
+        plantillasCompilacion,
+        funcionCompilar,
+        pingCompilar,
       };
     },
   });
@@ -389,6 +407,39 @@ function EstadoSistema() {
         : verificaciones.data?.funcionCopias
           ? "Disponible"
           : "No encontrada",
+    },
+    {
+      nombre: "Compilaciones",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.compilaciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.compilaciones
+          ? "Responde correctamente"
+          : "Falta la tabla compilaciones (migración 010)",
+    },
+    {
+      nombre: "Plantillas de compilación",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.plantillasCompilacion ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.plantillasCompilacion
+          ? "Responde correctamente"
+          : "Falta la tabla plantillas_compilacion (migración 010)",
+    },
+    {
+      nombre: "Edge Function compilar-app",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.funcionCompilar && verificaciones.data?.pingCompilar
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionCompilar
+          ? "No encontrada"
+          : verificaciones.data?.pingCompilar
+            ? "Conectado / OK"
+            : "Falta GITHUB_TOKEN con permisos repo y workflow",
     },
     {
       nombre: "Versión de la aplicación",
