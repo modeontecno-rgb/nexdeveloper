@@ -480,6 +480,33 @@ function EstadoSistema() {
           : "No responde o falta (migración 023)",
     },
     {
+      nombre: "Conversaciones del asistente",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAsistenteConversaciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAsistenteConversaciones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 024)",
+    },
+    {
+      nombre: "Mensajes del asistente",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAsistenteMensajes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAsistenteMensajes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 024)",
+    },
+    {
+      nombre: "Servicio del asistente",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionAsistente ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionAsistente
+          ? "Conectado / OK"
+          : "No responde o falta (migración 024)",
+    },
+    {
       nombre: "Aplicación instalable",
       nivel: trabajador === "activo" ? "ok" : trabajador === "no-soportado" ? "error" : "aviso",
       detalle:

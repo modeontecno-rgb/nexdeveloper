@@ -1,5 +1,19 @@
 # Historial de cambios
 
+## 0.24.0 — 6 de septiembre de 2026 — Asistente de cartera
+
+- Nueva pantalla «Asistente»: un chat dentro de NexDeveloper que conoce todos tus proyectos y te responde con cifras reales.
+- Pregúntale cosas como «¿qué le debo a Gericentro esta semana?», «¿cuánto llevo gastado en IA en QSVista?» o «¿qué dominios caducan antes de 30 días?».
+- El asistente puede crear tareas, órdenes y avisos desde la propia conversación, y te deja el enlace para abrirlos.
+- Bajo cada respuesta puedes desplegar «Cómo lo he comprobado» para ver qué ha consultado, además del coste y los tokens de esa respuesta.
+- Conversaciones guardadas en una lista lateral con buscador, conversaciones fijadas arriba, y opciones de renombrar, fijar y borrar.
+- Puedes dictar la pregunta con el micrófono (en los navegadores que lo permiten), elegir un proyecto en foco y, si tienes varios, el proveedor de IA.
+- Tarjetas de ejemplo al empezar una conversación para no quedarte en blanco.
+- Caja rápida «Pregúntale a NexDeveloper…» en el panel principal, botón «Preguntar al asistente» en la ficha de cada proyecto y atajo Ctrl/Cmd + K desde cualquier pantalla.
+- En el móvil, «Asistente» está también en la barra inferior de accesos rápidos.
+- Nuevos semáforos del asistente en «Estado del sistema».
+
+
 ## 0.23.0 — 6 de septiembre de 2026 — NexDeveloper en el móvil con avisos
 
 - Ya puedes instalar NexDeveloper en el iPhone, el iPad, el Mac o el ordenador como si fuera una aplicación, con su propio icono y sin barra del navegador.
