@@ -127,7 +127,7 @@ function useEmpresasEmisoras() {
 }
 
 /** Insignia con la empresa emisora, con un color propio para cada una. */
-function InsigniaEmpresa({ nombre, corto }: { nombre?: string | null; corto?: boolean }) {
+function InsigniaEmpresa({ nombre, corto }: { nombre?: string | null | undefined; corto?: boolean }) {
   if (!nombre) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <span
