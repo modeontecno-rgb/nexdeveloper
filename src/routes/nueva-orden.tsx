@@ -13,7 +13,9 @@ import { sugerirProyecto, useCrearOrden, type Sugerencia } from "@/lib/nex/queri
 import { bloquea, revisarTextoOrden } from "@/lib/nex/revision-orden";
 import type { Hallazgo } from "@/lib/nex/db-types";
 import { SelectorHabilidad } from "@/routes/habilidades";
+import { BotonConvocarMesa } from "@/routes/mesa";
 import { useActualizarHabilidad } from "@/lib/nex/queries/habilidades";
+
 
 export const Route = createFileRoute("/nueva-orden")({
   head: () => ({
