@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## 0.16.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Documentación» para cerrar cada versión y guardar los documentos de tus proyectos.
+- «Preparar cierre» reúne solo lo hecho desde el último cierre (tareas, actividad, compilaciones, calidad y commits) y redacta un borrador que puedes corregir.
+- Editas el título, el resumen, la lista de cambios (con su tipo, su importancia y el «por qué importa»), cómo probarlo, lo que tienes que hacer tú y el detalle técnico.
+- Vista previa de la hoja de cambios mientras la escribes y botón para descargarla en PDF.
+- Al cerrar, la hoja se sube al almacén propio, se registra la versión en Proyectian y, si quieres, se actualiza el CHANGELOG y se crea la etiqueta en GitHub; ves cada paso en verde o en rojo.
+- Historial de cierres con versión, estado, si llegó a Proyectian y a GitHub, y quién lo redactó, con opción de retomar un borrador.
+- Apartado «Documentos» por proyecto: manuales, entregables, material comercial, vídeos e imágenes, con su ruta en el Mac (con botón de copiar), descarga directa y subida de archivos de hasta 45 MB.
+- En cada proyecto, bloque «Versión y documentos» con la versión actual, acceso directo a cerrar versión y los últimos cinco documentos.
+- Estado del sistema: nuevos semáforos para la documentación, el almacén y Proyectian.
+
 ## 0.15.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Gasto de IA»: cuánto te cuesta cada mes la inteligencia artificial, por proveedor y por proyecto.
