@@ -933,6 +933,16 @@ function BloqueFacturas() {
           onChange={setFiltroProyecto}
           opciones={[{ valor: "todos", texto: "Todos" }, ...proyectos.map((p) => ({ valor: p.id, texto: p.nombre }))]}
         />
+        <Selector
+          etiqueta="Empresa"
+          valor={filtroEmpresa}
+          onChange={setFiltroEmpresa}
+          opciones={[
+            { valor: "todas", texto: "Todas" },
+            ...catalogo.map((e) => ({ valor: e.tenant_id, texto: e.nombre })),
+          ]}
+        />
+
         <Boton
           className="ml-auto"
           variante="suave"
