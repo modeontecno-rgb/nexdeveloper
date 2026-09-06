@@ -1166,6 +1166,12 @@ export type Database = {
       dominios_historial: Tabla<DominioHistorialRow>
       bandeja_fuentes: Tabla<BandejaFuenteRow, Partial<BandejaFuenteRow>, Partial<BandejaFuenteRow>>
       bandeja_entradas: Tabla<BandejaEntradaRow>
+      vigilancia_config: Tabla<VigilanciaConfigRow, Partial<SinUsuario<VigilanciaConfigRow>>>
+      vigilancia_lotes: Tabla<VigilanciaLoteRow>
+      vigilancia_hallazgos: Tabla<VigilanciaHallazgoRow>
+      competidores: Tabla<CompetidorRow, Partial<SinUsuario<CompetidorRow>> & { nombre: string }>
+      resumenes: Tabla<ResumenRow>
+      resumenes_config: Tabla<ResumenesConfigRow, Partial<SinUsuario<ResumenesConfigRow>>>
 
 
     }
