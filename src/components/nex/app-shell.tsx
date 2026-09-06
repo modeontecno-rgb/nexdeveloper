@@ -4,6 +4,7 @@ import {
   BookMarked,
   BookOpen,
   Boxes,
+  Clapperboard,
   Coins,
   Cpu,
   Inbox,
