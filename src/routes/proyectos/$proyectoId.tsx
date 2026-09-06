@@ -135,6 +135,8 @@ function DetalleProyecto() {
                 </Link>
               ))}
             <SelectorHabilidad proyectoId={proyectoId} />
+            <BotonConvocarMesa proyectoId={proyectoId} className="px-2.5 py-1 text-xs" />
+
             <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
             <ChipGastoIa proyectoId={proyectoId} />
