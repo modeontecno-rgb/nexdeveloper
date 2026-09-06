@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## 0.14.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Resúmenes»: cada mañana a las 08:00 recibes el parte del día y los lunes el informe semanal de toda tu cartera.
+- Cabecera con las cifras que importan (lo que requiere tu atención, avisos técnicos, novedades y mensajes, y gasto de IA) y si el resumen se envió bien o no.
+- Informe ilustrado listo para imprimir, con pestaña «Texto» y botón «Descargar PDF».
+- Botones «Generar ahora» (diario o semanal, con opción de enviarlo) y «Enviar de nuevo».
+- Historial de todos los resúmenes con su fecha, si se envió, quién lo redactó y marca de leído.
+- Configuración desde la propia aplicación: activar diario y semanal, elegir correo y WhatsApp, poner destinatarios, decidir qué apartados se incluyen y si la apertura la redacta la IA, con «Enviar prueba ahora».
+- En Inicio, tarjeta «Resumen de hoy» con las cuatro cifras y la entradilla, o botón para generarlo.
+- Estado del sistema: nuevos semáforos para los resúmenes.
+
 ## 0.13.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Bandeja»: tus correos de Gmail, los mensajes de WhatsApp Business y las notas de voz de Plaud, todo en un mismo sitio.
@@ -23,6 +34,14 @@
 - Comprobación automática todos los días a las 08:00: si algo falla o caduca pronto, aparece una tarea «Requiere tu atención».
 - En Inicio, tarjeta «Dominios y certificados» con los que necesitan atención; en cada proyecto, un aviso con el estado de sus dominios.
 - Estado del sistema: nuevos semáforos para los dominios y su comprobador.
+
+## 0.11.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Vigilancia»: cada lunes busca en internet las novedades que afectan a cada proyecto (versiones, seguridad, funciones, precios, fin de soporte, IA) y explica «qué te afecta» y qué hacer.
+- Radar de competencia mensual: descubre y sigue a los competidores de cada proyecto con precios, planes, puntos fuertes y débiles, y los cambios del mes.
+- Cada hallazgo se puede convertir en tarea, marcar como visto o descartar; los importantes aparecen en «Requiere tu atención».
+- Configuración por proyecto (tecnologías, temas, sector, competidores conocidos) e historial de cada ejecución con proveedor, tokens y coste.
+- Tarjeta en Inicio, aviso en la ficha del proyecto y semáforos nuevos en Estado del sistema.
 
 ## 0.10.0 — 6 de septiembre de 2026
 
