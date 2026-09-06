@@ -173,7 +173,7 @@ function BloqueVersiones({
   version,
   versiones,
 }: {
-  version?: string;
+  version?: string | undefined;
   versiones: NonNullable<import("@/lib/nex/queries/portal-cliente").DatosPortalPublico["versiones"]>;
 }) {
   const [abierta, setAbierta] = React.useState<string | null>(versiones[0]?.numero ?? null);

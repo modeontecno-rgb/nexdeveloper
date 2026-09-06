@@ -190,11 +190,11 @@ function useInvalidar() {
 
 export type DatosPortal = {
   proyecto_id: string;
-  nombre_cliente?: string;
-  contacto_email?: string;
-  marca?: MarcaPortal;
-  secciones?: SeccionesPortal;
-  expira_el?: string | null;
+  nombre_cliente?: string | undefined;
+  contacto_email?: string | undefined;
+  marca?: MarcaPortal | undefined;
+  secciones?: SeccionesPortal | undefined;
+  expira_el?: string | null | undefined;
 };
 
 export function useCrearPortal() {
@@ -210,7 +210,7 @@ export function useActualizarPortal() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: async (
-      datos: { portal_id: string } & Partial<Omit<DatosPortal, "proyecto_id">> & { activo?: boolean },
+      datos: { portal_id: string } & Partial<Omit<DatosPortal, "proyecto_id">> & { activo?: boolean | undefined },
     ) => llamar({ accion: "actualizar", ...datos }),
     onSuccess: invalidar,
   });
@@ -238,9 +238,9 @@ export function useResponderPeticion() {
   return useMutation({
     mutationFn: async (datos: {
       peticion_id: string;
-      estado?: EstadoPeticionPortal;
-      respuesta?: string;
-      crear_orden?: boolean;
+      estado?: EstadoPeticionPortal | undefined;
+      respuesta?: string | undefined;
+      crear_orden?: boolean | undefined;
     }) => llamar<{ tarea_id?: string; orden_id?: string }>({ accion: "responder", ...datos }),
     onSuccess: invalidar,
   });
@@ -276,7 +276,7 @@ export function usePortalPublico(token: string) {
 export function useEnviarPeticionPublica(token: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (datos: { texto: string; tipo: TipoPeticionPortal; contacto?: string }) =>
+    mutationFn: async (datos: { texto: string; tipo: TipoPeticionPortal; contacto?: string | undefined }) =>
       llamarPublico({ accion: "peticion", token, ...datos }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: clavesPortal.publico(token) });
