@@ -215,12 +215,15 @@ function PantallaFacturacion() {
 function ChipConexionEvoluteia({ mes }: { mes: string }) {
   const { data: estado } = useEstadoFacturacion(mes);
   const { data: config } = useFacturacionConfig();
+  const { catalogo } = useEmpresasEmisoras();
   const probar = useProbarEvoluteia();
   const [prueba, setPrueba] = React.useState<PruebaEvoluteia | null>(null);
 
   const conexion = estado?.evoluteia;
   const conectada = conexion?.estado === "conectada";
   const url = config?.evoluteia_url || URL_EVOLUTEIA_POR_DEFECTO;
+  const empresas = estado?.empresas?.length ? estado.empresas : catalogo;
+  const pruebaDe = (tenantId: string) => prueba?.empresas?.find((e) => e.tenant_id === tenantId);
 
   return (
     <div className="panel mb-6 flex flex-wrap items-center gap-3 p-4">
@@ -234,6 +237,23 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
         <span className={`size-2 rounded-full ${conectada ? "bg-success" : "bg-destructive"}`} aria-hidden />
         {conectada ? `EvoluteIA conectada${conexion?.cuenta ? ` · ${conexion.cuenta}` : ""}` : "EvoluteIA sin conexión"}
       </span>
+
+      {empresas.map((e) => {
+        const r = pruebaDe(e.tenant_id);
+        const verde = r ? Boolean(r.modulo_activo) : conectada && e.activa !== false;
+        return (
+          <span
+            key={e.tenant_id}
+            title={r?.error ?? e.nombre}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs whitespace-nowrap ${tonoEmpresa(e.nombre)}`}
+          >
+            <span className={`size-2 rounded-full ${verde ? "bg-success" : "bg-destructive"}`} aria-hidden />
+            {nombreCortoEmpresa(e.nombre)}
+            {e.por_defecto ? <span className="opacity-70">· por defecto</span> : null}
+          </span>
+        );
+      })}
+
       {!conectada && conexion?.ultimo_error ? (
         <span className="text-xs text-destructive">{conexion.ultimo_error}</span>
       ) : null}
@@ -265,6 +285,7 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
       <Dialogo
         abierto={Boolean(prueba)}
         titulo="Prueba de conexión con EvoluteIA"
+        descripcion={AVISO_EMPRESAS_PERMITIDAS}
         onCerrar={() => setPrueba(null)}
         ancho="max-w-lg"
       >
@@ -273,28 +294,48 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
             {prueba.error ?? "No se ha podido conectar."}
           </p>
         ) : (
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-sm">
             <p className="rounded-lg border border-success/40 bg-success/10 p-3 text-success">Conexión correcta.</p>
             <p>
               <span className="text-muted-foreground">Usuario:</span> {prueba?.usuario ?? "—"}
             </p>
-            <p>
-              <span className="text-muted-foreground">Empresa:</span> {prueba?.empresa?.razon_social ?? "—"}
-              {prueba?.empresa?.nif ? ` · ${prueba.empresa.nif}` : ""}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Serie:</span> {prueba?.serie?.codigo ?? "—"} · siguiente número{" "}
-              {prueba?.serie?.siguiente_num ?? "—"}
-              {prueba?.serie?.ejercicio ? ` (${prueba.serie.ejercicio})` : ""}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Verifactu:</span>{" "}
-              {prueba?.empresa?.verifactu_activo ? (
-                <span className="text-success">activo{prueba.empresa.verifactu_modo ? ` (${prueba.empresa.verifactu_modo})` : ""}</span>
-              ) : (
-                <span className="text-warning">no activo</span>
-              )}
-            </p>
+            {(prueba?.empresas ?? []).map((e) => (
+              <div key={e.tenant_id} className="rounded-lg border border-border p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <InsigniaEmpresa nombre={e.nombre} />
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${
+                      e.modulo_activo
+                        ? "border-success/40 bg-success/10 text-success"
+                        : "border-destructive/40 bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    <span className={`size-1.5 rounded-full ${e.modulo_activo ? "bg-success" : "bg-destructive"}`} />
+                    {e.modulo_activo ? "Módulo activo" : "Módulo no activo"}
+                  </span>
+                  {e.por_defecto ? <span className="text-xs text-muted-foreground">Por defecto</span> : null}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {e.empresa?.razon_social ?? "—"}
+                  {e.empresa?.nif ? ` · ${e.empresa.nif}` : ""}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Serie {e.serie?.codigo ?? "—"} · siguiente número {e.serie?.siguiente_num ?? "—"}
+                  {e.serie?.ejercicio ? ` (${e.serie.ejercicio})` : ""}
+                </p>
+                <p className="mt-1 text-xs">
+                  <span className="text-muted-foreground">Verifactu:</span>{" "}
+                  {e.empresa?.verifactu_activo ? (
+                    <span className="text-success">
+                      activo{e.empresa.verifactu_modo ? ` (${e.empresa.verifactu_modo})` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-warning">no activo</span>
+                  )}
+                </p>
+                {e.error ? <p className="mt-1 text-xs text-destructive">{e.error}</p> : null}
+              </div>
+            ))}
             <p>
               <span className="text-muted-foreground">Facturas sincronizadas:</span>{" "}
               {prueba?.facturas_sincronizadas ?? 0}
@@ -305,6 +346,7 @@ function ChipConexionEvoluteia({ mes }: { mes: string }) {
     </div>
   );
 }
+
 
 /* --------------------------------- Resumen -------------------------------- */
 
