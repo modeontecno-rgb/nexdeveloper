@@ -94,6 +94,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         compilaciones,
         plantillasCompilacion,
         funcionCompilar,
+        dominios,
+        dominiosHistorial,
+        funcionDominios,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -120,6 +123,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("compilaciones"),
         verificarTabla("plantillas_compilacion"),
         verificarFuncion("compilar-app"),
+        verificarTabla("dominios"),
+        verificarTabla("dominios_historial"),
+        verificarFuncion("dominios-comprobar"),
       ]);
       const pingCompilar = await (async () => {
         try {
@@ -155,6 +161,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         compilaciones,
         plantillasCompilacion,
         funcionCompilar,
+        dominios,
+        dominiosHistorial,
+        funcionDominios,
         pingCompilar,
       };
     },
@@ -213,6 +222,33 @@ function EstadoSistema() {
           ? "aviso"
           : "ok",
       detalle: `${alertas.data?.length ?? 0} sin resolver`,
+    },
+    {
+      nombre: "Tabla de dominios",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.dominios ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.dominios
+          ? "Conectado / OK"
+          : "No responde o falta (migración 012)",
+    },
+    {
+      nombre: "Historial de dominios",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.dominiosHistorial ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.dominiosHistorial
+          ? "Conectado / OK"
+          : "No responde o falta (migración 012)",
+    },
+    {
+      nombre: "Edge Function dominios-comprobar",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionDominios ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionDominios
+          ? "Conectado / OK"
+          : "No encontrada",
     },
     {
       nombre: "Tabla de acciones",
