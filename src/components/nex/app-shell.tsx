@@ -25,6 +25,7 @@ import {
   HeartPulse,
   Newspaper,
   Radar,
+  Receipt,
   Settings,
   ShieldCheck,
   Sparkle,
@@ -41,6 +42,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+import { CronometroBarra } from "@/components/nex/cronometro";
 import { PaletaAsistente } from "@/components/nex/paleta-asistente";
 import { PastillaVersion } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
@@ -78,6 +80,7 @@ const NAVEGACION = [
   { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
   { to: "/vigilancia", etiqueta: "Vigilancia", icono: Radar },
   { to: "/gasto-ia", etiqueta: "Gasto de IA", icono: Coins },
+  { to: "/facturacion", etiqueta: "Facturación", icono: Receipt },
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/dominios", etiqueta: "Dominios", icono: Globe },
   { to: "/salud", etiqueta: "Salud", icono: HeartPulse },
@@ -196,6 +199,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <BarraInferior ruta={ruta} avisosSinLeer={avisosSinLeer} />
+      <CronometroBarra />
       <PaletaAsistente />
     </div>
   );
