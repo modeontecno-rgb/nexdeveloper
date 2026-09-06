@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
+import { BotonCronometroProyecto } from "@/components/nex/cronometro";
 import { Dialogo } from "@/components/nex/dialogo";
 import type {
   ContratoCliente,
@@ -1637,7 +1638,7 @@ export function TarjetaFacturacionProyecto({ proyectoId }: { proyectoId: string 
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <BotonCronometroProyectoLocal proyectoId={proyectoId} />
+        <BotonCronometroProyecto proyectoId={proyectoId} />
         <Link to="/facturacion" className="text-xs text-primary hover:underline">
           Ver la facturación
         </Link>
@@ -1646,9 +1647,3 @@ export function TarjetaFacturacionProyecto({ proyectoId }: { proyectoId: string 
   );
 }
 
-function BotonCronometroProyectoLocal({ proyectoId }: { proyectoId: string }) {
-  const { BotonCronometroProyecto } = require("@/components/nex/cronometro") as {
-    BotonCronometroProyecto: (p: { proyectoId: string }) => React.ReactElement;
-  };
-  return <BotonCronometroProyecto proyectoId={proyectoId} />;
-}
