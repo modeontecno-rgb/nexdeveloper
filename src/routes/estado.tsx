@@ -148,6 +148,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAuditorias,
         tablaAuditoriaConfig,
         funcionAuditar,
+        tablaUsuariosClientes,
+        tablaUsuariosAcciones,
+        funcionUsuariosClientes,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -229,7 +232,19 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("auditorias"),
         verificarTabla("auditoria_config"),
         verificarFuncion("auditar"),
+        verificarTabla("usuarios_clientes"),
+        verificarTabla("usuarios_acciones"),
+        verificarFuncion("usuarios-clientes"),
       ]);
+      const pingUsuarios = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("usuarios-clientes", { body: { accion: "estado" } });
+          const r = data as { token_cuenta?: boolean; total?: number } | null;
+          return { tokenCuenta: Boolean(r?.token_cuenta), total: Number(r?.total ?? 0) };
+        } catch {
+          return { tokenCuenta: false, total: 0 };
+        }
+      })();
       const pingAuditar = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("auditar", { body: { accion: "estado" } });
@@ -398,6 +413,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAuditoriaConfig,
         funcionAuditar,
         pingAuditar,
+        tablaUsuariosClientes,
+        tablaUsuariosAcciones,
+        funcionUsuariosClientes,
+        pingUsuarios,
       };
 
     },
@@ -595,6 +614,41 @@ function EstadoSistema() {
           : verificaciones.data?.pingAuditar?.ia
             ? "Conectado / OK"
             : "Responde, pero falta la clave de IA",
+    },
+    {
+      nombre: "Usuarios de clientes",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaUsuariosClientes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaUsuariosClientes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 027)",
+    },
+    {
+      nombre: "Histórico de accesos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaUsuariosAcciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaUsuariosAcciones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 027)",
+    },
+    {
+      nombre: "Servicio de usuarios de clientes",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionUsuariosClientes
+          ? "error"
+          : verificaciones.data?.pingUsuarios?.tokenCuenta
+            ? "ok"
+            : "aviso",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionUsuariosClientes
+          ? "No responde o falta (migración 027)"
+          : verificaciones.data?.pingUsuarios?.tokenCuenta
+            ? "Conectado / OK"
+            : "Responde, pero falta el acceso a las cuentas de los clientes",
     },
     {
       nombre: "Aplicación instalable",

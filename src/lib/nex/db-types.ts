@@ -1514,6 +1514,45 @@ export type AuditoriaConfigRow = {
   proyectos_excluidos: string[] | null
 }
 
+/* ------------------ Usuarios de clientes (0.27.0) ------------------------ */
+
+export type UsuarioClienteRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  supabase_ref: string | null
+  auth_id: string
+  email: string
+  telefono: string | null
+  nombre: string | null
+  rol: string | null
+  confirmado: boolean
+  bloqueado: boolean
+  bloqueado_hasta: string | null
+  proveedor: string | null
+  creado_en_app: string | null
+  ultimo_acceso: string | null
+  metadatos: Record<string, Json> | null
+  sincronizado_el: string | null
+}
+
+export type ResultadoAccionUsuario = "ok" | "error"
+
+export type UsuarioAccionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  accion: string
+  email: string | null
+  auth_id: string | null
+  resultado: ResultadoAccionUsuario
+  detalle: string | null
+  proyectian: boolean | null
+  creado_el: string
+}
+
+
+
 
 
 /* ------------------------------ Habilidades ------------------------------ */
@@ -2023,6 +2062,12 @@ export type Database = {
       manuales_config: Tabla<ManualesConfigRow, Partial<SinUsuario<ManualesConfigRow>>, Partial<SinUsuario<ManualesConfigRow>>>
       auditorias: Tabla<AuditoriaRow, Partial<SinUsuario<AuditoriaRow>> & { proyecto_id: string; lote: string }, Partial<SinUsuario<AuditoriaRow>>>
       auditoria_config: Tabla<AuditoriaConfigRow, Partial<SinUsuario<AuditoriaConfigRow>>, Partial<SinUsuario<AuditoriaConfigRow>>>
+      usuarios_clientes: Tabla<
+        UsuarioClienteRow,
+        Partial<SinUsuario<UsuarioClienteRow>> & { proyecto_id: string; auth_id: string; email: string },
+        Partial<SinUsuario<UsuarioClienteRow>>
+      >
+      usuarios_acciones: Tabla<UsuarioAccionRow, Partial<SinUsuario<UsuarioAccionRow>> & { accion: string }>
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },

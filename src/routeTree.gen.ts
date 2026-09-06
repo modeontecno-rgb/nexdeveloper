@@ -36,6 +36,7 @@ import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as RepositoriosRouteImport } from './routes/repositorios'
 import { Route as ResumenesRouteImport } from './routes/resumenes'
 import { Route as SaludRouteImport } from './routes/salud'
+import { Route as UsuariosClientesRouteImport } from './routes/usuarios-clientes'
 import { Route as VigilanciaRouteImport } from './routes/vigilancia'
 import { Route as VozRouteImport } from './routes/voz'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
@@ -179,6 +180,11 @@ const SaludRoute = SaludRouteImport.update({
   path: '/salud',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsuariosClientesRoute = UsuariosClientesRouteImport.update({
+  id: '/usuarios-clientes',
+  path: '/usuarios-clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VigilanciaRoute = VigilanciaRouteImport.update({
   id: '/vigilancia',
   path: '/vigilancia',
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
   '/salud': typeof SaludRoute
+  '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
   '/salud': typeof SaludRoute
+  '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
   '/salud': typeof SaludRoute
+  '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
   '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
@@ -355,6 +364,7 @@ export interface FileRouteTypes {
     | '/repositorios'
     | '/resumenes'
     | '/salud'
+    | '/usuarios-clientes'
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
@@ -391,6 +401,7 @@ export interface FileRouteTypes {
     | '/repositorios'
     | '/resumenes'
     | '/salud'
+    | '/usuarios-clientes'
     | '/vigilancia'
     | '/voz'
     | '/ajustes/proveedores'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/repositorios'
     | '/resumenes'
     | '/salud'
+    | '/usuarios-clientes'
     | '/vigilancia'
     | '/voz'
     | '/ajustes_/proveedores'
@@ -464,6 +476,7 @@ export interface RootRouteChildren {
   RepositoriosRoute: typeof RepositoriosRoute
   ResumenesRoute: typeof ResumenesRoute
   SaludRoute: typeof SaludRoute
+  UsuariosClientesRoute: typeof UsuariosClientesRoute
   VigilanciaRoute: typeof VigilanciaRoute
   VozRoute: typeof VozRoute
   AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
@@ -663,6 +676,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SaludRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/usuarios-clientes': {
+      id: '/usuarios-clientes'
+      path: '/usuarios-clientes'
+      fullPath: '/usuarios-clientes'
+      preLoaderRoute: typeof UsuariosClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vigilancia': {
       id: '/vigilancia'
       path: '/vigilancia'
@@ -754,6 +774,7 @@ const rootRouteChildren: RootRouteChildren = {
   RepositoriosRoute: RepositoriosRoute,
   ResumenesRoute: ResumenesRoute,
   SaludRoute: SaludRoute,
+  UsuariosClientesRoute: UsuariosClientesRoute,
   VigilanciaRoute: VigilanciaRoute,
   VozRoute: VozRoute,
   AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
