@@ -1414,8 +1414,12 @@ function DialogoPreparar({
 function BloqueClientes() {
   const { data: proyectos = [] } = useProyectos();
   const { data: clientes = [] } = useClientesFacturacion();
+  const { catalogo, porDefecto } = useEmpresasEmisoras();
   const sugerir = useSugerirEnlaces();
   const [sugerencias, setSugerencias] = React.useState<SugerenciaEnlace[] | null>(null);
+  const [empresaSugerir, setEmpresaSugerir] = React.useState<string>("");
+
+  const tenantSugerir = empresaSugerir || porDefecto?.tenant_id || "";
 
   return (
     <div className="space-y-4">
@@ -1423,23 +1427,44 @@ function BloqueClientes() {
         <p className="text-sm text-muted-foreground">
           Cada proyecto se enlaza con un cliente («tercero») de EvoluteIA. Los datos fiscales se leen de EvoluteIA.
         </p>
-        <Boton
-          className="ml-auto"
-          variante="suave"
-          disabled={sugerir.isPending}
-          onClick={async () => {
-            try {
-              setSugerencias(await sugerir.mutateAsync());
-            } catch (e) {
-              toast.error((e as Error).message);
-            }
-          }}
-        >
-          <Wand2 className="size-3.5" /> Sugerir enlaces
-        </Boton>
+        <div className="ml-auto flex flex-wrap items-end gap-2">
+          <Campo etiqueta="Buscar en">
+            <select
+              value={tenantSugerir}
+              onChange={(e) => setEmpresaSugerir(e.target.value)}
+              className={claseCampo}
+            >
+              {catalogo.map((e) => (
+                <option key={e.tenant_id} value={e.tenant_id}>
+                  {e.nombre}
+                </option>
+              ))}
+            </select>
+          </Campo>
+          <Boton
+            variante="suave"
+            disabled={sugerir.isPending}
+            onClick={async () => {
+              try {
+                setSugerencias(await sugerir.mutateAsync(tenantSugerir || null));
+              } catch (e) {
+                toast.error((e as Error).message);
+              }
+            }}
+          >
+            <Wand2 className="size-3.5" /> Sugerir enlaces
+          </Boton>
+        </div>
       </div>
 
-      {sugerencias ? <PanelSugerencias sugerencias={sugerencias} onCerrar={() => setSugerencias(null)} /> : null}
+      {sugerencias ? (
+        <PanelSugerencias
+          sugerencias={sugerencias}
+          tenantId={tenantSugerir || null}
+          onCerrar={() => setSugerencias(null)}
+        />
+      ) : null}
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         {proyectos.map((p) => (
