@@ -108,7 +108,13 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaResumenes,
         tablaResumenesConfig,
         funcionResumenes,
+        gastoDiario,
+        gastosManuales,
+        presupuestosIa,
+        gastoConfig,
+        funcionGasto,
       ] = await Promise.all([
+
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
         verificarFuncion("ejecutar-accion"),
@@ -148,7 +154,21 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("resumenes"),
         verificarTabla("resumenes_config"),
         verificarFuncion("resumenes"),
+        verificarTabla("gasto_ia_diario"),
+        verificarTabla("gastos_ia_manuales"),
+        verificarTabla("presupuestos_ia"),
+        verificarTabla("gasto_ia_config"),
+        verificarFuncion("gasto-ia"),
       ]);
+      const pingGasto = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("gasto-ia", { body: {} });
+          const r = data as { anthropic_admin?: boolean; openai_admin?: boolean } | null;
+          return { anthropic: Boolean(r?.anthropic_admin), openai: Boolean(r?.openai_admin) };
+        } catch {
+          return { anthropic: false, openai: false };
+        }
+      })();
       const pingVigilar = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("vigilar", { body: {} });
@@ -217,6 +237,12 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionResumenes,
         pingBandeja,
         pingCompilar,
+        gastoDiario,
+        gastosManuales,
+        presupuestosIa,
+        gastoConfig,
+        funcionGasto,
+        pingGasto,
       };
     },
   });
@@ -409,6 +435,43 @@ function EstadoSistema() {
           ? "Conectado / OK"
           : "No encontrada",
     },
+    {
+      nombre: "Tablas de gasto de IA",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.gastoDiario &&
+            verificaciones.data?.gastosManuales &&
+            verificaciones.data?.presupuestosIa &&
+            verificaciones.data?.gastoConfig
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.gastoDiario &&
+            verificaciones.data?.gastosManuales &&
+            verificaciones.data?.presupuestosIa &&
+            verificaciones.data?.gastoConfig
+          ? "Conectado / OK"
+          : "No responden o faltan (migración 015)",
+    },
+    {
+      nombre: "Edge Function gasto-ia",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionGasto
+          ? "error"
+          : verificaciones.data?.pingGasto?.anthropic || verificaciones.data?.pingGasto?.openai
+            ? "ok"
+            : "aviso",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionGasto
+          ? "No encontrada"
+          : verificaciones.data?.pingGasto?.anthropic || verificaciones.data?.pingGasto?.openai
+            ? "Conectado / OK (coste real disponible)"
+            : "Sin claves de administración: cifras estimadas",
+    },
+
     {
       nombre: "Tabla de acciones",
       nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.acciones ? "ok" : "error",

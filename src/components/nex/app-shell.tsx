@@ -3,6 +3,7 @@ import {
   Activity,
   BookOpen,
   Boxes,
+  Coins,
   Cpu,
   Inbox,
   LayoutDashboard,
@@ -49,6 +50,7 @@ const NAVEGACION = [
   { to: "/compilaciones", etiqueta: "Compilaciones", icono: Package },
   { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
   { to: "/vigilancia", etiqueta: "Vigilancia", icono: Radar },
+  { to: "/gasto-ia", etiqueta: "Gasto de IA", icono: Coins },
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/dominios", etiqueta: "Dominios", icono: Globe },
 
