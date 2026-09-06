@@ -968,7 +968,8 @@ function BloqueFacturas() {
               <th className="p-3">Fecha</th>
               <th className="p-3">Proyecto</th>
               <th className="p-3">Cliente</th>
-              <th className="p-3 text-right">Base</th>
+              <th className="p-3">Empresa</th>
+
               <th className="p-3 text-right">Total</th>
               <th className="p-3 text-right">Pendiente</th>
               <th className="p-3">Estado</th>
