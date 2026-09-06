@@ -2310,6 +2310,16 @@ export type Database = {
       salud_informes: Tabla<SaludInformeRow>
       salud_proyectos: Tabla<SaludProyectoRow>
       salud_config: Tabla<SaludConfigRow, Partial<SinUsuario<SaludConfigRow>>, Partial<SinUsuario<SaludConfigRow>>>
+      infra_servicios: Tabla<
+        InfraServicioRow,
+        Partial<SinUsuario<InfraServicioRow>> & { nombre: string; tipo: TipoServicioInfra },
+        Partial<SinUsuario<InfraServicioRow>>
+      >
+      infra_dependencias: Tabla<InfraDependenciaRow>
+      infra_comprobaciones: Tabla<InfraComprobacionRow>
+      infra_incidencias: Tabla<InfraIncidenciaRow>
+      infra_sincronizacion: Tabla<InfraSincronizacionRow>
+      infra_config: Tabla<InfraConfigRow, Partial<SinUsuario<InfraConfigRow>>, Partial<SinUsuario<InfraConfigRow>>>
 
 
 
