@@ -1,2 +1,2 @@
 /** Versión visible de la aplicación (fuente única). */
-export const VERSION_APP = "0.32.0";
+export const VERSION_APP = "0.33.0";

@@ -1076,7 +1076,7 @@ function BloqueFacturas() {
                 const r = await emitir.mutateAsync({ documento_id: emitirId });
                 setEmitirId(null);
                 toast.success(
-                  `Factura ${r.numero ?? ""} emitida${r.verifactu ? " y registrada en Verifactu" : " (sin Verifactu)"}.`,
+                  `Factura ${r.numero ?? ""} emitida desde ${r.empresa ?? "la empresa por defecto"}${r.verifactu ? " y registrada en Verifactu" : " (sin Verifactu)"}.`,
                 );
               } catch (e) {
                 toast.error((e as Error).message);
