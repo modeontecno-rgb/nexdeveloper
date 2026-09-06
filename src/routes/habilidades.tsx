@@ -661,10 +661,10 @@ export function DialogoUsar({
           </label>
         </div>
         <div className="flex justify-end gap-2">
-          <Boton variante="suave" onClick={onCerrar}>
+          <Boton type="button" variante="suave" onClick={onCerrar}>
             Cancelar
           </Boton>
-          <Boton disabled={invocar.isPending} onClick={() => void aplicar()}>
+          <Boton type="button" disabled={invocar.isPending} onClick={() => void aplicar()}>
             <Wand2 className="size-4" /> Crear tarea
           </Boton>
         </div>
@@ -802,10 +802,10 @@ function DialogoEditar({
           )}
         </div>
         <div className="flex justify-end gap-2">
-          <Boton variante="suave" onClick={onCerrar}>
+          <Boton type="button" variante="suave" onClick={onCerrar}>
             Cancelar
           </Boton>
-          <Boton disabled={guardar.isPending} onClick={() => void enviar()}>
+          <Boton type="button" disabled={guardar.isPending} onClick={() => void enviar()}>
             <Check className="size-4" /> Guardar
           </Boton>
         </div>
@@ -942,7 +942,7 @@ export function SelectorHabilidad({
 
   return (
     <>
-      <Boton variante="suave" onClick={() => setAbierto(true)}>
+      <Boton type="button" variante="suave" onClick={() => setAbierto(true)}>
         <Wand2 className="size-4" /> {etiqueta}
       </Boton>
 
