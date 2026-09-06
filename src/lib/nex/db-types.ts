@@ -225,6 +225,7 @@ export type ProyectoRow = {
   palabras_clave: string[] | null
   version_actual: string | null
   proyectian_slug: string | null
+  lovable_project_id: string | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
   resumen_automatico: string | null
@@ -301,6 +302,8 @@ export type OrdenRow = {
   reorganizada_el: string | null
   pendiente_confirmar_proyecto: boolean
   requiere_atencion: boolean
+  ejecucion_id: string | null
+  ejecutar_con: "lovable" | "manual"
   creado_el: string
 }
 
@@ -1461,6 +1464,82 @@ export type MesaValoracionRow = {
   creado_el: string
 }
 
+// ---- Ejecución real de las órdenes (0.20.0) ----
+export type EstadoEjecucion =
+  | "en_cola"
+  | "enviando"
+  | "construyendo"
+  | "comprobando"
+  | "esperando_aprobacion"
+  | "publicando"
+  | "completada"
+  | "error"
+  | "cancelada"
+export type MotorEjecucion = "lovable" | "claude" | "auto"
+export type ModoTrabajoEjecucion = "construir" | "planificar"
+export type EstadoConexionLovable = "desconectada" | "conectada" | "error"
+
+export type EjecucionOrdenRow = {
+  id: string
+  user_id: string
+  orden_id: string | null
+  proyecto_id: string | null
+  tarea_id: string | null
+  estado: EstadoEjecucion
+  motor: MotorEjecucion
+  modo: ModoTrabajoEjecucion
+  texto: string | null
+  mensaje_id: string | null
+  thread_id: string | null
+  commit_sha: string | null
+  respuesta: string | null
+  resumen: string | null
+  coste_creditos: number | null
+  coste_ia: number | null
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  pasos: number | null
+  rama: string | null
+  pr_url: string | null
+  pr_numero: number | null
+  preview_url: string | null
+  preview_ok: boolean | null
+  publicado_url: string | null
+  error: string | null
+  intentos: number | null
+  iniciada_el: string | null
+  terminada_el: string | null
+  aprobada_el: string | null
+  creado_el: string
+  actualizado_el: string
+}
+
+export type EjecucionConfigRow = {
+  id: string
+  user_id: string
+  auto_ejecutar: boolean
+  auto_publicar: boolean
+  comprobar_preview: boolean
+  max_simultaneas: number
+  modo_max: boolean
+  aviso_creditos: number
+  motor_preferido: MotorEjecucion
+  modelo_claude: string | null
+  max_pasos: number
+  max_coste_ia: number
+}
+
+export type LovableConexionRow = {
+  id: string
+  user_id: string
+  estado: EstadoConexionLovable
+  cuenta: string | null
+  ultimo_error: string | null
+  ultima_comprobacion: string | null
+}
+
+
+
 export type Database = {
 
 
@@ -1594,6 +1673,17 @@ export type Database = {
         Partial<SinUsuario<MesaValoracionRow>> & { mesa_id: string; valoracion: number },
         Partial<SinUsuario<MesaValoracionRow>>
       >
+      ejecuciones_orden: Tabla<
+        EjecucionOrdenRow,
+        Partial<SinUsuario<EjecucionOrdenRow>>,
+        Partial<SinUsuario<EjecucionOrdenRow>>
+      >
+      ejecucion_config: Tabla<
+        EjecucionConfigRow,
+        Partial<SinUsuario<EjecucionConfigRow>>,
+        Partial<SinUsuario<EjecucionConfigRow>>
+      >
+      lovable_conexion: Tabla<LovableConexionRow>
 
 
 
@@ -1671,6 +1761,7 @@ export type Database = {
       estado_ejecucion_calidad: EstadoEjecucionCalidad
       resultado_control: ResultadoControl
       semaforo_calidad: SemaforoCalidad
+      estado_ejecucion: EstadoEjecucion
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio
