@@ -102,7 +102,7 @@ const PESTANAS: { valor: Pestana; texto: string }[] = [
   { valor: "config", texto: "Configuración" },
 ];
 
-function Cifra({ titulo, valor, pie, tono }: { titulo: string; valor: React.ReactNode; pie?: React.ReactNode; tono?: string }) {
+function Cifra({ titulo, valor, pie, tono }: { titulo: string; valor: React.ReactNode; pie?: React.ReactNode; tono?: string | undefined }) {
   return (
     <div className="panel p-4">
       <p className="text-xs text-muted-foreground">{titulo}</p>
@@ -581,7 +581,7 @@ function CronometroPanel() {
             disabled={!proyectoId || iniciar.isPending}
             onClick={async () => {
               try {
-                await iniciar.mutateAsync({ proyecto_id: proyectoId, descripcion: descripcion || undefined });
+                await iniciar.mutateAsync({ proyecto_id: proyectoId, ...(descripcion ? { descripcion } : {}) });
                 toast.success("Cronómetro en marcha.");
               } catch (e) {
                 toast.error((e as Error).message);
@@ -655,7 +655,7 @@ function PanelNuevasHoras({ abierto, onCerrar }: { abierto: boolean; onCerrar: (
                   proyecto_id: proyectoId,
                   fecha,
                   horas: Number(horas),
-                  descripcion: descripcion || undefined,
+                  ...(descripcion ? { descripcion } : {}),
                   facturable,
                 });
                 toast.success("Horas registradas.");
@@ -1465,7 +1465,7 @@ function BloqueConfiguracion() {
   }, [config]);
 
   const campo = (clave: string, etiqueta: string, pista?: string) => (
-    <Campo etiqueta={etiqueta} pista={pista}>
+    <Campo etiqueta={etiqueta} {...(pista ? { pista } : {})}>
       <input
         value={datos[clave] ?? ""}
         onChange={(e) => setDatos({ ...datos, [clave]: e.target.value })}
