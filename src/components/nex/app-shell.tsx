@@ -26,6 +26,7 @@ import {
   Newspaper,
   Radar,
   Receipt,
+  Server,
   Settings,
   ShieldCheck,
   Sparkle,
@@ -84,6 +85,7 @@ const NAVEGACION = [
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/dominios", etiqueta: "Dominios", icono: Globe },
   { to: "/salud", etiqueta: "Salud", icono: HeartPulse },
+  { to: "/infraestructura", etiqueta: "Infraestructura", icono: Server },
   { to: "/auditoria", etiqueta: "Auditoría", icono: Stamp },
 
   { to: "/avisos", etiqueta: "Avisos", icono: Bell },
