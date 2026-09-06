@@ -1994,6 +1994,10 @@ function BloqueConfiguracion() {
     <div className="space-y-4">
       <TarjetaSoloFabricante />
 
+      <BloqueEmpresasEmisoras />
+
+
+
       <div className="panel p-4">
         <h2 className="font-display text-sm font-semibold">Horas y gasto de IA</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
