@@ -9,6 +9,7 @@ import {
   Printer,
   RefreshCw,
   Settings2,
+  SpellCheck,
   Trash2,
 } from "lucide-react";
 import * as React from "react";
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
-import type { ManualRow, PublicoManual } from "@/lib/nex/db-types";
+import type { NivelRevisionManual, PublicoManual, ManualRow, TratamientoManual } from "@/lib/nex/db-types";
 import { formatoEuros, formatoFechaHora } from "@/lib/nex/labels";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
@@ -34,6 +35,7 @@ import {
   useManuales,
   useRealtimeManuales,
   useReintentarManual,
+  useRevisarManual,
 } from "@/lib/nex/queries/manuales";
 import { cn } from "@/lib/utils";
 
@@ -189,6 +191,18 @@ function ManualesPantalla() {
         <SemaforoRequisito ok={Boolean(req.github)} texto={req.github ? "GitHub conectado" : "GitHub sin conectar"} />
         <SemaforoRequisito ok={Boolean(req.proyectian)} texto={req.proyectian ? "Proyectian" : "Proyectian sin conectar"} />
         <SemaforoRequisito ok={Boolean(req.almacen)} texto={req.almacen ? "Almacén 03-MANUALES" : "Almacén sin configurar"} />
+        <SemaforoRequisito ok={Boolean(req.revisor)} texto={req.revisor ? "Revisor de redacción" : "Revisor sin IA"} />
+        {req.perfil_estilo ? (
+          <SemaforoRequisito ok texto="Perfil de estilo cargado" />
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-current" />
+            Sin perfil de estilo
+            <Link to="/personal" className="text-primary hover:underline">
+              Crear
+            </Link>
+          </span>
+        )}
       </div>
 
       {configAbierta ? <PanelConfiguracion /> : null}
