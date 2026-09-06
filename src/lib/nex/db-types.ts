@@ -2019,6 +2019,8 @@ export type Database = {
       documentos_nex: Tabla<DocumentoNexRow>
       manuales: Tabla<ManualRow, Partial<SinUsuario<ManualRow>> & { proyecto_id: string; titulo: string }, Partial<SinUsuario<ManualRow>>>
       manuales_config: Tabla<ManualesConfigRow, Partial<SinUsuario<ManualesConfigRow>>, Partial<SinUsuario<ManualesConfigRow>>>
+      auditorias: Tabla<AuditoriaRow, Partial<SinUsuario<AuditoriaRow>> & { proyecto_id: string; lote: string }, Partial<SinUsuario<AuditoriaRow>>>
+      auditoria_config: Tabla<AuditoriaConfigRow, Partial<SinUsuario<AuditoriaConfigRow>>, Partial<SinUsuario<AuditoriaConfigRow>>>
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },
