@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.15.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Gasto de IA»: cuánto te cuesta cada mes la inteligencia artificial, por proveedor y por proyecto.
+- Cabecera con el gasto del mes, los tokens y las llamadas, el presupuesto global con barra de color y la proyección a fin de mes.
+- Insignia «real facturado» cuando el importe viene directamente del proveedor; si no, la cifra es una estimación a partir de los tokens.
+- Gráficos: gasto por día y proveedor, reparto por proveedor y los diez proyectos que más gastan, con sus tablas de detalle.
+- Presupuestos mensuales globales, por proveedor o por proyecto, con aviso al porcentaje que elijas y opción de bloquear los trabajos de IA al superarlos.
+- Apartado para apuntar a mano créditos comprados y suscripciones (mensuales o puntuales), con total del mes.
+- Configuración del tipo de cambio dólar-euro y del precio del crédito, y aviso claro de qué hace falta para ver el coste real facturado.
+- Botón «Sincronizar ahora» y sincronización automática cada día a las 07:30.
+- En Inicio, tarjeta «Gasto de IA» con el gasto del mes, el presupuesto y la proyección; en cada proyecto, chip con su gasto del mes.
+- Estado del sistema: nuevos semáforos para el gasto de IA.
+
 ## 0.14.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Resúmenes»: cada mañana a las 08:00 recibes el parte del día y los lunes el informe semanal de toda tu cartera.
