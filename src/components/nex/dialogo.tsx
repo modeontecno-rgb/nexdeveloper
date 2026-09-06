@@ -29,13 +29,14 @@ export function Dialogo({
   if (!abierto) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto bg-black/50 sm:items-start sm:p-8">
       <div
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className={`panel w-full ${ancho} bg-background p-5 shadow-xl`}
+        className={`panel w-full ${ancho} min-h-full rounded-none border-0 bg-background p-4 shadow-xl sm:min-h-0 sm:rounded-xl sm:border sm:p-5`}
       >
+
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-base font-semibold">{titulo}</h2>
