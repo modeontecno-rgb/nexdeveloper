@@ -174,6 +174,15 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("habilidades_config"),
         verificarFuncion("habilidades"),
       ]);
+      const pingHabilidades = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("habilidades", { body: {} });
+          const r = data as { repo_ok?: boolean; github?: boolean } | null;
+          return { repoOk: Boolean(r?.repo_ok), github: Boolean(r?.github) };
+        } catch {
+          return { repoOk: false, github: false };
+        }
+      })();
       const pingDocumentar = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("documentar", { body: {} });
@@ -270,6 +279,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         documentosNex,
         funcionDocumentar,
         pingDocumentar,
+        tablaHabilidades,
+        tablaHabilidadesUsos,
+        tablaHabilidadesConfig,
+        funcionHabilidades,
+        pingHabilidades,
       };
     },
   });
@@ -496,6 +510,38 @@ function EstadoSistema() {
               ]
                 .filter(Boolean)
                 .join(" y ")}`,
+    },
+    {
+      nombre: "Tablas de habilidades",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.tablaHabilidades &&
+            verificaciones.data?.tablaHabilidadesUsos &&
+            verificaciones.data?.tablaHabilidadesConfig
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaHabilidades &&
+            verificaciones.data?.tablaHabilidadesUsos &&
+            verificaciones.data?.tablaHabilidadesConfig
+          ? "Conectado / OK"
+          : "No responden o faltan (migración 017)",
+    },
+    {
+      nombre: "Edge Function habilidades",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.funcionHabilidades && verificaciones.data?.pingHabilidades?.repoOk
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionHabilidades
+          ? "No encontrada"
+          : verificaciones.data?.pingHabilidades?.repoOk
+            ? "Conectado / OK (repositorio accesible)"
+            : "Sin acceso al repositorio de habilidades",
     },
     {
       nombre: "Tablas de gasto de IA",
