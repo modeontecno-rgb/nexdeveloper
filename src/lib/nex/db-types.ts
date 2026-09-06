@@ -230,6 +230,9 @@ export type ProyectoRow = {
   ultima_ejecucion_calidad_id: string | null
   semaforo_salud: Semaforo
   salud_comprobada_el: string | null
+  semaforo_infra: Semaforo | null
+  semaforo_sincronizacion: Semaforo | null
+
   puntuacion_auditoria: number | null
   auditoria_el: string | null
   sentry_slug: string | null
