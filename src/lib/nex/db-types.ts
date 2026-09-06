@@ -944,6 +944,8 @@ export type Database = {
       v_rendimiento_modelos: { Row: RendimientoModeloRow; Relationships: [] }
       v_copias_destinos: { Row: CopiaDestinoRow; Relationships: [] }
       v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
+      v_dominios_resumen: { Row: DominiosResumenRow; Relationships: [] }
+
 
     }
 
