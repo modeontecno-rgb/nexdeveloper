@@ -225,6 +225,7 @@ export type ProyectoRow = {
   palabras_clave: string[] | null
   version_actual: string | null
   proyectian_slug: string | null
+  lovable_project_id: string | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
   resumen_automatico: string | null
@@ -301,6 +302,8 @@ export type OrdenRow = {
   reorganizada_el: string | null
   pendiente_confirmar_proyecto: boolean
   requiere_atencion: boolean
+  ejecucion_id: string | null
+  ejecutar_con: "lovable" | "manual"
   creado_el: string
 }
 
@@ -1670,6 +1673,17 @@ export type Database = {
         Partial<SinUsuario<MesaValoracionRow>> & { mesa_id: string; valoracion: number },
         Partial<SinUsuario<MesaValoracionRow>>
       >
+      ejecuciones_orden: Tabla<
+        EjecucionOrdenRow,
+        Partial<SinUsuario<EjecucionOrdenRow>>,
+        Partial<SinUsuario<EjecucionOrdenRow>>
+      >
+      ejecucion_config: Tabla<
+        EjecucionConfigRow,
+        Partial<SinUsuario<EjecucionConfigRow>>,
+        Partial<SinUsuario<EjecucionConfigRow>>
+      >
+      lovable_conexion: Tabla<LovableConexionRow>
 
 
 
@@ -1747,6 +1761,7 @@ export type Database = {
       estado_ejecucion_calidad: EstadoEjecucionCalidad
       resultado_control: ResultadoControl
       semaforo_calidad: SemaforoCalidad
+      estado_ejecucion: EstadoEjecucion
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio
