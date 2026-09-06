@@ -217,7 +217,7 @@ export function useAdoptarHabilidad() {
 export function useActualizarHabilidad() {
   const invalidar = useInvalidar();
   return useMutation({
-    mutationFn: async ({ id, cambios }: { id: string; cambios: Partial<HabilidadRow> }) => {
+    mutationFn: async ({ id, cambios }: { id: string; cambios: Partial<Omit<HabilidadRow, "id" | "user_id">> }) => {
       const { error } = await supabase.from("habilidades").update(cambios).eq("id", id);
       if (error) throw new Error(error.message);
     },
@@ -261,7 +261,7 @@ export function useInvocarHabilidad() {
 export function useGuardarConfigHabilidades() {
   const invalidar = useInvalidar();
   return useMutation({
-    mutationFn: async ({ id, cambios }: { id: string; cambios: Partial<HabilidadesConfigRow> }) => {
+    mutationFn: async ({ id, cambios }: { id: string; cambios: Partial<Omit<HabilidadesConfigRow, "id" | "user_id">> }) => {
       const { error } = await supabase.from("habilidades_config").update(cambios).eq("id", id);
       if (error) throw new Error(error.message);
     },
