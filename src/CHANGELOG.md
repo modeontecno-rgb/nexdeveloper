@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## 0.19.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Mesa de expertos»: reúne a varios expertos para decidir un trabajo; uno lo planifica, otro lo ejecuta y otro lo revisa.
+- «Nueva mesa»: eliges proyecto, escribes qué hay que decidir, añades el contexto y eliges el modo (económico, equilibrado o máxima calidad) con su coste orientativo.
+- La mesa propone el equipo con el motivo de cada elección; puedes cambiar el experto, el papel, el proveedor y el modelo, y añadir o quitar participantes antes de empezar.
+- Deliberación en directo: las intervenciones van apareciendo como una conversación de sala, con el papel de cada uno y su coste.
+- Al terminar, la «Conclusión del coordinador» resume la decisión y muestra el equipo final, el plan paso a paso con responsable y horas, los riesgos, el coste y las horas estimadas, la calidad prevista y si necesita tu aprobación.
+- Desde la conclusión puedes crear las tareas del plan en el proyecto, enviarla como orden, copiar el texto y puntuar la mesa de 1 a 5 con un comentario.
+- Historial con todas las mesas por fecha, proyecto, modo, estado, coste y valoración, para volver a abrir cualquiera.
+- Atajos: «Consultar a la mesa de expertos» en Nueva orden, «Convocar mesa» en la ficha de cada proyecto y «Pedir opinión a la mesa» en las tareas que requieren tu atención.
+- Estado del sistema: nuevos semáforos para la mesa y sus proveedores de IA.
+
 ## 0.18.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Voz y demos»: escribe el guion de la demostración de cualquier proyecto y ponle voz sin salir de la aplicación.

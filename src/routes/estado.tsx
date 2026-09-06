@@ -124,6 +124,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaLocuciones,
         tablaVozConfig,
         funcionVoz,
+        tablaMesas,
+        tablaMesaIntervenciones,
+        tablaMesaValoraciones,
+        funcionMesa,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -181,7 +185,20 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("locuciones"),
         verificarTabla("voz_config"),
         verificarFuncion("voz"),
+        verificarTabla("mesas"),
+        verificarTabla("mesa_intervenciones"),
+        verificarTabla("mesa_valoraciones"),
+        verificarFuncion("mesa"),
       ]);
+      const pingMesa = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("mesa", { body: {} });
+          const r = data as { minimo_ok?: boolean; proveedores?: string[] } | null;
+          return { minimoOk: Boolean(r?.minimo_ok), proveedores: r?.proveedores ?? [] };
+        } catch {
+          return { minimoOk: false, proveedores: [] as string[] };
+        }
+      })();
       const pingVoz = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("voz", { body: {} });
@@ -306,6 +323,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaVozConfig,
         funcionVoz,
         pingVoz,
+        tablaMesas,
+        tablaMesaIntervenciones,
+        tablaMesaValoraciones,
+        funcionMesa,
+        pingMesa,
       };
     },
   });
@@ -564,6 +586,38 @@ function EstadoSistema() {
           : verificaciones.data?.pingHabilidades?.repoOk
             ? "Conectado / OK (repositorio accesible)"
             : "Sin acceso al repositorio de habilidades",
+    },
+    {
+      nombre: "Tablas de la mesa de expertos",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.tablaMesas &&
+            verificaciones.data?.tablaMesaIntervenciones &&
+            verificaciones.data?.tablaMesaValoraciones
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaMesas &&
+            verificaciones.data?.tablaMesaIntervenciones &&
+            verificaciones.data?.tablaMesaValoraciones
+          ? "Conectado / OK"
+          : "No responden o faltan (migración 019)",
+    },
+    {
+      nombre: "Edge Function mesa",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.funcionMesa && verificaciones.data?.pingMesa?.minimoOk
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionMesa
+          ? "No encontrada"
+          : verificaciones.data?.pingMesa?.minimoOk
+            ? `Conectado / OK (${verificaciones.data?.pingMesa?.proveedores.length ?? 0} proveedores)`
+            : "Sin proveedores de IA con clave",
     },
     {
       nombre: "Tablas de voz y demos",

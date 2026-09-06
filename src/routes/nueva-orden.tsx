@@ -13,7 +13,9 @@ import { sugerirProyecto, useCrearOrden, type Sugerencia } from "@/lib/nex/queri
 import { bloquea, revisarTextoOrden } from "@/lib/nex/revision-orden";
 import type { Hallazgo } from "@/lib/nex/db-types";
 import { SelectorHabilidad } from "@/routes/habilidades";
+import { BotonConvocarMesa } from "@/routes/mesa";
 import { useActualizarHabilidad } from "@/lib/nex/queries/habilidades";
+
 
 export const Route = createFileRoute("/nueva-orden")({
   head: () => ({
@@ -128,7 +130,7 @@ function NuevaOrdenPantalla() {
               />
             </Campo>
 
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <SelectorHabilidad
                 {...(proyectoId ? { proyectoId } : {})}
                 etiqueta="Añadir habilidad"
@@ -140,7 +142,14 @@ function NuevaOrdenPantalla() {
                   });
                 }}
               />
+              <BotonConvocarMesa
+                etiqueta="Consultar a la mesa de expertos"
+                className="px-2.5 py-1.5 text-xs"
+                {...(proyectoId ? { proyectoId } : {})}
+                {...(texto.trim() ? { pregunta: texto.trim() } : {})}
+              />
             </div>
+
 
             {sugerencia && sugerencia.proyecto_id !== proyectoId ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">

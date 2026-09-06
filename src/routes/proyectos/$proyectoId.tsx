@@ -2,6 +2,8 @@ import { ChipGastoIa } from "@/routes/gasto-ia";
 import { BloqueVersionDocumentos } from "@/routes/documentacion";
 import { BloqueDemo } from "@/routes/voz";
 import { SelectorHabilidad } from "@/routes/habilidades";
+import { BotonConvocarMesa } from "@/routes/mesa";
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
@@ -135,6 +137,8 @@ function DetalleProyecto() {
                 </Link>
               ))}
             <SelectorHabilidad proyectoId={proyectoId} />
+            <BotonConvocarMesa proyectoId={proyectoId} className="px-2.5 py-1 text-xs" />
+
             <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
             <ChipGastoIa proyectoId={proyectoId} />
