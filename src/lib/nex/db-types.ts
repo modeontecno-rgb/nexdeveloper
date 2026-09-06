@@ -882,6 +882,8 @@ export type Database = {
       v_proveedores_ia: { Row: ProveedorIaRow; Relationships: [] }
       v_rendimiento_modelos: { Row: RendimientoModeloRow; Relationships: [] }
       v_copias_destinos: { Row: CopiaDestinoRow; Relationships: [] }
+      v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
+
     }
 
     Functions: {
