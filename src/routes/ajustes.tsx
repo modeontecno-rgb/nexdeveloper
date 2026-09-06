@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Cpu, Database, Trash2 } from "lucide-react";
+import { Cpu, Database, Smartphone, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
-import { Encabezado } from "@/components/nex/app-shell";
+import { Encabezado, useAccesosMovil } from "@/components/nex/app-shell";
 import { TarjetaPlaudConexion } from "@/routes/pideme";
 import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
@@ -11,7 +11,14 @@ import { useAuth } from "@/lib/nex/auth";
 import { borrarDatosDemostracion, cargarDatosDemostracion } from "@/lib/nex/demo";
 import { useAjustes, usePerfil } from "@/lib/nex/queries/datos";
 import { useGuardarAjustes } from "@/lib/nex/queries/mutaciones";
+import {
+  ACCESOS_MOVIL_POR_DEFECTO,
+  TODAS_LAS_PANTALLAS,
+  guardarAccesosMovil,
+  type RutaMenu,
+} from "@/lib/nex/menu";
 import { VERSION_APP } from "@/lib/nex/version";
+
 
 export const Route = createFileRoute("/ajustes")({
   head: () => ({
