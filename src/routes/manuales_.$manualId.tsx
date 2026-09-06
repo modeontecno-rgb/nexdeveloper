@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, Image as Imagen, Loader2, Printer, RefreshCw, Save } from "lucide-react";
+import { ArrowLeft, Download, Image as Imagen, Loader2, Printer, RefreshCw, Save, SpellCheck } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -19,9 +19,10 @@ import {
   useManual,
   useRealtimeManuales,
   useRegenerarCapitulo,
+  useRevisarManual,
 } from "@/lib/nex/queries/manuales";
 import { markdownAHtml } from "@/lib/nex/queries/resumenes";
-import { LineaPasos } from "@/routes/manuales";
+import { InsigniaRevision, LineaPasos } from "@/routes/manuales";
 
 export const Route = createFileRoute("/manuales_/$manualId")({
   head: () => ({
@@ -41,6 +42,7 @@ function EditorManual() {
   const { manualId } = Route.useParams();
   const { data: manual, isPending } = useManual(manualId);
   const enlace = useEnlaceManual();
+  const revisar = useRevisarManual();
   useRealtimeManuales(true);
 
   if (isPending) return <Cargando texto="Cargando el manual..." />;
@@ -92,6 +94,10 @@ function EditorManual() {
               <ArrowLeft className="size-4" />
               Manuales
             </Link>
+            <Boton variante="suave" onClick={() => revisar.mutate(manual.id)} disabled={revisar.isPending}>
+              {revisar.isPending ? <Loader2 className="size-4 animate-spin" /> : <SpellCheck className="size-4" />}
+              Revisar redacción
+            </Boton>
             <Boton variante="suave" onClick={() => void ver()}>
               Ver
             </Boton>
@@ -106,6 +112,10 @@ function EditorManual() {
           </>
         }
       />
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <InsigniaRevision manual={manual} />
+      </div>
 
       {manual.estado !== "listo" ? (
         <div className="panel mb-4 p-4">
@@ -173,6 +183,16 @@ function TarjetaCapitulo({ manual, capitulo }: { manual: ManualRow; capitulo: Ca
           <p className="text-xs text-muted-foreground">Capítulo {capitulo.orden}</p>
           <p className="truncate text-sm font-medium">{capitulo.titulo}</p>
           {capitulo.ruta ? <p className="truncate text-xs text-muted-foreground">{capitulo.ruta}</p> : null}
+          <span
+            className={
+              capitulo.revisado
+                ? "mt-1 inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-xs text-success"
+                : "mt-1 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+            }
+          >
+            <span className="size-1.5 rounded-full bg-current" />
+            {capitulo.revisado ? "Revisado" : "Sin revisar"}
+          </span>
         </div>
       </div>
 

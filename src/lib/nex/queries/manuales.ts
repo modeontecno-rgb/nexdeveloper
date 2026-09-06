@@ -39,12 +39,13 @@ export const ETIQUETA_ESTADO_MANUAL: Record<ManualRow["estado"], string> = {
   borrador: "Borrador",
   preparando: "Leyendo pantallas",
   redactando: "Redactando",
+  revisando: "Revisando redacción",
   publicando: "Componiendo",
   listo: "Listo",
   error: "Error",
 };
 
-export const PASOS_MANUAL: ManualRow["estado"][] = ["preparando", "redactando", "publicando", "listo"];
+export const PASOS_MANUAL: ManualRow["estado"][] = ["preparando", "redactando", "revisando", "publicando", "listo"];
 
 async function llamar<T = Record<string, unknown>>(cuerpo: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke("manuales", { body: cuerpo });
@@ -75,6 +76,8 @@ export type EstadoManuales = {
   github?: boolean;
   proyectian?: boolean;
   almacen?: boolean;
+  perfil_estilo?: boolean;
+  revisor?: boolean;
 };
 
 export function useEstadoManuales(habilitado = true) {
@@ -173,6 +176,19 @@ export function useReintentarManual() {
     onSuccess: () => {
       invalidar();
       toast.success("Se ha reanudado el manual.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** Lanza la revisión de redacción de un manual ya generado. */
+export function useRevisarManual() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (manualId: string) => llamar({ accion: "revisar", manual_id: manualId }),
+    onSuccess: () => {
+      invalidar();
+      toast.success("Revisión de redacción en marcha.");
     },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -9,6 +9,7 @@ import {
   Printer,
   RefreshCw,
   Settings2,
+  SpellCheck,
   Trash2,
 } from "lucide-react";
 import * as React from "react";
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
-import type { ManualRow, PublicoManual } from "@/lib/nex/db-types";
+import type { NivelRevisionManual, PublicoManual, ManualRow, TratamientoManual } from "@/lib/nex/db-types";
 import { formatoEuros, formatoFechaHora } from "@/lib/nex/labels";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
@@ -34,6 +35,7 @@ import {
   useManuales,
   useRealtimeManuales,
   useReintentarManual,
+  useRevisarManual,
 } from "@/lib/nex/queries/manuales";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +80,74 @@ export function SemaforoRequisito({ ok, texto }: { ok: boolean; texto: string })
     >
       <span className="size-1.5 rounded-full bg-current" />
       {texto}
+    </span>
+  );
+}
+
+const AYUDA_NIVEL: Record<NivelRevisionManual, string> = {
+  ligera: "Solo corrige errores de ortografía y gramática.",
+  normal: "Corrige errores y mejora la claridad de las frases.",
+  exhaustiva: "Además parte las frases largas y ajusta el tono a tu estilo.",
+};
+
+/** Segmento de dos botones para elegir el tratamiento al lector. */
+export function SegmentoTratamiento({ valor, onCambio }: { valor: TratamientoManual; onCambio: (v: TratamientoManual) => void }) {
+  return (
+    <div className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-0.5">
+      {(["usted", "tu"] as TratamientoManual[]).map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onCambio(v)}
+          className={cn(
+            "min-h-11 rounded-md px-4 text-sm font-medium transition",
+            valor === v ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {v === "usted" ? "Usted" : "Tú"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Insignia con el resultado de la revisión de redacción de un manual. */
+export function InsigniaRevision({ manual }: { manual: ManualRow }) {
+  const [abierto, setAbierto] = React.useState(false);
+  const revision = manual.revision;
+  if (manual.estado !== "listo") return null;
+  if (!revision) {
+    return (
+      <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">Sin revisar</span>
+    );
+  }
+  return (
+    <span className="relative inline-block" onMouseEnter={() => setAbierto(true)} onMouseLeave={() => setAbierto(false)}>
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        className="rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-xs text-success"
+      >
+        Redacción revisada · {revision.correcciones} correcciones
+      </button>
+      {typeof revision.no_aplicados === "number" && revision.no_aplicados > 0 ? (
+        <span className="ml-1.5 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs text-warning">
+          {revision.no_aplicados} capítulos sin cambios
+        </span>
+      ) : null}
+      {abierto ? (
+        <span className="absolute right-0 z-20 mt-1.5 block w-72 max-w-[80vw] space-y-1.5 rounded-lg border border-border bg-surface p-3 text-xs shadow-lg">
+          {(revision.ejemplos ?? []).slice(0, 3).map((ej, i) => (
+            <span key={i} className="block text-muted-foreground">
+              {ej}
+            </span>
+          ))}
+          <span className="block text-muted-foreground">
+            Nivel {revision.nivel ?? "normal"} · tratamiento {revision.tratamiento === "tu" ? "de tú" : "de usted"}
+            {revision.con_perfil_estilo ? " · con perfil de estilo" : ""}
+          </span>
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -189,6 +259,18 @@ function ManualesPantalla() {
         <SemaforoRequisito ok={Boolean(req.github)} texto={req.github ? "GitHub conectado" : "GitHub sin conectar"} />
         <SemaforoRequisito ok={Boolean(req.proyectian)} texto={req.proyectian ? "Proyectian" : "Proyectian sin conectar"} />
         <SemaforoRequisito ok={Boolean(req.almacen)} texto={req.almacen ? "Almacén 03-MANUALES" : "Almacén sin configurar"} />
+        <SemaforoRequisito ok={Boolean(req.revisor)} texto={req.revisor ? "Revisor de redacción" : "Revisor sin IA"} />
+        {req.perfil_estilo ? (
+          <SemaforoRequisito ok texto="Perfil de estilo cargado" />
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-current" />
+            Sin perfil de estilo
+            <Link to="/personal" className="text-primary hover:underline">
+              Crear
+            </Link>
+          </span>
+        )}
       </div>
 
       {configAbierta ? <PanelConfiguracion /> : null}
@@ -257,6 +339,8 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
   const [version, setVersion] = React.useState("");
   const [conCapturas, setConCapturas] = React.useState(true);
   const [estilo, setEstilo] = React.useState<"claro" | "tecnico">("claro");
+  const [revisar, setRevisar] = React.useState(true);
+  const [tratamiento, setTratamiento] = React.useState<TratamientoManual>("usted");
   const guardarConfig = useGuardarConfigManuales();
 
   const proyecto = proyectos.find((p) => p.id === proyectoId) ?? null;
@@ -274,6 +358,8 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
     if (cfg) {
       setConCapturas(cfg.incluir_capturas);
       setEstilo(cfg.estilo);
+      setRevisar(cfg.revisar_redaccion ?? true);
+      setTratamiento(cfg.tratamiento ?? "usted");
     }
   }, [estado.data?.config]);
 
@@ -284,7 +370,12 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
   const lanzar = async () => {
     if (!proyectoId) return;
     try {
-      await guardarConfig.mutateAsync({ incluir_capturas: conCapturas, estilo });
+      await guardarConfig.mutateAsync({
+        incluir_capturas: conCapturas,
+        estilo,
+        revisar_redaccion: revisar,
+        tratamiento,
+      });
     } catch {
       /* la configuración no es imprescindible para generar */
     }
@@ -360,6 +451,14 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
         </label>
       </div>
 
+      <div className="flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" checked={revisar} onChange={(e) => setRevisar(e.target.checked)} />
+          Revisar la redacción
+        </label>
+        <SegmentoTratamiento valor={tratamiento} onCambio={setTratamiento} />
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <Boton onClick={() => void lanzar()} disabled={!proyectoId || generar.isPending}>
           {generar.isPending ? <Loader2 className="size-4 animate-spin" /> : <BookOpen className="size-4" />}
@@ -384,9 +483,20 @@ function PanelConfiguracion() {
   const [capturas, setCapturas] = React.useState(true);
   const [servicio, setServicio] = React.useState("");
   const [maximo, setMaximo] = React.useState(12);
+  const [revisar, setRevisar] = React.useState(true);
+  const [tratamiento, setTratamiento] = React.useState<TratamientoManual>("usted");
+  const [nivel, setNivel] = React.useState<NivelRevisionManual>("normal");
+  const [conPerfil, setConPerfil] = React.useState(true);
+  const [glosario, setGlosario] = React.useState("");
+  const perfilEstilo = Boolean(estado.data?.perfil_estilo);
 
   React.useEffect(() => {
     if (!cfg) return;
+    setRevisar(cfg.revisar_redaccion ?? true);
+    setTratamiento(cfg.tratamiento ?? "usted");
+    setNivel(cfg.nivel_revision ?? "normal");
+    setConPerfil(cfg.usar_perfil_estilo ?? true);
+    setGlosario((cfg.glosario ?? []).join("\n"));
     setRegenerar(cfg.regenerar_al_cambiar_version);
     setEstilo(cfg.estilo);
     setCapturas(cfg.incluir_capturas);
@@ -426,6 +536,55 @@ function PanelConfiguracion() {
           />
         </Campo>
       </div>
+      <div className="space-y-3 rounded-xl border border-border bg-surface p-3">
+        <h3 className="text-sm font-semibold">Revisor de redacción</h3>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" checked={revisar} onChange={(e) => setRevisar(e.target.checked)} />
+          Revisar la redacción de cada manual antes de publicarlo
+        </label>
+
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">Tratamiento al lector</p>
+          <SegmentoTratamiento valor={tratamiento} onCambio={setTratamiento} />
+        </div>
+
+        <Campo etiqueta="Nivel de revisión" pista={AYUDA_NIVEL[nivel]}>
+          <select className={claseCampo} value={nivel} onChange={(e) => setNivel(e.target.value as NivelRevisionManual)}>
+            <option value="ligera">Ligera (solo errores)</option>
+            <option value="normal">Normal (errores y claridad)</option>
+            <option value="exhaustiva">Exhaustiva (también frases largas y tono)</option>
+          </select>
+        </Campo>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={conPerfil} onChange={(e) => setConPerfil(e.target.checked)} />
+            Aplicar mi perfil de estilo (PERSONAL → Editor de estilo)
+          </label>
+          {!perfilEstilo ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Todavía no hay perfil de estilo. Créalo en{" "}
+              <Link to="/personal" className="text-primary hover:underline">
+                PERSONAL
+              </Link>
+              .
+            </p>
+          ) : null}
+        </div>
+
+        <Campo
+          etiqueta="Glosario de nombres a respetar"
+          pista="NexDeveloper, Proyectian, EvoluteIA y el nombre del proyecto se respetan siempre; añade aquí los de tu cliente."
+        >
+          <textarea
+            className={`${claseCampo} min-h-24`}
+            value={glosario}
+            onChange={(e) => setGlosario(e.target.value)}
+            placeholder="Un nombre por línea o separados por comas"
+          />
+        </Campo>
+      </div>
+
       <Boton
         onClick={() =>
           guardar.mutate({
@@ -434,6 +593,14 @@ function PanelConfiguracion() {
             incluir_capturas: capturas,
             servicio_capturas: servicio.trim() || null,
             max_capitulos: maximo,
+            revisar_redaccion: revisar,
+            tratamiento,
+            nivel_revision: nivel,
+            usar_perfil_estilo: conPerfil,
+            glosario: glosario
+              .split(/[\n,]/)
+              .map((t) => t.trim())
+              .filter(Boolean),
           })
         }
         disabled={guardar.isPending}
@@ -452,6 +619,7 @@ function TarjetaManual({ manual, nombreProyecto }: { manual: ManualRow; nombrePr
   const borrar = useBorrarManual();
   const generar = useGenerarManual();
   const reintentar = useReintentarManual();
+  const revisar = useRevisarManual();
   const { data: proyectos = [] } = useProyectos();
   const proyecto = proyectos.find((p) => p.id === manual.proyecto_id) ?? null;
 
@@ -477,6 +645,10 @@ function TarjetaManual({ manual, nombreProyecto }: { manual: ManualRow; nombrePr
         >
           {ETIQUETA_ESTADO_MANUAL[manual.estado]}
         </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <InsigniaRevision manual={manual} />
       </div>
 
       <p className="text-xs text-muted-foreground">
@@ -539,7 +711,21 @@ function TarjetaManual({ manual, nombreProyecto }: { manual: ManualRow; nombrePr
           <Trash2 className="size-4" />
           Borrar
         </Boton>
+        {manual.estado === "listo" || manual.estado === "error" ? (
+          <Boton variante="suave" onClick={() => revisar.mutate(manual.id)} disabled={revisar.isPending}>
+            {revisar.isPending ? <Loader2 className="size-4 animate-spin" /> : <SpellCheck className="size-4" />}
+            Revisar redacción
+          </Boton>
+        ) : null}
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Repaso final recomendado: abre el PDF o el Markdown en{" "}
+        <a href="https://app.grammarly.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+          Grammarly
+        </a>{" "}
+        antes de entregarlo al cliente.
+      </p>
     </article>
   );
 }
@@ -567,7 +753,10 @@ export function BloqueManualProyecto({ proyectoId }: { proyectoId: string }) {
         >
           <FileCode2 className="size-3.5 shrink-0 text-muted-foreground" />
           <span className="truncate">{ultimo.titulo}</span>
-          <span className="ml-auto text-xs text-muted-foreground">{ETIQUETA_ESTADO_MANUAL[ultimo.estado]}</span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {ETIQUETA_ESTADO_MANUAL[ultimo.estado]}
+            {ultimo.revision ? <span className="ml-1 text-success">✓ revisado</span> : null}
+          </span>
         </Link>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">Este proyecto todavía no tiene manuales.</p>

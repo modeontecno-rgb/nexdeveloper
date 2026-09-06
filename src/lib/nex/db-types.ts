@@ -1444,7 +1444,20 @@ export type DocumentoNexRow = {
 /* -------------------------- Manuales (0.25.0) --------------------------- */
 
 export type PublicoManual = "usuario" | "administrador" | "comercial"
-export type EstadoManual = "borrador" | "preparando" | "redactando" | "publicando" | "listo" | "error"
+export type EstadoManual = "borrador" | "preparando" | "redactando" | "revisando" | "publicando" | "listo" | "error"
+
+export type RevisionManual = {
+  capitulos: number
+  correcciones: number
+  ejemplos: string[]
+  intro?: boolean
+  no_aplicados?: number
+  nivel?: string
+  tratamiento?: string
+  modelo?: string
+  con_perfil_estilo?: boolean
+  glosario?: string[]
+}
 
 export type CapituloManual = {
   orden: number
@@ -1454,6 +1467,7 @@ export type CapituloManual = {
   elementos?: string[] | null
   captura_url?: string | null
   texto_md?: string | null
+  revisado?: boolean
 }
 
 export type ManualRow = {
@@ -1477,9 +1491,14 @@ export type ManualRow = {
   tokens_salida: number | null
   coste: number | null
   error: string | null
+  revision: RevisionManual | null
+  revisado_el: string | null
   creado_el: string
   actualizado_el: string
 }
+
+export type TratamientoManual = "usted" | "tu"
+export type NivelRevisionManual = "ligera" | "normal" | "exhaustiva"
 
 export type ManualesConfigRow = {
   id: string
@@ -1489,7 +1508,13 @@ export type ManualesConfigRow = {
   incluir_capturas: boolean
   servicio_capturas: string | null
   max_capitulos: number
+  revisar_redaccion: boolean
+  tratamiento: TratamientoManual
+  nivel_revision: NivelRevisionManual
+  usar_perfil_estilo: boolean
+  glosario: string[]
 }
+
 
 /* ------------------------- Auditoría mensual (0.26.0) -------------------- */
 
