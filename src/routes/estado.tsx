@@ -91,6 +91,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionRepos,
         copias,
         funcionCopias,
+        restauraciones,
+        restauracionConfig,
+        funcionRestaurar,
         compilaciones,
         plantillasCompilacion,
         funcionCompilar,
@@ -294,6 +297,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionRepos,
         copias,
         funcionCopias,
+        restauraciones,
+        restauracionConfig,
+        funcionRestaurar,
         compilaciones,
         plantillasCompilacion,
         funcionCompilar,
@@ -400,6 +406,33 @@ function EstadoSistema() {
           ? "aviso"
           : "ok",
       detalle: `${alertas.data?.length ?? 0} sin resolver`,
+    },
+    {
+      nombre: "Tabla de restauraciones",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.restauraciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.restauraciones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 022)",
+    },
+    {
+      nombre: "Configuración de restauración",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.restauracionConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.restauracionConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 022)",
+    },
+    {
+      nombre: "Función de restauración de copias",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionRestaurar ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionRestaurar
+          ? "Conectado / OK"
+          : "No responde (copias-restaurar)",
     },
     {
       nombre: "Tabla de informes de salud",
