@@ -842,7 +842,57 @@ export type DominiosResumenRow = {
   ultima_comprobacion: string | null
 }
 
+/* ------------------------------ Bandeja única ------------------------------ */
+
+export type OrigenBandeja = "gmail" | "whatsapp" | "plaud" | "manual"
+export type EstadoEntradaBandeja = "nueva" | "clasificada" | "convertida" | "archivada" | "descartada"
+
+export type BandejaFuenteRow = {
+  id: string
+  origen: "gmail" | "whatsapp" | "plaud"
+  activa: boolean
+  cuenta: string | null
+  configuracion: Json
+  conectada: boolean
+  ultima_sincronizacion: string | null
+  resultado: string | null
+}
+
+export type PropuestaTarea = {
+  titulo?: string
+  descripcion?: string
+  prioridad?: Prioridad
+  requiere_atencion?: boolean
+  instrucciones?: string
+}
+
+export type AdjuntoBandeja = { nombre: string; tipo?: string; bytes?: number }
+
+export type BandejaEntradaRow = {
+  id: string
+  user_id: string
+  origen: OrigenBandeja
+  id_externo: string | null
+  remitente: string | null
+  remitente_nombre: string | null
+  asunto: string | null
+  texto: string | null
+  resumen: string | null
+  fecha: string | null
+  proyecto_id: string | null
+  proyecto_confianza: number | null
+  proyecto_confirmado: boolean
+  propuesta: PropuestaTarea | null
+  estado: EstadoEntradaBandeja
+  tarea_id: string | null
+  adjuntos: AdjuntoBandeja[] | null
+  url_original: string | null
+  datos: Json
+  creado_el: string
+}
+
 type SinUsuario<T> = Omit<T, "user_id">
+
 
 
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
