@@ -12,6 +12,8 @@ import { revisarOrden } from "@/lib/nex/queries/calidad";
 import { sugerirProyecto, useCrearOrden, type Sugerencia } from "@/lib/nex/queries/ordenes";
 import { bloquea, revisarTextoOrden } from "@/lib/nex/revision-orden";
 import type { Hallazgo } from "@/lib/nex/db-types";
+import { SelectorHabilidad } from "@/routes/habilidades";
+import { useActualizarHabilidad } from "@/lib/nex/queries/habilidades";
 
 export const Route = createFileRoute("/nueva-orden")({
   head: () => ({
@@ -46,6 +48,7 @@ function NuevaOrdenPantalla() {
   const [equipo, setEquipo] = React.useState<string[]>([]);
   const [sugerencia, setSugerencia] = React.useState<Sugerencia | null>(null);
   const [hallazgos, setHallazgos] = React.useState<Hallazgo[] | null>(null);
+  const actualizarHabilidad = useActualizarHabilidad();
 
   React.useEffect(() => {
     if (!proyectoId && proyectos[0]) setProyectoId(proyectos[0].id);
