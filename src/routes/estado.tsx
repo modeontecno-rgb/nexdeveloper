@@ -94,6 +94,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         compilaciones,
         plantillasCompilacion,
         funcionCompilar,
+        vigilanciaHallazgos,
+        competidores,
+        funcionVigilar,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -120,6 +123,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("compilaciones"),
         verificarTabla("plantillas_compilacion"),
         verificarFuncion("compilar-app"),
+        verificarTabla("vigilancia_hallazgos"),
+        verificarTabla("competidores"),
+        verificarFuncion("vigilar"),
       ]);
       const pingCompilar = await (async () => {
         try {
@@ -127,6 +133,14 @@ function useVerificacionesBackend(habilitado: boolean) {
           return Boolean((data as { github?: boolean } | null)?.github);
         } catch {
           return false;
+        }
+      })();
+      const pingVigilar = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("vigilar", { body: {} });
+          return ((data as { buscador?: string | null } | null)?.buscador ?? null) as string | null;
+        } catch {
+          return null;
         }
       })();
       return {
@@ -156,6 +170,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         plantillasCompilacion,
         funcionCompilar,
         pingCompilar,
+        vigilanciaHallazgos,
+        competidores,
+        funcionVigilar,
+        pingVigilar,
       };
     },
   });
@@ -440,6 +458,36 @@ function EstadoSistema() {
           : verificaciones.data?.pingCompilar
             ? "Conectado / OK"
             : "Falta GITHUB_TOKEN con permisos repo y workflow",
+    },
+    {
+      nombre: "Vigilancia",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.vigilanciaHallazgos && verificaciones.data?.competidores
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.vigilanciaHallazgos && verificaciones.data?.competidores
+          ? "Responde correctamente"
+          : "Faltan las tablas de vigilancia (migración 011)",
+    },
+    {
+      nombre: "Edge Function vigilar",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionVigilar
+          ? "error"
+          : verificaciones.data?.pingVigilar
+            ? "ok"
+            : "aviso",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionVigilar
+          ? "No encontrada"
+          : verificaciones.data?.pingVigilar
+            ? `Conectado / OK · ${verificaciones.data.pingVigilar}`
+            : "Sin proveedor de búsqueda con clave",
     },
     {
       nombre: "Versión de la aplicación",
