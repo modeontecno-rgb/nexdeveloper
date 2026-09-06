@@ -456,7 +456,11 @@ function BloqueResumen({ mes, onIrAClientes }: { mes: string; onIrAClientes: () 
                       <span className="text-warning">Sin enlazar</span>
                     )}
                   </td>
+                  <td className="p-3">
+                    <InsigniaEmpresa nombre={p.empresa} corto />
+                  </td>
                   <td className="p-3 text-muted-foreground">{ETIQUETA_CONTRATO[p.contrato] ?? p.contrato}</td>
+
                   <td className="p-3 text-right tabular-nums">{formatoHoras(p.horas)}</td>
                   <td className="p-3 text-right tabular-nums">{formatoHoras(p.horas_sin_facturar)}</td>
                   <td className="p-3 text-right tabular-nums">{formatoDinero(p.facturado)}</td>
