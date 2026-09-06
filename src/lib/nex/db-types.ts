@@ -940,6 +940,10 @@ export type Database = {
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio
+      herramienta_compilacion: HerramientaCompilacion
+      plataforma_compilacion: PlataformaCompilacion
+      estado_compilacion: EstadoCompilacion
+
     }
     CompositeTypes: { [_ in never]: never }
   }
