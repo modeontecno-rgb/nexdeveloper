@@ -1475,8 +1475,17 @@ function BloqueClientes() {
   );
 }
 
-function PanelSugerencias({ sugerencias, onCerrar }: { sugerencias: SugerenciaEnlace[]; onCerrar: () => void }) {
+function PanelSugerencias({
+  sugerencias,
+  tenantId,
+  onCerrar,
+}: {
+  sugerencias: SugerenciaEnlace[];
+  tenantId: string | null;
+  onCerrar: () => void;
+}) {
   const enlazar = useEnlazarCliente();
+
 
   return (
     <div className="panel p-4">
