@@ -1777,6 +1777,10 @@ export type Database = {
         Partial<SinUsuario<EjecucionConfigRow>>
       >
       lovable_conexion: Tabla<LovableConexionRow>
+      salud_informes: Tabla<SaludInformeRow>
+      salud_proyectos: Tabla<SaludProyectoRow>
+      salud_config: Tabla<SaludConfigRow, Partial<SinUsuario<SaludConfigRow>>, Partial<SinUsuario<SaludConfigRow>>>
+
 
 
 
