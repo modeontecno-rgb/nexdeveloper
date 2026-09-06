@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Inbox } from "lucide-react";
+import { Ban, Inbox, Link2, PauseCircle, PlayCircle } from "lucide-react";
 import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoOrdenBadge, EstadoTareaBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
-import { Boton, Selector } from "@/components/nex/campos";
+import { Boton, Selector, claseCampo } from "@/components/nex/campos";
+import { Dialogo } from "@/components/nex/dialogo";
 import { TareasEnBloques } from "@/components/nex/tareas-bloques";
-import type { EstadoTarea } from "@/lib/nex/db-types";
-import { ETIQUETA_ESTADO_TAREA, desde, formatoDinero } from "@/lib/nex/labels";
+import type { EstadoTarea, TareaRow } from "@/lib/nex/db-types";
+import { ETIQUETA_ESTADO_TAREA, desde, formatoDinero, formatoFecha, formatoFechaHora } from "@/lib/nex/labels";
+import { useCancelarTarea, usePausarTarea, useReanudarTarea } from "@/lib/nex/queries/proyectian";
 import {
   useAgentes,
   useAjustes,
@@ -123,12 +125,14 @@ function Cola() {
                     {nombreProyecto(t.proyecto_id)} · {nombreAgente(t.agente_id)} · {desde(t.ultima_actividad)}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <InsigniasProyectian tarea={t} />
                   <EstadoTareaBadge estado={t.estado} />
                   <PrioridadBadge prioridad={t.prioridad} />
                 </div>
               </div>
               <Progreso className="mt-3" valor={Number(t.progreso)} />
+              <EstadoPausaCancelacion tarea={t} />
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>
                   {Number(t.horas_consumidas).toFixed(1)} / {Number(t.estimacion_horas).toFixed(1)} h ·{" "}
@@ -143,11 +147,172 @@ function Cola() {
                   opciones={proyectos.map((p) => ({ valor: p.id, texto: p.nombre }))}
                 />
               </div>
+              <AccionesEstadoTarea tarea={t} />
             </article>
           ))}
           {visibles.length === 0 && <p className="panel p-6 text-sm text-muted-foreground">No hay tareas aquí.</p>}
         </div>
       )}
     </>
+  );
+}
+
+/* ------------------- Pausas, cancelaciones y origen de la tarea ----------- */
+
+/** Insignias de dónde viene la tarea y si está enlazada con Proyectian. */
+export function InsigniasProyectian({ tarea }: { tarea: TareaRow }) {
+  return (
+    <>
+      {tarea.origen === "proyectian" ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-info/30 bg-info/10 px-2.5 py-0.5 text-xs font-medium text-info">
+          Proyectian
+        </span>
+      ) : null}
+      {tarea.proyectian_pendiente_id ? (
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+          title={
+            tarea.sincronizado_el
+              ? `Sincronizada con Proyectian · ${formatoFechaHora(tarea.sincronizado_el)}`
+              : "Sincronizada con Proyectian"
+          }
+        >
+          <Link2 className="size-3.5" /> Sincronizada
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/** Aviso visible cuando la tarea está pausada o cancelada. */
+export function EstadoPausaCancelacion({ tarea }: { tarea: TareaRow }) {
+  if (tarea.estado === "pausada") {
+    return (
+      <p className="mt-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+        <PauseCircle className="mr-1 inline size-3.5" /> Pausada
+        {tarea.pausada_hasta ? ` hasta ${formatoFecha(tarea.pausada_hasta)}` : ""}
+        {tarea.motivo_estado ? ` · ${tarea.motivo_estado}` : ""}
+      </p>
+    );
+  }
+  if (tarea.estado === "cancelada") {
+    return (
+      <p className="mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+        <Ban className="mr-1 inline size-3.5" /> Cancelada
+        {tarea.cancelada_el ? ` el ${formatoFecha(tarea.cancelada_el)}` : ""}
+        {tarea.motivo_estado ? ` · ${tarea.motivo_estado}` : ""}
+      </p>
+    );
+  }
+  return null;
+}
+
+/** Botones para pausar, cancelar o reanudar una tarea. */
+export function AccionesEstadoTarea({ tarea }: { tarea: TareaRow }) {
+  const pausar = usePausarTarea();
+  const cancelar = useCancelarTarea();
+  const reanudar = useReanudarTarea();
+  const [dialogo, setDialogo] = React.useState<"pausar" | "cancelar" | null>(null);
+  const [hasta, setHasta] = React.useState("");
+  const [motivo, setMotivo] = React.useState("");
+
+  const cerrar = () => {
+    setDialogo(null);
+    setHasta("");
+    setMotivo("");
+  };
+
+  const parada = tarea.estado === "pausada" || tarea.estado === "cancelada";
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {parada ? (
+        <Boton variante="suave" className="px-2.5 py-1 text-xs" onClick={() => reanudar.mutate({ id: tarea.id })}>
+          <PlayCircle className="size-3.5" /> Reanudar
+        </Boton>
+      ) : (
+        <>
+          <Boton variante="suave" className="px-2.5 py-1 text-xs" onClick={() => setDialogo("pausar")}>
+            <PauseCircle className="size-3.5" /> Pausar
+          </Boton>
+          <Boton variante="peligro" className="px-2.5 py-1 text-xs" onClick={() => setDialogo("cancelar")}>
+            <Ban className="size-3.5" /> Cancelar
+          </Boton>
+        </>
+      )}
+
+      <Dialogo
+        abierto={dialogo === "pausar"}
+        titulo="Pausar la tarea"
+        descripcion="Indica hasta cuándo queda parada y por qué."
+        onCerrar={cerrar}
+        ancho="max-w-md"
+      >
+        <div className="space-y-3">
+          <label className="block text-xs text-muted-foreground">
+            Pausada hasta
+            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={`${claseCampo} mt-1`} />
+          </label>
+          <label className="block text-xs text-muted-foreground">
+            Motivo
+            <textarea
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              rows={3}
+              className={`${claseCampo} mt-1`}
+              placeholder="Por ejemplo: esperando respuesta del cliente."
+            />
+          </label>
+          <div className="flex justify-end gap-2">
+            <Boton variante="suave" onClick={cerrar}>
+              Volver
+            </Boton>
+            <Boton
+              onClick={() => {
+                pausar.mutate({ id: tarea.id, hasta, motivo });
+                cerrar();
+              }}
+            >
+              Pausar
+            </Boton>
+          </div>
+        </div>
+      </Dialogo>
+
+      <Dialogo
+        abierto={dialogo === "cancelar"}
+        titulo="Cancelar la tarea"
+        descripcion="Quedará registrada la fecha y el motivo."
+        onCerrar={cerrar}
+        ancho="max-w-md"
+      >
+        <div className="space-y-3">
+          <label className="block text-xs text-muted-foreground">
+            Motivo
+            <textarea
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              rows={3}
+              className={`${claseCampo} mt-1`}
+              placeholder="Por ejemplo: el cliente ha descartado esta funcionalidad."
+            />
+          </label>
+          <div className="flex justify-end gap-2">
+            <Boton variante="suave" onClick={cerrar}>
+              Volver
+            </Boton>
+            <Boton
+              variante="peligro"
+              onClick={() => {
+                cancelar.mutate({ id: tarea.id, motivo });
+                cerrar();
+              }}
+            >
+              Cancelar la tarea
+            </Boton>
+          </div>
+        </div>
+      </Dialogo>
+    </div>
   );
 }

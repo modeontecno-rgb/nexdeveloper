@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 0.34.0 — Sincronización con Proyectian (6 de septiembre de 2026)
+
+- Nueva pantalla «Proyectian» en el menú: arriba se ve de un vistazo si la conexión funciona, con qué cuenta de GitHub entra y cuántos proyectos hay en Proyectian.
+- Botones para traer los datos cuando quieras: todo de golpe, o solo versiones, salud, pantallas, reuniones o pendientes; cada uno te dice en un aviso qué ha traído.
+- «Diagnóstico de repositorios»: tabla con cada proyecto, su repositorio, si existe, cuándo fue el último cambio y si tiene fichero de versión, marcando en rojo lo que lleva más de siete días parado o le falta la versión.
+- «Historial de sincronización» con las últimas 200 sincronizaciones, filtro por tipo y por proyecto, insignia verde o roja, resumen, cuándo ocurrió y un desplegable para ver el detalle completo.
+- En la ficha de cada proyecto hay un bloque «Versión» con la versión en uso, de dónde se ha leído, el código del último cambio con su fecha y cuándo se comprobó, además de un botón «Comprobar ahora».
+- En Tareas se ven las pausas («pausada hasta» con su motivo) y las cancelaciones (fecha y motivo), y hay botones para pausar, cancelar o reanudar.
+- Las tareas que vienen de Proyectian llevan su insignia, y las enlazadas muestran un icono de enlace con la fecha de la última sincronización.
+
 ## 0.33.0 — Menú por categorías y empresa emisora (6 de septiembre de 2026)
 
 - El menú ya no es una lista interminable: arriba quedan fijos Inicio, Pídeme qué quieres, Bandeja y Avisos, y el resto se agrupa por temas que se abren de uno en uno.

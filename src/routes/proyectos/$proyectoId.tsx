@@ -13,6 +13,7 @@ import { CampoGuiaEstiloProyecto } from "@/routes/personal";
 import { TarjetaPortalProyecto } from "@/routes/modo-cliente";
 import { TarjetaFacturacionProyecto } from "@/routes/facturacion";
 import { BloqueUsuariosProyecto, ChipUsuariosProyecto } from "@/routes/usuarios-clientes";
+import { BloqueVersionProyecto } from "@/routes/proyectian";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
@@ -165,6 +166,7 @@ function DetalleProyecto() {
         }
       />
 
+      <BloqueVersionProyecto proyecto={proyecto} />
       <TarjetaPortalProyecto proyecto={proyecto} />
       <TarjetaFacturacionProyecto proyectoId={proyectoId} />
       <TarjetaInfraProyecto proyectoId={proyectoId} />

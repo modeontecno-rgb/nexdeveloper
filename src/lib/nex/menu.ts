@@ -20,6 +20,7 @@ import {
   Globe,
   HeartPulse,
   Inbox,
+  Link2,
   LayoutDashboard,
   ListTodo,
   MessagesSquare,
@@ -362,6 +363,13 @@ export const ANCLADOS_PIE: PantallaMenu[] = [
     icono: Cpu,
     alias: ["claves", "api key", "modelos", "openai", "claude", "precios"],
     descripcion: "Claves, modelos y precios de cada proveedor.",
+  },
+  {
+    to: "/proyectian",
+    etiqueta: "Proyectian",
+    icono: Link2,
+    alias: ["sincronizar", "versiones", "pendientes", "reuniones", "pantallas", "github", "repositorios"],
+    descripcion: "Sincronización con Proyectian y con los repositorios.",
   },
   {
     to: "/integraciones",
