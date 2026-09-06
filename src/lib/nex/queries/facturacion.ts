@@ -145,7 +145,10 @@ export type ResumenProyectoFacturacion = {
   color: string | null;
   enlazado: boolean;
   cliente: string | null;
+  empresa?: string | null;
+  tenant_id?: string | null;
   contrato: ContratoCliente;
+
   horas: number;
   horas_sin_facturar: number;
   facturado: number;
