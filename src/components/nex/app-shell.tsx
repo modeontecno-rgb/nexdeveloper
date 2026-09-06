@@ -4,6 +4,7 @@ import {
   BookMarked,
   BookOpen,
   Boxes,
+  Clapperboard,
   Coins,
   Cpu,
   Inbox,
@@ -42,6 +43,8 @@ const NAVEGACION = [
   { to: "/bandeja", etiqueta: "Bandeja", icono: Inbox },
   { to: "/resumenes", etiqueta: "Resúmenes", icono: Newspaper },
   { to: "/documentacion", etiqueta: "Documentación", icono: BookMarked },
+  { to: "/voz", etiqueta: "Voz y demos", icono: Clapperboard },
+
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },
   { to: "/nueva-orden", etiqueta: "Nueva orden", icono: Sparkle },
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },

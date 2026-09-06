@@ -1319,6 +1319,68 @@ export type HabilidadesResumenRow = {
   sincronizada_el: string | null
 }
 
+/* --------------------------- Voz y vídeos demo --------------------------- */
+
+export type EstadoGuionDemo = "borrador" | "listo"
+export type EstadoLocucion = "pendiente" | "generando" | "ok" | "error"
+
+export type EscenaGuion = {
+  orden: number
+  titulo: string
+  texto: string
+  url_pantalla?: string | null
+  captura_url?: string | null
+  duracion_seg?: number | null
+}
+
+export type GuionDemoRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  titulo: string
+  publico: string | null
+  duracion_objetivo_seg: number | null
+  escenas: EscenaGuion[] | null
+  generado_por: string | null
+  estado: EstadoGuionDemo
+  creado_el: string
+}
+
+export type LocucionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  guion_id: string | null
+  escena: number | null
+  titulo: string | null
+  texto: string | null
+  voz_id: string | null
+  voz_nombre: string | null
+  modelo: string | null
+  estado: EstadoLocucion
+  ruta_remota: string | null
+  bytes: number | null
+  caracteres: number | null
+  duracion_seg: number | null
+  error: string | null
+  creado_el: string
+  terminada_el: string | null
+}
+
+export type VozConfigRow = {
+  id: string
+  user_id: string
+  voz_id: string | null
+  voz_nombre: string | null
+  modelo: string | null
+  estabilidad: number | null
+  similitud: number | null
+  estilo: number | null
+  velocidad: number | null
+  servicio_capturas: string | null
+}
+
+
 export type Database = {
 
 
@@ -1433,6 +1495,14 @@ export type Database = {
       >
       habilidades_usos: Tabla<HabilidadUsoRow>
       habilidades_config: Tabla<HabilidadesConfigRow, Partial<SinUsuario<HabilidadesConfigRow>>>
+      guiones_demo: Tabla<
+        GuionDemoRow,
+        Partial<SinUsuario<GuionDemoRow>> & { proyecto_id: string; titulo: string },
+        Partial<SinUsuario<GuionDemoRow>>
+      >
+      locuciones: Tabla<LocucionRow>
+      voz_config: Tabla<VozConfigRow, Partial<SinUsuario<VozConfigRow>>>
+
 
 
 

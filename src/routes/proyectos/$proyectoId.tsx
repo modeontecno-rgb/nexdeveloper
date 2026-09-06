@@ -1,5 +1,6 @@
 import { ChipGastoIa } from "@/routes/gasto-ia";
 import { BloqueVersionDocumentos } from "@/routes/documentacion";
+import { BloqueDemo } from "@/routes/voz";
 import { SelectorHabilidad } from "@/routes/habilidades";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
@@ -241,6 +242,8 @@ function DetalleProyecto() {
 
         <aside className="space-y-4">
           <BloqueVersionDocumentos proyectoId={proyectoId} versionActual={proyecto.version_actual} />
+
+          <BloqueDemo proyectoId={proyectoId} />
 
           <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Vistas previas</h2>
