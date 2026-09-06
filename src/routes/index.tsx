@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowRight, CircleDot, Radar } from "lucide-react";
+import { AlertTriangle, ArrowRight, CircleDot } from "lucide-react";
 import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
 import { Selector } from "@/components/nex/campos";
-import type { EstadoProyecto, Prioridad } from "@/lib/nex/db-types";
+import type { DominioRow, EstadoProyecto, Prioridad } from "@/lib/nex/db-types";
 import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_PRIORIDAD, desde, formatoDinero } from "@/lib/nex/labels";
+import { useDominios } from "@/lib/nex/queries/dominios";
 import {
   useAjustes,
   useAlertas,
@@ -14,7 +15,6 @@ import {
   useProyectos,
   useResumenProyectos,
 } from "@/lib/nex/queries/datos";
-import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,7 +40,7 @@ function Inicio() {
   const { data: alertas = [] } = useAlertas();
   const { data: carga = [] } = useCargaAgentes();
   const { data: ajustes } = useAjustes();
-  const { data: hallazgos = [] } = useVigilanciaHallazgos();
+  const { data: dominios = [] } = useDominios();
   const moneda = ajustes?.moneda ?? "EUR";
 
   const [estado, setEstado] = React.useState<EstadoProyecto | "todos">("todos");
@@ -173,33 +173,6 @@ function Inicio() {
 
         <aside className="space-y-4">
           <div className="panel p-4">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
-                <Radar className="size-4 text-primary" /> Vigilancia
-              </h2>
-              <Link to="/vigilancia" className="text-xs text-primary hover:underline">
-                Ver todo
-              </Link>
-            </div>
-            <ul className="mt-3 space-y-3">
-              {hallazgos
-                .filter((h) => h.estado === "nuevo" && h.relevancia === "alta")
-                .slice(0, 5)
-                .map((h) => (
-                  <li key={h.id} className="rounded-lg border border-border bg-surface p-3 text-sm">
-                    <p className="text-foreground">{h.titulo}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {proyectos.find((p) => p.id === h.proyecto_id)?.nombre ?? "Proyecto"}
-                    </p>
-                  </li>
-                ))}
-              {hallazgos.filter((h) => h.estado === "nuevo" && h.relevancia === "alta").length === 0 && (
-                <li className="text-sm text-muted-foreground">Sin novedades importantes por revisar.</li>
-              )}
-            </ul>
-          </div>
-
-          <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Alertas y decisiones</h2>
             <ul className="mt-3 space-y-3">
               {alertas.map((a) => (
@@ -218,6 +191,8 @@ function Inicio() {
               {alertas.length === 0 && <li className="text-sm text-muted-foreground">Sin alertas abiertas.</li>}
             </ul>
           </div>
+
+          <TarjetaDominios dominios={dominios} />
 
           <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Capacidad de agentes</h2>
@@ -246,6 +221,55 @@ function Inicio() {
         </aside>
       </section>
     </>
+  );
+}
+
+function TarjetaDominios({ dominios }: { dominios: DominioRow[] }) {
+  const activos = dominios.filter((d) => d.activo);
+  const problemas = activos.filter((d) => d.resultado === "aviso" || d.resultado === "error");
+  const nivel = problemas.some((d) => d.resultado === "error")
+    ? "error"
+    : problemas.length > 0
+      ? "aviso"
+      : "ok";
+  const tono =
+    nivel === "error" ? "bg-destructive" : nivel === "aviso" ? "bg-warning" : "bg-success";
+  const ultima = activos
+    .map((d) => d.ultima_comprobacion)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
+  return (
+    <div className="panel p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold">Dominios y certificados</h2>
+        <span className={`size-2.5 rounded-full ${tono}`} aria-hidden />
+      </div>
+      {problemas.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Todo en orden · última comprobación {desde(ultima ?? null)}
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {problemas.slice(0, 6).map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-2 text-sm">
+              <span className="truncate">{d.dominio}</span>
+              <span
+                className={
+                  d.resultado === "error" ? "text-xs text-destructive" : "text-xs text-warning"
+                }
+              >
+                {d.resultado === "error" ? "no responde" : "revisar"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to="/dominios" className="mt-3 inline-flex text-xs text-primary hover:underline">
+        Ver todos los dominios
+      </Link>
+    </div>
   );
 }
 

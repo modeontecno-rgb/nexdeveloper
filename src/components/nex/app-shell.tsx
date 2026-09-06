@@ -12,6 +12,7 @@ import {
   Plug,
   Users,
   GitBranch,
+  Globe,
   Settings,
   ShieldCheck,
   Sparkle,
@@ -20,7 +21,6 @@ import {
   BadgeCheck,
   DatabaseBackup,
   Package,
-  Radar,
 } from "lucide-react";
 import * as React from "react";
 
@@ -42,8 +42,9 @@ const NAVEGACION = [
   { to: "/repositorios", etiqueta: "Repositorios", icono: GitBranch },
   { to: "/compilaciones", etiqueta: "Compilaciones", icono: Package },
   { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
-  { to: "/vigilancia", etiqueta: "Vigilancia", icono: Radar },
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
+  { to: "/dominios", etiqueta: "Dominios", icono: Globe },
+
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },
   { to: "/ajustes", etiqueta: "Ajustes", icono: Settings },

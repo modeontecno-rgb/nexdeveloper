@@ -785,110 +785,61 @@ export type CompilacionUltimaRow = {
   creado_el: string
 }
 
-// ---- Vigilancia (0.11.0) ----
-export type TipoVigilancia = "novedades" | "competencia"
-export type OrigenVigilancia = "manual" | "programado"
-export type EstadoLoteVigilancia = "en_curso" | "ok" | "error"
-export type TipoHallazgoVigilancia = "novedad" | "competencia"
-export type CategoriaHallazgoVigilancia =
-  | "version"
-  | "seguridad"
-  | "funcionalidad"
-  | "precio"
-  | "fin_de_soporte"
-  | "ia"
-  | "otro"
-  | "nuevo_competidor"
-  | "noticia"
-export type RelevanciaVigilancia = "alta" | "media" | "baja"
-export type EstadoHallazgoVigilancia = "nuevo" | "visto" | "descartado" | "convertido"
+export type TipoDominio = "dominio" | "subdominio" | "externo"
+export type ResultadoDominio = "ok" | "aviso" | "error" | "sin_comprobar"
 
-export type VigilanciaConfigRow = {
-  proyecto_id: string
-  user_id: string
-  activa: boolean
-  novedades_activas: boolean
-  competencia_activa: boolean
-  tecnologias: string[]
-  temas_extra: string[]
-  sector: string | null
-  competidores_conocidos: string[]
-  idioma: string | null
-  ultima_novedades: string | null
-  ultima_competencia: string | null
-}
-
-export type VigilanciaLoteRow = {
+export type DominioRow = {
   id: string
   user_id: string
-  proyecto_id: string
-  tipo: TipoVigilancia
-  origen: OrigenVigilancia
-  estado: EstadoLoteVigilancia
-  proveedor: string | null
-  modelo: string | null
-  tokens_entrada: number | null
-  tokens_salida: number | null
-  coste: number | null
-  busquedas: number | null
-  resumen: string | null
+  proyecto_id: string | null
+  dominio: string
+  tipo: TipoDominio
+  registrador: string | null
+  gestionado_por: string | null
+  activo: boolean
+  aviso_dias: number
+  pendiente: boolean
+  ip_resuelta: string | null
+  dns_ok: boolean | null
+  http_estado: number | null
+  https_ok: boolean | null
+  tiempo_ms: number | null
+  cert_emisor: string | null
+  cert_valido_hasta: string | null
+  cert_dias: number | null
+  dominio_caduca: string | null
+  dominio_dias: number | null
+  resultado: ResultadoDominio
   error: string | null
-  hallazgos: number | null
-  iniciado_el: string | null
-  terminado_el: string | null
-}
-
-export type VigilanciaHallazgoRow = {
-  id: string
-  user_id: string
-  proyecto_id: string
-  lote_id: string | null
-  tipo: TipoHallazgoVigilancia
-  categoria: CategoriaHallazgoVigilancia
-  titulo: string
-  resumen: string | null
-  por_que_afecta: string | null
-  accion_sugerida: string | null
-  fuente_url: string | null
-  fuente_nombre: string | null
-  fecha_fuente: string | null
-  relevancia: RelevanciaVigilancia
-  competidor_id: string | null
-  estado: EstadoHallazgoVigilancia
+  ultima_comprobacion: string | null
+  avisado_el: string | null
   tarea_id: string | null
-  creado_el: string
-}
-
-export type PlanCompetidor = { nombre?: string; precio?: string | number; periodo?: string; notas?: string }
-
-export type CompetidorRow = {
-  id: string
-  user_id: string
-  proyecto_id: string
-  nombre: string
-  url: string | null
-  pais: string | null
-  descripcion: string | null
-  precio_desde: string | null
-  planes: PlanCompetidor[] | null
-  puntos_fuertes: string[]
-  puntos_debiles: string[]
-  origen: "radar" | "manual"
-  seguir: boolean
-  ultima_revision: string | null
-  ultimo_cambio: string | null
   notas: string | null
+  creado_el: string
+  actualizado_el: string
 }
 
-export type VigilanciaResumenRow = {
-  proyecto_id: string
-  nombre: string
-  activa: boolean
-  ultima_novedades: string | null
-  ultima_competencia: string | null
-  nuevos: number
-  nuevos_alta: number
-  competidores: number
+export type DominioHistorialRow = {
+  id: string
+  dominio_id: string
+  comprobado_el: string
+  resultado: ResultadoDominio
+  http_estado: number | null
+  https_ok: boolean | null
+  tiempo_ms: number | null
+  cert_dias: number | null
+  dominio_dias: number | null
+  error: string | null
+}
+
+export type DominiosResumenRow = {
+  total: number
+  ok: number
+  aviso: number
+  error: number
+  cert_dias_min: number | null
+  dominio_dias_min: number | null
+  ultima_comprobacion: string | null
 }
 
 type SinUsuario<T> = Omit<T, "user_id">
@@ -980,13 +931,8 @@ export type Database = {
       plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
       compilaciones: Tabla<CompilacionRow>
       firmas_compilacion: Tabla<FirmaCompilacionRow>
-      vigilancia_config: Tabla<
-        VigilanciaConfigRow,
-        Partial<SinUsuario<VigilanciaConfigRow>> & { proyecto_id: string }
-      >
-      vigilancia_lotes: Tabla<VigilanciaLoteRow>
-      vigilancia_hallazgos: Tabla<VigilanciaHallazgoRow>
-      competidores: Tabla<CompetidorRow, Partial<SinUsuario<CompetidorRow>> & { proyecto_id: string; nombre: string }>
+      dominios: Tabla<DominioRow>
+      dominios_historial: Tabla<DominioHistorialRow>
 
 
     }
@@ -998,7 +944,7 @@ export type Database = {
       v_rendimiento_modelos: { Row: RendimientoModeloRow; Relationships: [] }
       v_copias_destinos: { Row: CopiaDestinoRow; Relationships: [] }
       v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
-      v_vigilancia_resumen: { Row: VigilanciaResumenRow; Relationships: [] }
+      v_dominios_resumen: { Row: DominiosResumenRow; Relationships: [] }
 
 
     }

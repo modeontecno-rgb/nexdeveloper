@@ -1,15 +1,16 @@
 # Historial de cambios
 
-## 0.11.0 — 6 de septiembre de 2026
+## 0.12.0 — 6 de septiembre de 2026
 
-- Nueva pantalla «Vigilancia»: un vigía que cada lunes busca novedades de las tecnologías de cada proyecto y un radar que cada mes revisa a la competencia.
-- Cada hallazgo llega con su relevancia, un resumen, el apartado «Qué te afecta», la acción sugerida y el enlace a la fuente.
-- Puedes convertir cualquier hallazgo en tarea (marcándolo como «requiere mi atención»), darlo por visto o descartarlo.
-- Pestaña «Competencia» con la ficha de cada competidor: web, país, precio desde, planes, puntos fuertes y débiles, y el interruptor para seguirlo o dejar de seguirlo; también puedes añadirlos a mano.
-- Pestaña «Configuración» para elegir, proyecto a proyecto, qué se vigila: tecnologías, temas extra, sector y competidores conocidos.
-- Pestaña «Historial» con cada ejecución: fecha, tipo, modelo usado, búsquedas, coste, hallazgos y el detalle del error si algo falla.
-- En Inicio, tarjeta con los hallazgos nuevos más importantes; en cada proyecto, un aviso con el número de novedades pendientes.
-- Si no hay ninguna clave de búsqueda configurada, la pantalla lo avisa y te lleva a Ajustes.
+- Nueva pantalla «Dominios»: todos tus dominios y subdominios en una tabla, con su estado de un vistazo.
+- Semáforo por dominio: verde si responde bien, ámbar si algo caduca pronto y rojo si falla.
+- Muestra el tiempo de respuesta, el emisor del certificado y los días que quedan para que caduquen certificado y dominio.
+- Botón «Comprobar todos» con progreso en vivo, y «Comprobar ahora» dominio a dominio con el resultado al instante.
+- Puedes añadir, editar y borrar dominios, asignarles proyecto y decidir con cuántos días de antelación quieres el aviso.
+- Historial de las últimas 30 comprobaciones de cada dominio, con un pequeño gráfico del tiempo de respuesta.
+- Comprobación automática todos los días a las 08:00: si algo falla o caduca pronto, aparece una tarea «Requiere tu atención».
+- En Inicio, tarjeta «Dominios y certificados» con los que necesitan atención; en cada proyecto, un aviso con el estado de sus dominios.
+- Estado del sistema: nuevos semáforos para los dominios y su comprobador.
 
 ## 0.10.0 — 6 de septiembre de 2026
 

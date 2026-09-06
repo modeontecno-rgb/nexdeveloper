@@ -17,13 +17,13 @@ import { Route as CalidadRouteImport } from './routes/calidad'
 import { Route as ColaRouteImport } from './routes/cola'
 import { Route as CompilacionesRouteImport } from './routes/compilaciones'
 import { Route as CopiasRouteImport } from './routes/copias'
+import { Route as DominiosRouteImport } from './routes/dominios'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as RepositoriosRouteImport } from './routes/repositorios'
-import { Route as VigilanciaRouteImport } from './routes/vigilancia'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
@@ -69,6 +69,11 @@ const CopiasRoute = CopiasRouteImport.update({
   path: '/copias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DominiosRoute = DominiosRouteImport.update({
+  id: '/dominios',
+  path: '/dominios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EstadoRoute = EstadoRouteImport.update({
   id: '/estado',
   path: '/estado',
@@ -97,11 +102,6 @@ const ReferenciaRoute = ReferenciaRouteImport.update({
 const RepositoriosRoute = RepositoriosRouteImport.update({
   id: '/repositorios',
   path: '/repositorios',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VigilanciaRoute = VigilanciaRouteImport.update({
-  id: '/vigilancia',
-  path: '/vigilancia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AjustesProveedoresRoute = AjustesProveedoresRouteImport.update({
@@ -135,13 +135,13 @@ export interface FileRoutesByFullPath {
   '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/copias': typeof CopiasRoute
+  '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
-  '/vigilancia': typeof VigilanciaRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -156,13 +156,13 @@ export interface FileRoutesByTo {
   '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/copias': typeof CopiasRoute
+  '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
-  '/vigilancia': typeof VigilanciaRoute
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
@@ -178,13 +178,13 @@ export interface FileRoutesById {
   '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/copias': typeof CopiasRoute
+  '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
-  '/vigilancia': typeof VigilanciaRoute
   '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
@@ -201,13 +201,13 @@ export interface FileRouteTypes {
     | '/cola'
     | '/compilaciones'
     | '/copias'
+    | '/dominios'
     | '/estado'
     | '/expertos'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
-    | '/vigilancia'
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -222,13 +222,13 @@ export interface FileRouteTypes {
     | '/cola'
     | '/compilaciones'
     | '/copias'
+    | '/dominios'
     | '/estado'
     | '/expertos'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
-    | '/vigilancia'
     | '/ajustes/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos'
@@ -243,13 +243,13 @@ export interface FileRouteTypes {
     | '/cola'
     | '/compilaciones'
     | '/copias'
+    | '/dominios'
     | '/estado'
     | '/expertos'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
     | '/repositorios'
-    | '/vigilancia'
     | '/ajustes_/proveedores'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
@@ -265,13 +265,13 @@ export interface RootRouteChildren {
   ColaRoute: typeof ColaRoute
   CompilacionesRoute: typeof CompilacionesRoute
   CopiasRoute: typeof CopiasRoute
+  DominiosRoute: typeof DominiosRoute
   EstadoRoute: typeof EstadoRoute
   ExpertosRoute: typeof ExpertosRoute
   IntegracionesRoute: typeof IntegracionesRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
   RepositoriosRoute: typeof RepositoriosRoute
-  VigilanciaRoute: typeof VigilanciaRoute
   AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
@@ -335,6 +335,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CopiasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dominios': {
+      id: '/dominios'
+      path: '/dominios'
+      fullPath: '/dominios'
+      preLoaderRoute: typeof DominiosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/estado': {
       id: '/estado'
       path: '/estado'
@@ -375,13 +382,6 @@ declare module '@tanstack/react-router' {
       path: '/repositorios'
       fullPath: '/repositorios'
       preLoaderRoute: typeof RepositoriosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/vigilancia': {
-      id: '/vigilancia'
-      path: '/vigilancia'
-      fullPath: '/vigilancia'
-      preLoaderRoute: typeof VigilanciaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ajustes_/proveedores': {
@@ -435,13 +435,13 @@ const rootRouteChildren: RootRouteChildren = {
   ColaRoute: ColaRoute,
   CompilacionesRoute: CompilacionesRoute,
   CopiasRoute: CopiasRoute,
+  DominiosRoute: DominiosRoute,
   EstadoRoute: EstadoRoute,
   ExpertosRoute: ExpertosRoute,
   IntegracionesRoute: IntegracionesRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,
   RepositoriosRoute: RepositoriosRoute,
-  VigilanciaRoute: VigilanciaRoute,
   AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
