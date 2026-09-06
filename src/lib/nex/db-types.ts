@@ -980,6 +980,14 @@ export type Database = {
       plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
       compilaciones: Tabla<CompilacionRow>
       firmas_compilacion: Tabla<FirmaCompilacionRow>
+      vigilancia_config: Tabla<
+        VigilanciaConfigRow,
+        Partial<SinUsuario<VigilanciaConfigRow>> & { proyecto_id: string }
+      >
+      vigilancia_lotes: Tabla<VigilanciaLoteRow>
+      vigilancia_hallazgos: Tabla<VigilanciaHallazgoRow>
+      competidores: Tabla<CompetidorRow, Partial<SinUsuario<CompetidorRow>> & { proyecto_id: string; nombre: string }>
+
 
     }
     Views: {
