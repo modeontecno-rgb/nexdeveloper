@@ -145,6 +145,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaManuales,
         tablaManualesConfig,
         funcionManuales,
+        tablaAuditorias,
+        tablaAuditoriaConfig,
+        funcionAuditar,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -223,7 +226,19 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("manuales"),
         verificarTabla("manuales_config"),
         verificarFuncion("manuales"),
+        verificarTabla("auditorias"),
+        verificarTabla("auditoria_config"),
+        verificarFuncion("auditar"),
       ]);
+      const pingAuditar = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("auditar", { body: { accion: "estado" } });
+          const r = data as { ia?: boolean; github?: boolean } | null;
+          return { ia: Boolean(r?.ia), github: Boolean(r?.github) };
+        } catch {
+          return { ia: false, github: false };
+        }
+      })();
       const pingMesa = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("mesa", { body: {} });
@@ -379,6 +394,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaManuales,
         tablaManualesConfig,
         funcionManuales,
+        tablaAuditorias,
+        tablaAuditoriaConfig,
+        funcionAuditar,
+        pingAuditar,
       };
 
     },
@@ -541,6 +560,41 @@ function EstadoSistema() {
         : verificaciones.data?.funcionManuales
           ? "Conectado / OK"
           : "No responde o falta (migración 025)",
+    },
+    {
+      nombre: "Auditorías",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAuditorias ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAuditorias
+          ? "Conectado / OK"
+          : "No responde o falta (migración 026)",
+    },
+    {
+      nombre: "Configuración de la auditoría",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAuditoriaConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAuditoriaConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 026)",
+    },
+    {
+      nombre: "Servicio de auditoría",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionAuditar
+          ? "error"
+          : verificaciones.data?.pingAuditar?.ia
+            ? "ok"
+            : "aviso",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionAuditar
+          ? "No responde o falta (migración 026)"
+          : verificaciones.data?.pingAuditar?.ia
+            ? "Conectado / OK"
+            : "Responde, pero falta la clave de IA",
     },
     {
       nombre: "Aplicación instalable",

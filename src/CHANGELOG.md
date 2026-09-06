@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.26.0 — 6 de septiembre de 2026 — Auditoría mensual con el Auditor jefe
+
+- Nueva pantalla «Auditoría»: el día 2 de cada mes se revisan todos tus proyectos y cada uno recibe una nota de 0 a 100.
+- Se miran seis cosas en cada proyecto: accesibilidad, rendimiento, seguridad, textos, código y datos, con su nota por separado.
+- Resumen del mes: nota media de la cartera, cuántos proyectos están en verde, ámbar y rojo, hallazgos por gravedad, coste del lote y un gráfico ordenado de peor a mejor.
+- Cada hallazgo viene con el problema, dónde está y la solución propuesta; con un botón puedes convertirlo en tarea, o ver la tarea si ya se creó sola.
+- Puedes auditar toda la cartera cuando quieras (se avisa del coste aproximado y verás el avance en directo) o auditar un solo proyecto.
+- Comparativa con el mes anterior: se indica si el proyecto ha subido o bajado de puntuación.
+- Configuración propia: activar o desactivar la auditoría automática, día del mes, qué áreas se revisan, crear tareas solas, limitarlas a lo crítico y alto, máximo de hallazgos y proyectos excluidos.
+- En la ficha de cada proyecto tienes el chip «Auditoría: 82/100» con la fecha, y en el Panel una tarjeta «Auditoría del mes» con la nota media y los proyectos en rojo.
+- Nuevos semáforos de la auditoría en «Estado del sistema».
+
+
 ## 0.25.0 — 6 de septiembre de 2026 — Generador de manuales
 
 - Nueva pantalla «Manuales»: NexDeveloper recorre las pantallas de un proyecto, las captura y redacta el manual entero por ti.
