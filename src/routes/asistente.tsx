@@ -5,7 +5,6 @@ import {
   MessageSquarePlus,
   Mic,
   MicOff,
-  Panel as _Panel,
   Pin,
   PinOff,
   Search,
@@ -437,7 +436,7 @@ function ChipAccion({ accion }: { accion: AccionAsistente }) {
   }
   const destino = accion.url ?? RUTA_ACCION[accion.tipo] ?? "/";
   return (
-    <Link to={destino} className={clase}>
+    <Link to={destino as "/cola"} className={clase}>
       {texto}
     </Link>
   );
