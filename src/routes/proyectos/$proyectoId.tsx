@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { peorResultado, useDominios } from "@/lib/nex/queries/dominios";
 import { useEntradasBandeja } from "@/lib/nex/queries/bandeja";
+import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge } from "@/components/nex/badges";
 import { SemaforoBadge } from "@/components/nex/semaforo";
@@ -129,6 +130,7 @@ function DetalleProyecto() {
                   {ETIQUETA_PLATAFORMA[c.plataforma]} v{c.version} · {c.estado === "ok" ? "correcta" : c.estado}
                 </Link>
               ))}
+            <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
             <EstadoProyectoBadge estado={proyecto.estado} />
