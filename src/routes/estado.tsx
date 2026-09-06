@@ -139,6 +139,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAvisosSuscripciones,
         tablaAvisosConfig,
         funcionAvisos,
+        tablaAsistenteConversaciones,
+        tablaAsistenteMensajes,
+        funcionAsistente,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -211,6 +214,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("avisos_suscripciones"),
         verificarTabla("avisos_config"),
         verificarFuncion("avisos"),
+        verificarTabla("asistente_conversaciones"),
+        verificarTabla("asistente_mensajes"),
+        verificarFuncion("asistente"),
       ]);
       const pingMesa = await (async () => {
         try {
