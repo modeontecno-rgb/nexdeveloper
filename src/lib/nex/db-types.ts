@@ -1426,6 +1426,13 @@ export type Database = {
         Partial<SinUsuario<CierreVersionRow>>
       >
       documentos_nex: Tabla<DocumentoNexRow>
+      habilidades: Tabla<
+        HabilidadRow,
+        Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },
+        Partial<SinUsuario<HabilidadRow>>
+      >
+      habilidades_usos: Tabla<HabilidadUsoRow>
+      habilidades_config: Tabla<HabilidadesConfigRow, Partial<SinUsuario<HabilidadesConfigRow>>>
 
 
 
@@ -1444,6 +1451,7 @@ export type Database = {
       v_gasto_ia_mes: { Row: GastoIaMesRow; Relationships: [] }
       v_gasto_ia_proyecto_mes: { Row: GastoIaProyectoMesRow; Relationships: [] }
       v_gasto_ia_estado: { Row: GastoIaEstadoRow; Relationships: [] }
+      v_habilidades_resumen: { Row: HabilidadesResumenRow; Relationships: [] }
 
 
 
@@ -1506,6 +1514,9 @@ export type Database = {
       herramienta_compilacion: HerramientaCompilacion
       plataforma_compilacion: PlataformaCompilacion
       estado_compilacion: EstadoCompilacion
+      origen_habilidad: OrigenHabilidad
+      categoria_habilidad: CategoriaHabilidad
+      estado_habilidad: EstadoHabilidad
 
     }
     CompositeTypes: { [_ in never]: never }
