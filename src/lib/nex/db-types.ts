@@ -2644,6 +2644,13 @@ export type Database = {
       infra_incidencias: Tabla<InfraIncidenciaRow>
       infra_sincronizacion: Tabla<InfraSincronizacionRow>
       infra_config: Tabla<InfraConfigRow, Partial<SinUsuario<InfraConfigRow>>, Partial<SinUsuario<InfraConfigRow>>>
+      peticiones_directas: Tabla<PeticionDirectaRow>
+      plaud_grabaciones: Tabla<PlaudGrabacionRow>
+      personal_conversaciones: Tabla<PersonalConversacionRow>
+      personal_mensajes: Tabla<PersonalMensajeRow>
+      personal_documentos: Tabla<PersonalDocumentoRow>
+      personal_config: Tabla<PersonalConfigRow, Partial<SinUsuario<PersonalConfigRow>>, Partial<SinUsuario<PersonalConfigRow>>>
+      estilo_reescrituras: Tabla<EstiloReescrituraRow>
 
 
 
