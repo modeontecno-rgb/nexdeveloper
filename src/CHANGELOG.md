@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## 0.9.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Copias»: guarda tus bases de datos y tus repositorios en tu propio almacén.
+- Destino de las copias configurable desde la aplicación (servidor, bucket, región, carpeta y credenciales), con «Probar conexión»; la clave secreta se guarda cifrada y nunca se muestra.
+- Eliges qué se copia: todas las bases de datos y repositorios, o solo los que marques, con la lista actualizable y un botón para crear las fichas de proyecto que falten.
+- «Copiar ahora» muestra el progreso en vivo de cada copia, con estado, tamaño y tablas o filas.
+- Copias automáticas diarias y semanales, con cuántas se conservan y aviso si la última correcta es demasiado antigua.
+- Histórico con filtros y botón de descarga con enlace temporal.
+- Estado del sistema: nueva tarjeta «Secretos y conexiones» y semáforos para las copias.
+- La versión se ve de forma discreta en el pie del menú y en la pantalla de acceso; al pulsarla se copia.
+
 ## 0.8.0 — 5 de septiembre de 2026
 
 - Nueva pantalla «Repositorios»: crea repositorios privados de GitHub en la cuenta modeontecno-rgb para cualquier proyecto, con un solo botón.

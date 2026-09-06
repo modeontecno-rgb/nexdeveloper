@@ -15,6 +15,7 @@ import {
   useProyectos,
   useTareas,
 } from "@/lib/nex/queries/datos";
+import { useComprobarSecretos } from "@/lib/nex/queries/copias";
 import { supabase } from "@/lib/nex/supabase";
 import { VERSION_APP } from "@/lib/nex/version";
 
@@ -31,6 +32,15 @@ export const Route = createFileRoute("/estado")({
 });
 
 type Nivel = "ok" | "aviso" | "error";
+
+const NOMBRES_SECRETOS = [
+  "GITHUB_TOKEN",
+  "CUENTA_SUPABASE_TOKEN",
+  "SENTRY_DSN",
+  "SENTRY_AUTH_TOKEN",
+  "CANVA_CLIENT_ID",
+  "CANVA_CLIENT_SECRET",
+] as const;
 
 async function verificarTabla(nombre: string): Promise<boolean> {
   const { error } = await supabase
@@ -79,6 +89,8 @@ function useVerificacionesBackend(habilitado: boolean) {
         repositorios,
         repositorioSubidas,
         funcionRepos,
+        copias,
+        funcionCopias,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -100,6 +112,8 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("repositorios"),
         verificarTabla("repositorio_subidas"),
         verificarFuncion("github-repos"),
+        verificarTabla("copias"),
+        verificarFuncion("copias-generar"),
       ]);
       return {
         acciones,
@@ -122,6 +136,8 @@ function useVerificacionesBackend(habilitado: boolean) {
         repositorios,
         repositorioSubidas,
         funcionRepos,
+        copias,
+        funcionCopias,
       };
     },
   });
@@ -136,6 +152,7 @@ function EstadoSistema() {
   const credenciales = useCredenciales();
   const alertas = useAlertas();
   const verificaciones = useVerificacionesBackend(Boolean(sesion));
+  const secretos = useComprobarSecretos(Boolean(sesion));
 
   const piezas: { nombre: string; nivel: Nivel; detalle: string }[] = [
     {
@@ -356,6 +373,24 @@ function EstadoSistema() {
           : "No encontrada",
     },
     {
+      nombre: "Copias de seguridad",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.copias ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.copias
+          ? "Responde correctamente"
+          : "Falta la tabla copias (migración 009)",
+    },
+    {
+      nombre: "Edge Function copias-generar",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionCopias ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionCopias
+          ? "Disponible"
+          : "No encontrada",
+    },
+    {
       nombre: "Versión de la aplicación",
       nivel: "ok",
       detalle: `NexDeveloper ${VERSION_APP}`,
@@ -390,6 +425,53 @@ function EstadoSistema() {
           </Boton>
         }
       />
+
+      <section className="panel mb-5 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-display text-base font-semibold">Secretos y conexiones</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Solo se indica si cada secreto está configurado; nunca se muestra su valor.
+            </p>
+          </div>
+          <Boton variante="suave" onClick={() => void secretos.refetch()} disabled={secretos.isFetching}>
+            Volver a comprobar
+          </Boton>
+        </div>
+
+        {secretos.isPending ? (
+          <p className="mt-3 text-sm text-muted-foreground">Comprobando...</p>
+        ) : secretos.isError ? (
+          <p className="mt-3 text-sm text-destructive">No se ha podido comprobar los secretos.</p>
+        ) : (
+          <>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {NOMBRES_SECRETOS.map((clave) => {
+                const puesto = Boolean(secretos.data?.[clave]);
+                return (
+                  <div key={clave} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+                    <span className="truncate text-sm">{clave}</span>
+                    <span
+                      className={
+                        puesto
+                          ? "inline-flex rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-xs text-success"
+                          : "inline-flex rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-xs text-destructive"
+                      }
+                    >
+                      {puesto ? "Configurada" : "Sin configurar"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              GitHub: {secretos.data?.github?.ok ? (secretos.data.github.usuario ?? "conectado") : "sin conexión"} ·
+              {" "}
+              Supabase: {secretos.data?.supabase?.ok ? `${secretos.data.supabase.proyectos ?? 0} proyectos` : "sin conexión"}
+            </p>
+          </>
+        )}
+      </section>
 
       <div className="grid gap-3 md:grid-cols-2">
         {piezas.map((p) => (

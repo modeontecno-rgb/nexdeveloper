@@ -1,2 +1,2 @@
-/** Versión visible de la aplicación. */
-export const VERSION_APP = "0.8.0";
+/** Versión visible de la aplicación. Se mantiene por compatibilidad: la fuente es `src/lib/version.ts`. */
+export { VERSION_APP } from "@/lib/version";

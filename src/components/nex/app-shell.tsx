@@ -18,9 +18,11 @@ import {
   Sun,
   X,
   BadgeCheck,
+  DatabaseBackup,
 } from "lucide-react";
 import * as React from "react";
 
+import { PastillaVersion } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
 import { useAuth } from "@/lib/nex/auth";
 import { usePerfil } from "@/lib/nex/queries/datos";
@@ -37,6 +39,7 @@ const NAVEGACION = [
   { to: "/expertos", etiqueta: "Expertos", icono: Users },
   { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
   { to: "/repositorios", etiqueta: "Repositorios", icono: GitBranch },
+  { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },
   { to: "/ajustes", etiqueta: "Ajustes", icono: Settings },
@@ -110,7 +113,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <LogOut className="size-3.5" /> Cerrar sesión
             </button>
           </div>
-          <PieMarca />
+          <div className="flex items-center justify-between gap-2">
+            <PieMarca className="flex-1" />
+            <PastillaVersion />
+          </div>
         </div>
       </aside>
 

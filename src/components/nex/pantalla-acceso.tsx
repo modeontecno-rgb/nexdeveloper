@@ -1,6 +1,7 @@
 import { Cpu, Loader2 } from "lucide-react";
 import * as React from "react";
 
+import { PastillaVersionFija } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
 import { useAuth } from "@/lib/nex/auth";
 
@@ -26,6 +27,7 @@ export function PantallaAcceso() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <PastillaVersionFija />
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <span className="grid size-11 place-items-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
