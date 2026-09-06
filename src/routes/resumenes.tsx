@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
-import type { CanalResumen, IncluirResumen, ResumenRow, TipoResumen } from "@/lib/nex/db-types";
+import type { CanalResumen, IncluirResumen, ResumenRow, ResumenesConfigRow, TipoResumen } from "@/lib/nex/db-types";
 import { desde, formatoFechaHora } from "@/lib/nex/labels";
 import {
   hoyISO,
@@ -360,7 +360,7 @@ function Configuracion() {
   const fuenteWhatsapp = fuentes.find((f) => f.origen === "whatsapp");
   const whatsappListo = Boolean(fuenteWhatsapp?.conectada);
 
-  const cambiar = (cambios: Partial<Omit<typeof config, "user_id">>) => {
+  const cambiar = (cambios: Partial<Omit<ResumenesConfigRow, "user_id">>) => {
     guardar.mutate(
       { id: config.id, cambios },
       { onError: (error) => toast.error((error as Error).message) },
