@@ -32,6 +32,7 @@ import type {
   TipoDocumentoNex,
 } from "@/lib/nex/db-types";
 import { formatoFechaHora } from "@/lib/nex/labels";
+import { useGenerarManual } from "@/lib/nex/queries/manuales";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
   LIMITE_SUBIDA_BYTES,
@@ -215,6 +216,7 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
   const { data: proyectos = [] } = useProyectos();
   const preparar = usePrepararCierre();
   const cerrar = useCerrarVersion();
+  const generarManual = useGenerarManual();
   const { data: cierres = [] } = useCierresVersion();
 
   const [proyectoId, setProyectoId] = React.useState(proyectoInicial ?? "");
@@ -229,6 +231,7 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
     pendiente_usuario: [],
   });
   const [conGithub, setConGithub] = React.useState(true);
+  const [regenerarManual, setRegenerarManual] = React.useState(false);
   const [confirmando, setConfirmando] = React.useState(false);
   const [resultado, setResultado] = React.useState<ResultadoCierre | null>(null);
 
@@ -278,6 +281,18 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
       const r = await cerrar.mutateAsync({ cierre_id: borrador.id, datos, github: conGithub });
       setResultado(r);
       toast.success("Versión cerrada.");
+      if (regenerarManual && proyectoId) {
+        try {
+          await generarManual.mutateAsync({
+            proyectoId,
+            publico: "usuario",
+            ...(borrador.version ? { version: borrador.version } : {}),
+          });
+          toast.success("El manual de usuario se está rehaciendo con la versión nueva.");
+        } catch {
+          /* el error ya se avisa */
+        }
+      }
     } catch (err) {
       toast.error((err as Error).message);
       setResultado({ ok: false, avisos: [(err as Error).message] });
@@ -358,6 +373,15 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input type="checkbox" checked={conGithub} onChange={(e) => setConGithub(e.target.checked)} />
                 Actualizar CHANGELOG y crear la etiqueta en GitHub
+              </label>
+
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={regenerarManual}
+                  onChange={(e) => setRegenerarManual(e.target.checked)}
+                />
+                Regenerar el manual de usuario tras cerrar
               </label>
 
               <div className="flex flex-wrap gap-2 pt-1">
