@@ -264,7 +264,7 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("facturacion_config"),
         verificarTabla("facturacion_clientes"),
         verificarTabla("horas_registro"),
-        verificarTabla("facturas"),
+        verificarTabla("facturas_evoluteia"),
         verificarFuncion("facturacion"),
         verificarTabla("infra_servicios"),
         verificarTabla("infra_dependencias"),
