@@ -154,6 +154,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaPortalesCliente,
         tablaPortalPeticiones,
         funcionPortalCliente,
+        tablaFacturacionConfig,
+        tablaFacturacionClientes,
+        tablaHorasRegistro,
+        tablaFacturas,
+        funcionFacturacion,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -241,6 +246,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("portales_cliente"),
         verificarTabla("portal_peticiones"),
         verificarFuncion("portal-cliente"),
+        verificarTabla("facturacion_config"),
+        verificarTabla("facturacion_clientes"),
+        verificarTabla("horas_registro"),
+        verificarTabla("facturas"),
+        verificarFuncion("facturacion"),
       ]);
       const pingUsuarios = await (async () => {
         try {
@@ -426,6 +436,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaPortalesCliente,
         tablaPortalPeticiones,
         funcionPortalCliente,
+        tablaFacturacionConfig,
+        tablaFacturacionClientes,
+        tablaHorasRegistro,
+        tablaFacturas,
+        funcionFacturacion,
       };
 
     },
@@ -685,6 +700,51 @@ function EstadoSistema() {
         : verificaciones.data?.funcionPortalCliente
           ? "Conectado / OK"
           : "No responde o falta (migración 028)",
+    },
+    {
+      nombre: "Configuración de facturación",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaFacturacionConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaFacturacionConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 029)",
+    },
+    {
+      nombre: "Clientes de facturación",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaFacturacionClientes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaFacturacionClientes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 029)",
+    },
+    {
+      nombre: "Registro de horas",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaHorasRegistro ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaHorasRegistro
+          ? "Conectado / OK"
+          : "No responde o falta (migración 029)",
+    },
+    {
+      nombre: "Facturas",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaFacturas ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaFacturas
+          ? "Conectado / OK"
+          : "No responde o falta (migración 029)",
+    },
+    {
+      nombre: "Servicio de facturación",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionFacturacion ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionFacturacion
+          ? "Conectado / OK"
+          : "No responde o falta (migración 029)",
     },
     {
       nombre: "Aplicación instalable",

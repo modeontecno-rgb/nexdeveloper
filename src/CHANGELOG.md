@@ -1,5 +1,19 @@
 # Historial de cambios
 
+## 0.29.0 — 6 de septiembre de 2026 — Facturación y horas por proyecto
+
+- Nueva pantalla «Facturación» con cinco apartados: Resumen, Horas, Facturas, Clientes y Configuración.
+- Cronómetro siempre a mano: lo arrancas desde el proyecto o desde la pantalla de horas y se ve corriendo en cualquier parte de la aplicación; al pararlo, las horas se guardan solas y redondeadas.
+- Registro de horas manual, con cronómetro y automático: cada tarea que cierras y cada trabajo de la IA suman su tiempo.
+- Tabla de horas con filtros por proyecto, fechas y «sin facturar», editable directamente en la fila; las horas ya facturadas quedan bloqueadas.
+- Ficha de cada cliente con sus datos fiscales y su tipo de contrato: por horas, cuota mensual, precio cerrado o sin facturar, cada uno explicado.
+- Borradores de factura preparados solos el día 1 con las horas del mes, la cuota y el gasto de IA repercutido con su margen.
+- Emisión con número correlativo: la factura se guarda imprimible en el almacén, queda registrada y se crea la tarea para enviarla.
+- Control de cobros: marcas enviada, pagada o anulada, y las vencidas aparecen en rojo, también en el Panel principal.
+- Resumen mensual con lo facturado, lo cobrado, lo pendiente, las horas, el coste de IA y el margen, con gráfico de facturado frente a coste de IA por proyecto.
+- Configuración completa dentro de la aplicación: emisor, serie y numeración, IVA, IRPF, tarifa por hora, recargo de IA, vencimientos, redondeo y texto legal.
+- Nuevos semáforos de facturación en «Estado del sistema».
+
 ## 0.28.0 — 6 de septiembre de 2026 — Modo cliente
 
 - Nueva pantalla «Modo cliente»: crea para cada proyecto un enlace secreto que puedes enviar a tu cliente; entra sin contraseña y solo ve lo suyo.

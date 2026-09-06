@@ -26,6 +26,7 @@ import { Route as DominiosRouteImport } from './routes/dominios'
 import { Route as EjecucionRouteImport } from './routes/ejecucion'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
+import { Route as FacturacionRouteImport } from './routes/facturacion'
 import { Route as GastoIaRouteImport } from './routes/gasto-ia'
 import { Route as HabilidadesRouteImport } from './routes/habilidades'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
@@ -130,6 +131,11 @@ const EstadoRoute = EstadoRouteImport.update({
 const ExpertosRoute = ExpertosRouteImport.update({
   id: '/expertos',
   path: '/expertos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FacturacionRoute = FacturacionRouteImport.update({
+  id: '/facturacion',
+  path: '/facturacion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GastoIaRoute = GastoIaRouteImport.update({
@@ -252,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/ejecucion': typeof EjecucionRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
+  '/facturacion': typeof FacturacionRoute
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
@@ -291,6 +298,7 @@ export interface FileRoutesByTo {
   '/ejecucion': typeof EjecucionRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
+  '/facturacion': typeof FacturacionRoute
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
@@ -331,6 +339,7 @@ export interface FileRoutesById {
   '/ejecucion': typeof EjecucionRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
+  '/facturacion': typeof FacturacionRoute
   '/gasto-ia': typeof GastoIaRoute
   '/habilidades': typeof HabilidadesRoute
   '/integraciones': typeof IntegracionesRoute
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
     | '/ejecucion'
     | '/estado'
     | '/expertos'
+    | '/facturacion'
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/ejecucion'
     | '/estado'
     | '/expertos'
+    | '/facturacion'
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/ejecucion'
     | '/estado'
     | '/expertos'
+    | '/facturacion'
     | '/gasto-ia'
     | '/habilidades'
     | '/integraciones'
@@ -490,6 +502,7 @@ export interface RootRouteChildren {
   EjecucionRoute: typeof EjecucionRoute
   EstadoRoute: typeof EstadoRoute
   ExpertosRoute: typeof ExpertosRoute
+  FacturacionRoute: typeof FacturacionRoute
   GastoIaRoute: typeof GastoIaRoute
   HabilidadesRoute: typeof HabilidadesRoute
   IntegracionesRoute: typeof IntegracionesRoute
@@ -630,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/expertos'
       fullPath: '/expertos'
       preLoaderRoute: typeof ExpertosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/facturacion': {
+      id: '/facturacion'
+      path: '/facturacion'
+      fullPath: '/facturacion'
+      preLoaderRoute: typeof FacturacionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gasto-ia': {
@@ -804,6 +824,7 @@ const rootRouteChildren: RootRouteChildren = {
   EjecucionRoute: EjecucionRoute,
   EstadoRoute: EstadoRoute,
   ExpertosRoute: ExpertosRoute,
+  FacturacionRoute: FacturacionRoute,
   GastoIaRoute: GastoIaRoute,
   HabilidadesRoute: HabilidadesRoute,
   IntegracionesRoute: IntegracionesRoute,

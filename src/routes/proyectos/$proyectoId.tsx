@@ -9,6 +9,7 @@ import { BotonPreguntarAsistente } from "@/routes/asistente";
 import { BloqueManualProyecto } from "@/routes/manuales";
 import { ChipAuditoriaProyecto } from "@/routes/auditoria";
 import { TarjetaPortalProyecto } from "@/routes/modo-cliente";
+import { TarjetaFacturacionProyecto } from "@/routes/facturacion";
 import { BloqueUsuariosProyecto, ChipUsuariosProyecto } from "@/routes/usuarios-clientes";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -162,6 +163,7 @@ function DetalleProyecto() {
       />
 
       <TarjetaPortalProyecto proyecto={proyecto} />
+      <TarjetaFacturacionProyecto proyectoId={proyectoId} />
 
       <BloqueMensajes proyectoId={proyectoId} />
 
