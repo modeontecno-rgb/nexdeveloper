@@ -1540,12 +1540,18 @@ function PanelSugerencias({
   );
 }
 
-function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente: FacturacionClienteRow | null }) {
+function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente: ClienteFacturacion | null }) {
   const [abierto, setAbierto] = React.useState(false);
+  const [cambiar, setCambiar] = React.useState(false);
   const desenlazar = useDesenlazarCliente();
+  const cambiarEmpresa = useCambiarEmpresaCliente();
+  const { catalogo } = useEmpresasEmisoras();
   const enlazado = Boolean(cliente?.tercero_id);
+  const empresaActual = catalogo.find((e) => e.tenant_id === cliente?.evoluteia_tenant_id) ?? null;
+  const otraEmpresa = catalogo.find((e) => e.tenant_id !== empresaActual?.tenant_id) ?? null;
 
   return (
+
     <div className="panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
