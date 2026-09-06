@@ -1518,6 +1518,8 @@ function PanelSugerencias({
                             proyecto_id: s.proyecto_id,
                             tercero_id: c.id,
                             contrato: "horas",
+                            ...(tenantId ? { tenant_id: tenantId } : {}),
+
                           });
                           toast.success("Proyecto enlazado con EvoluteIA.");
                         } catch (e) {
