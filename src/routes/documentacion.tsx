@@ -211,7 +211,7 @@ function Semaforito({ activo, texto }: { activo: boolean; texto: string }) {
   );
 }
 
-function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string }) {
+function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefined }) {
   const { data: proyectos = [] } = useProyectos();
   const preparar = usePrepararCierre();
   const cerrar = useCerrarVersion();
@@ -263,7 +263,7 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string }) {
     if (!proyectoId) return;
     setResultado(null);
     try {
-      const r = await preparar.mutateAsync({ proyecto_id: proyectoId, version: version || undefined });
+      const r = await preparar.mutateAsync({ proyecto_id: proyectoId, ...(version ? { version } : {}) });
       cargarBorrador(r.cierre);
       toast.success(`Borrador preparado con ${r.material_lineas ?? 0} apuntes de material.`);
     } catch (err) {
@@ -676,7 +676,7 @@ function iconoTipo(tipo: string) {
   return FileText;
 }
 
-function PestanaDocumentos({ proyectoInicial }: { proyectoInicial?: string }) {
+function PestanaDocumentos({ proyectoInicial }: { proyectoInicial?: string | undefined }) {
   const { data: proyectos = [] } = useProyectos();
   const [proyectoId, setProyectoId] = React.useState(proyectoInicial ?? "");
   React.useEffect(() => {
