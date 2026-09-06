@@ -34,6 +34,7 @@ import {
   useTareasAtencion,
 } from "@/lib/nex/queries/datos";
 import { useUltimasCompilaciones } from "@/lib/nex/queries/compilaciones";
+import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 import { ETIQUETA_PLATAFORMA } from "@/routes/compilaciones";
 import { useAsignarExperto } from "@/lib/nex/queries/expertos";
 import { useEnviarMensaje } from "@/lib/nex/queries/mutaciones";
@@ -61,6 +62,7 @@ function DetalleProyecto() {
   const { data: actividad = [] } = useActividad(proyectoId);
   const { data: tareasAtencion = [] } = useTareasAtencion(proyectoId);
   const { data: ultimasCompilaciones = [] } = useUltimasCompilaciones();
+  const { data: hallazgosVigilancia = [] } = useVigilanciaHallazgos();
   const { data: ajustes } = useAjustes();
   const moneda = ajustes?.moneda ?? "EUR";
 
@@ -114,6 +116,16 @@ function DetalleProyecto() {
         {...(proyecto.descripcion ? { descripcion: proyecto.descripcion } : {})}
         acciones={
           <div className="flex items-center gap-2">
+            {hallazgosVigilancia.filter((h) => h.proyecto_id === proyectoId && h.estado === "nuevo").length > 0 ? (
+              <Link
+                to="/vigilancia"
+                search={{ proyecto: proyectoId }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-xs text-warning transition hover:opacity-90"
+                title="Hallazgos de vigilancia sin revisar"
+              >
+                {hallazgosVigilancia.filter((h) => h.proyecto_id === proyectoId && h.estado === "nuevo").length} novedades
+              </Link>
+            ) : null}
             {ultimasCompilaciones
               .filter((c) => c.proyecto_id === proyectoId)
               .map((c) => (

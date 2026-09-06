@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowRight, CircleDot } from "lucide-react";
+import { AlertTriangle, ArrowRight, CircleDot, Radar } from "lucide-react";
 import * as React from "react";
 
 import { Encabezado } from "@/components/nex/app-shell";
@@ -14,6 +14,7 @@ import {
   useProyectos,
   useResumenProyectos,
 } from "@/lib/nex/queries/datos";
+import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,6 +40,7 @@ function Inicio() {
   const { data: alertas = [] } = useAlertas();
   const { data: carga = [] } = useCargaAgentes();
   const { data: ajustes } = useAjustes();
+  const { data: hallazgos = [] } = useVigilanciaHallazgos();
   const moneda = ajustes?.moneda ?? "EUR";
 
   const [estado, setEstado] = React.useState<EstadoProyecto | "todos">("todos");
@@ -170,6 +172,33 @@ function Inicio() {
         </div>
 
         <aside className="space-y-4">
+          <div className="panel p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
+                <Radar className="size-4 text-primary" /> Vigilancia
+              </h2>
+              <Link to="/vigilancia" className="text-xs text-primary hover:underline">
+                Ver todo
+              </Link>
+            </div>
+            <ul className="mt-3 space-y-3">
+              {hallazgos
+                .filter((h) => h.estado === "nuevo" && h.relevancia === "alta")
+                .slice(0, 5)
+                .map((h) => (
+                  <li key={h.id} className="rounded-lg border border-border bg-surface p-3 text-sm">
+                    <p className="text-foreground">{h.titulo}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {proyectos.find((p) => p.id === h.proyecto_id)?.nombre ?? "Proyecto"}
+                    </p>
+                  </li>
+                ))}
+              {hallazgos.filter((h) => h.estado === "nuevo" && h.relevancia === "alta").length === 0 && (
+                <li className="text-sm text-muted-foreground">Sin novedades importantes por revisar.</li>
+              )}
+            </ul>
+          </div>
+
           <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Alertas y decisiones</h2>
             <ul className="mt-3 space-y-3">
