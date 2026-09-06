@@ -785,7 +785,65 @@ export type CompilacionUltimaRow = {
   creado_el: string
 }
 
+export type TipoDominio = "dominio" | "subdominio" | "externo"
+export type ResultadoDominio = "ok" | "aviso" | "error" | "sin_comprobar"
+
+export type DominioRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  dominio: string
+  tipo: TipoDominio
+  registrador: string | null
+  gestionado_por: string | null
+  activo: boolean
+  aviso_dias: number
+  pendiente: boolean
+  ip_resuelta: string | null
+  dns_ok: boolean | null
+  http_estado: number | null
+  https_ok: boolean | null
+  tiempo_ms: number | null
+  cert_emisor: string | null
+  cert_valido_hasta: string | null
+  cert_dias: number | null
+  dominio_caduca: string | null
+  dominio_dias: number | null
+  resultado: ResultadoDominio
+  error: string | null
+  ultima_comprobacion: string | null
+  avisado_el: string | null
+  tarea_id: string | null
+  notas: string | null
+  creado_el: string
+  actualizado_el: string
+}
+
+export type DominioHistorialRow = {
+  id: string
+  dominio_id: string
+  comprobado_el: string
+  resultado: ResultadoDominio
+  http_estado: number | null
+  https_ok: boolean | null
+  tiempo_ms: number | null
+  cert_dias: number | null
+  dominio_dias: number | null
+  error: string | null
+}
+
+export type DominiosResumenRow = {
+  total: number
+  ok: number
+  aviso: number
+  error: number
+  cert_dias_min: number | null
+  dominio_dias_min: number | null
+  ultima_comprobacion: string | null
+}
+
 type SinUsuario<T> = Omit<T, "user_id">
+
 
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
   Row: Row
