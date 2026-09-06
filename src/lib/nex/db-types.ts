@@ -228,8 +228,12 @@ export type ProyectoRow = {
   lovable_project_id: string | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
+  semaforo_salud: Semaforo
+  salud_comprobada_el: string | null
+  sentry_slug: string | null
   resumen_automatico: string | null
   resumen_actualizado_el: string | null
+
   creado_el: string
   actualizado_el: string
 }
