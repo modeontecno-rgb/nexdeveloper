@@ -980,13 +980,13 @@ function BloqueFacturas() {
           <tbody>
             {isPending ? (
               <tr>
-                <td colSpan={9} className="p-4 text-muted-foreground">
+                <td colSpan={10} className="p-4 text-muted-foreground">
                   Cargando facturas...
                 </td>
               </tr>
             ) : facturas.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-4 text-muted-foreground">
+                <td colSpan={10} className="p-4 text-muted-foreground">
                   Todavía no hay facturas en EvoluteIA para estos filtros.
                 </td>
               </tr>
