@@ -725,6 +725,61 @@ export type CopiaRow = {
   creado_el: string
 }
 
+// ---- Restauración de copias (0.22.0) ----
+export type TipoRestauracion = "base_datos" | "repositorio" | "prueba"
+export type OrigenRestauracion = "manual" | "programado"
+export type ModoRestauracion = "solo_datos" | "esquema_y_datos" | "simulada" | "rama"
+export type EstadoRestauracion =
+  | "en_cola"
+  | "preparando"
+  | "restaurando"
+  | "completada"
+  | "error"
+  | "cancelada"
+
+export type ProgresoRestauracion = {
+  tablas_total?: number
+  tablas_hechas?: number
+  filas_total?: number
+  filas_hechas?: number
+  archivos_total?: number
+  archivos_hechos?: number
+  avisos?: string[]
+}
+
+export type RestauracionRow = {
+  id: string
+  user_id: string
+  copia_id: string | null
+  proyecto_id: string | null
+  tipo: TipoRestauracion
+  origen: OrigenRestauracion
+  ruta_remota: string | null
+  destino: string | null
+  rama: string | null
+  modo: ModoRestauracion
+  estado: EstadoRestauracion
+  paso: string | null
+  progreso: ProgresoRestauracion | null
+  resultado: Json
+  copia_previa: string | null
+  error: string | null
+  iniciada_el: string | null
+  terminada_el: string | null
+  creado_el: string
+}
+
+export type RestauracionConfigRow = {
+  id: string
+  user_id: string
+  sandbox_ref: string | null
+  prueba_mensual: boolean
+  dia_prueba: number
+  proyecto_prueba_id: string | null
+}
+
+
+
 
 // ---- Compilaciones (0.10.0) ----
 export type HerramientaCompilacion = "capacitor" | "flutter" | "tauri" | "web"
