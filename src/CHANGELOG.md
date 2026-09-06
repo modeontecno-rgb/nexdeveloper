@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## 0.30.0 — 6 de septiembre de 2026 — Control total de infraestructura
+
+- Nueva pantalla «Infraestructura»: un semáforo grande que dice de un vistazo si todo funciona, con Mapa, Servicios, Incidencias, Sincronización, Ideas y Configuración.
+- Se vigila cada diez minutos todo lo que tus proyectos necesitan: bases de datos, GitHub, la plataforma de desarrollo, los dominios y sus páginas, el almacén de archivos, los proveedores de IA, Sentry, Proyectian y las funciones de NexDeveloper.
+- Cuando algo se cae se abre una incidencia que dice exactamente qué proyectos y qué partes de cada proyecto dejan de funcionar, con su tarea y su aviso al móvil.
+- Mapa por proyecto: pulsas un proyecto y ves de qué servicios depende, cuáles son imprescindibles y qué parte se vería afectada.
+- Cada hora se comprueba que GitHub, la base de datos y la copia del Mac van a la par: último commit, versión del repositorio frente a la de aquí, migraciones pendientes y funciones sin desplegar, con un botón para adoptar la versión del repositorio.
+- Ficha de cada servicio con tiempo de respuesta, disponibilidad de las últimas horas, coste mensual y fecha de renovación (en rojo si queda menos de un mes), y el coste total de la infraestructura al pie.
+- Puedes añadir a mano cualquier servidor o servicio que contrates en el futuro y decir a qué proyectos afecta.
+- Apartado de ideas con sugerencias de qué más conviene vigilar.
+- En la ficha del proyecto hay una tarjeta de infraestructura con sus dos semáforos, y en el inicio aparece una banda roja si hay algo caído.
+
 ## 0.29.0 — 6 de septiembre de 2026 — Facturación y horas por proyecto
 
 - Nueva pantalla «Facturación» con cinco apartados: Resumen, Horas, Facturas, Clientes y Configuración.
