@@ -1071,9 +1071,106 @@ export type ResumenRow = {
   creado_el: string
 }
 
+// ---- Gasto de IA (0.15.0) ----
+export type ProveedorGastoIa =
+  | "anthropic"
+  | "openai"
+  | "google"
+  | "groq"
+  | "lovable"
+  | "elevenlabs"
+  | "fal"
+  | "otro"
 
+export type FuenteGastoIa = "interno" | "anthropic_admin" | "openai_admin" | "manual"
+
+export type GastoIaDiarioRow = {
+  id: string
+  user_id: string
+  fecha: string
+  proveedor: ProveedorGastoIa
+  fuente: FuenteGastoIa
+  proyecto_id: string | null
+  modelo: string | null
+  tokens_entrada: number
+  tokens_salida: number
+  llamadas: number
+  creditos: number
+  coste: number
+  detalle: Json | null
+}
+
+export type PeriodicidadGastoIa = "unico" | "mensual"
+
+export type GastoIaManualRow = {
+  id: string
+  user_id: string
+  fecha: string
+  proveedor: ProveedorGastoIa
+  concepto: string
+  proyecto_id: string | null
+  creditos: number
+  importe: number
+  periodicidad: PeriodicidadGastoIa
+  notas: string | null
+}
+
+export type AmbitoPresupuestoIa = "global" | "proveedor" | "proyecto"
+export type AccionPresupuestoIa = "avisar" | "bloquear"
+
+export type PresupuestoIaRow = {
+  id: string
+  user_id: string
+  ambito: AmbitoPresupuestoIa
+  referencia: string | null
+  limite_mensual: number
+  aviso_pct: number
+  accion: AccionPresupuestoIa
+  activo: boolean
+  avisado_mes: string | null
+  bloqueado: boolean
+}
+
+export type GastoIaConfigRow = {
+  id: string
+  user_id: string
+  moneda: string
+  tipo_cambio_usd: number
+  precio_credito_lovable: number | null
+}
+
+export type GastoIaMesRow = {
+  mes: string
+  proveedor: ProveedorGastoIa
+  coste: number
+  tokens: number
+  llamadas: number
+  creditos: number
+  real_facturado: boolean
+}
+
+export type GastoIaProyectoMesRow = {
+  mes: string
+  proyecto_id: string | null
+  proyecto: string | null
+  coste: number
+  tokens: number
+  llamadas: number
+}
+
+export type GastoIaEstadoRow = {
+  presupuesto_id: string
+  ambito: AmbitoPresupuestoIa
+  referencia: string | null
+  limite_mensual: number
+  aviso_pct: number
+  accion: AccionPresupuestoIa
+  bloqueado: boolean
+  gastado_mes: number
+}
 
 export type Database = {
+
   __InternalSupabase: { PostgrestVersion: "14.5" }
   public: {
     Tables: {
