@@ -230,6 +230,9 @@ export type ProyectoRow = {
   ultima_ejecucion_calidad_id: string | null
   semaforo_salud: Semaforo
   salud_comprobada_el: string | null
+  semaforo_infra: Semaforo | null
+  semaforo_sincronizacion: Semaforo | null
+
   puntuacion_auditoria: number | null
   auditoria_el: string | null
   sentry_slug: string | null
@@ -2112,6 +2115,149 @@ export type SaludConfigRow = {
   incluir_rendimiento: boolean
 }
 
+/* ------------------------- Infraestructura (0.30.0) ------------------------ */
+
+export type TipoServicioInfra =
+  | "supabase"
+  | "github"
+  | "http"
+  | "dns"
+  | "tcp"
+  | "s3"
+  | "funcion"
+  | "proveedor_ia"
+  | "sentry"
+  | "proyectian"
+  | "servidor"
+  | "correo"
+  | "otro"
+
+export type AmbitoInfra = "global" | "proyecto"
+export type OrigenServicioInfra = "descubierto" | "manual"
+export type EstadoIncidenciaInfra = "abierta" | "resuelta" | "ignorada"
+
+export type MetodoInfra = {
+  esperado?: number | null
+  texto?: string | null
+  metodo_http?: string | null
+  tipo_dns?: string | null
+  puerto?: number | null
+  bucket?: string | null
+  servicios?: string[] | null
+}
+
+export type InfraServicioRow = {
+  id: string
+  user_id: string
+  nombre: string
+  tipo: TipoServicioInfra
+  proveedor: string | null
+  url: string | null
+  referencia: string | null
+  metodo: MetodoInfra | null
+  ambito: AmbitoInfra
+  critico: boolean
+  activo: boolean
+  origen: OrigenServicioInfra
+  estado: Semaforo
+  fallos_seguidos: number
+  ultimo_ms: number | null
+  ultimo_detalle: string | null
+  ultimo_error: string | null
+  comprobado_el: string | null
+  ultimo_verde_el: string | null
+  coste_mensual: number | null
+  renovacion_el: string | null
+  notas: string | null
+}
+
+export type InfraDependenciaRow = {
+  id: string
+  user_id: string
+  servicio_id: string
+  proyecto_id: string
+  modulos: string[] | null
+  critica: boolean
+}
+
+export type InfraComprobacionRow = {
+  id: string
+  user_id: string
+  servicio_id: string
+  estado: Semaforo
+  ms: number | null
+  detalle: string | null
+  error: string | null
+  comprobado_el: string
+}
+
+export type ProyectoAfectadoInfra = {
+  proyecto_id: string
+  nombre: string
+  slug?: string | null
+  modulos?: string[] | null
+  critica?: boolean
+}
+
+export type InfraIncidenciaRow = {
+  id: string
+  user_id: string
+  servicio_id: string
+  estado: EstadoIncidenciaInfra
+  titulo: string
+  detalle: string | null
+  proyectos_afectados: ProyectoAfectadoInfra[] | null
+  afecta_todo: boolean
+  tarea_id: string | null
+  abierta_el: string
+  resuelta_el: string | null
+  duracion_min: number | null
+  notas: string | null
+}
+
+export type InfraSincronizacionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  semaforo: Semaforo
+  motivos: string[] | null
+  github_rama: string | null
+  github_sha: string | null
+  github_fecha: string | null
+  github_autor: string | null
+  commits_7d: number | null
+  version_repo: string | null
+  version_app: string | null
+  migraciones_repo: number | null
+  migraciones_aplicadas: number | null
+  migraciones_pendientes: string[] | null
+  migraciones_sin_repo: string[] | null
+  funciones_repo: number | null
+  funciones_desplegadas: number | null
+  funciones_sin_desplegar: number | null
+  funciones_sin_repo: number | null
+  mac_sha: string | null
+  mac_fecha: string | null
+  mac_reportado_el: string | null
+  error: string | null
+  comprobado_el: string | null
+}
+
+export type InfraConfigRow = {
+  id: string
+  user_id: string
+  activo: boolean
+  intervalo_min: number
+  sincronizar_cada_h: number
+  umbral_lento_ms: number
+  fallos_para_rojo: number
+  avisar_push: boolean
+  crear_tareas: boolean
+  dias_sin_commit_ambar: number
+  resolver_dns: boolean
+}
+
+
 export type Database = {
 
 
@@ -2310,6 +2456,16 @@ export type Database = {
       salud_informes: Tabla<SaludInformeRow>
       salud_proyectos: Tabla<SaludProyectoRow>
       salud_config: Tabla<SaludConfigRow, Partial<SinUsuario<SaludConfigRow>>, Partial<SinUsuario<SaludConfigRow>>>
+      infra_servicios: Tabla<
+        InfraServicioRow,
+        Partial<SinUsuario<InfraServicioRow>> & { nombre: string; tipo: TipoServicioInfra },
+        Partial<SinUsuario<InfraServicioRow>>
+      >
+      infra_dependencias: Tabla<InfraDependenciaRow>
+      infra_comprobaciones: Tabla<InfraComprobacionRow>
+      infra_incidencias: Tabla<InfraIncidenciaRow>
+      infra_sincronizacion: Tabla<InfraSincronizacionRow>
+      infra_config: Tabla<InfraConfigRow, Partial<SinUsuario<InfraConfigRow>>, Partial<SinUsuario<InfraConfigRow>>>
 
 
 

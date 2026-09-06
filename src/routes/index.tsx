@@ -13,6 +13,7 @@ import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 import { TarjetaResumenHoy } from "@/routes/resumenes";
 import { TarjetaGastoIa } from "@/routes/gasto-ia";
 import { TarjetaSalud } from "@/routes/salud";
+import { BandaInfraPanel } from "@/routes/infraestructura";
 import { TarjetaAuditoriaMes } from "@/routes/auditoria";
 import { TarjetaCobrosPendientes } from "@/routes/facturacion";
 import { ContadorPeticionesClientes } from "@/routes/modo-cliente";
@@ -88,6 +89,8 @@ function Inicio() {
           </Link>
         }
       />
+
+      <BandaInfraPanel />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metrica titulo="Proyectos" valor={String(proyectos.length)} pie={`${filtrados.length} visibles`} />

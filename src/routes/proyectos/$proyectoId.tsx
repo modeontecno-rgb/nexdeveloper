@@ -8,6 +8,7 @@ import { ChipSalud } from "@/routes/salud";
 import { BotonPreguntarAsistente } from "@/routes/asistente";
 import { BloqueManualProyecto } from "@/routes/manuales";
 import { ChipAuditoriaProyecto } from "@/routes/auditoria";
+import { ChipInfraestructura, TarjetaInfraProyecto } from "@/routes/infraestructura";
 import { TarjetaPortalProyecto } from "@/routes/modo-cliente";
 import { TarjetaFacturacionProyecto } from "@/routes/facturacion";
 import { BloqueUsuariosProyecto, ChipUsuariosProyecto } from "@/routes/usuarios-clientes";
@@ -153,6 +154,7 @@ function DetalleProyecto() {
             <ChipRestaurarProyecto proyectoId={proyectoId} />
             <ChipUsuariosProyecto proyectoId={proyectoId} />
             <ChipAuditoriaProyecto proyecto={proyecto} />
+            <ChipInfraestructura proyecto={proyecto} />
             <ChipSalud semaforo={proyecto.semaforo_salud ?? "gris"} fecha={proyecto.salud_comprobada_el} />
             <ChipGastoIa proyectoId={proyectoId} />
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
@@ -164,6 +166,7 @@ function DetalleProyecto() {
 
       <TarjetaPortalProyecto proyecto={proyecto} />
       <TarjetaFacturacionProyecto proyectoId={proyectoId} />
+      <TarjetaInfraProyecto proyectoId={proyectoId} />
 
       <BloqueMensajes proyectoId={proyectoId} />
 

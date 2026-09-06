@@ -159,6 +159,12 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaHorasRegistro,
         tablaFacturas,
         funcionFacturacion,
+        tablaInfraServicios,
+        tablaInfraDependencias,
+        tablaInfraIncidencias,
+        tablaInfraSincronizacion,
+        tablaInfraConfig,
+        funcionInfraestructura,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -251,6 +257,12 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("horas_registro"),
         verificarTabla("facturas"),
         verificarFuncion("facturacion"),
+        verificarTabla("infra_servicios"),
+        verificarTabla("infra_dependencias"),
+        verificarTabla("infra_incidencias"),
+        verificarTabla("infra_sincronizacion"),
+        verificarTabla("infra_config"),
+        verificarFuncion("infraestructura"),
       ]);
       const pingUsuarios = await (async () => {
         try {
@@ -441,6 +453,12 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaHorasRegistro,
         tablaFacturas,
         funcionFacturacion,
+        tablaInfraServicios,
+        tablaInfraDependencias,
+        tablaInfraIncidencias,
+        tablaInfraSincronizacion,
+        tablaInfraConfig,
+        funcionInfraestructura,
       };
 
     },
@@ -745,6 +763,60 @@ function EstadoSistema() {
         : verificaciones.data?.funcionFacturacion
           ? "Conectado / OK"
           : "No responde o falta (migración 029)",
+    },
+    {
+      nombre: "Servicios de infraestructura",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaInfraServicios ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaInfraServicios
+          ? "Conectado / OK"
+          : "No responde o falta (migración 030)",
+    },
+    {
+      nombre: "Dependencias de infraestructura",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaInfraDependencias ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaInfraDependencias
+          ? "Conectado / OK"
+          : "No responde o falta (migración 030)",
+    },
+    {
+      nombre: "Incidencias de infraestructura",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaInfraIncidencias ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaInfraIncidencias
+          ? "Conectado / OK"
+          : "No responde o falta (migración 030)",
+    },
+    {
+      nombre: "Sincronización de proyectos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaInfraSincronizacion ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaInfraSincronizacion
+          ? "Conectado / OK"
+          : "No responde o falta (migración 030)",
+    },
+    {
+      nombre: "Ajustes de infraestructura",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaInfraConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaInfraConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 030)",
+    },
+    {
+      nombre: "Servicio de vigilancia de infraestructura",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionInfraestructura ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionInfraestructura
+          ? "Conectado / OK"
+          : "No responde o falta (migración 030)",
     },
     {
       nombre: "Aplicación instalable",

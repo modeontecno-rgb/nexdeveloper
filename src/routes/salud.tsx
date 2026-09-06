@@ -18,6 +18,7 @@ import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
 import { BotonConvocarMesa } from "@/routes/mesa";
 import { ChipUsuariosInactivos } from "@/routes/usuarios-clientes";
+import { ChipInfraGlobal } from "@/routes/infraestructura";
 import type {
   AdvisorSalud,
   SaludConfigRow,
@@ -96,6 +97,10 @@ function PantallaSalud() {
         titulo="Salud de la cartera"
         descripcion="Cada mañana se revisan todos los proyectos. Solo hace falta que mires lo que esté en rojo."
       />
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        <ChipInfraGlobal />
+      </div>
 
       <CabeceraInforme informe={informe} comprobados={comprobados} total={filas.length} />
 
