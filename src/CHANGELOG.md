@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## 0.35.0 — Revisor de redacción de manuales (6 de septiembre de 2026)
+
+- Antes de publicar, NexDeveloper repasa la redacción del manual: ortografía, gramática, tratamiento de usted o de tú, frases más cortas y nombres de producto bien escritos, siguiendo tu perfil de estilo propio si lo tienes.
+- La generación muestra un paso nuevo, «Revisando redacción», para que sepas en qué momento va.
+- Los manuales ya publicados tienen un botón «Revisar redacción» para darles el repaso cuando quieras.
+- Nueva configuración: activar o desactivar el repaso, elegir tratamiento (usted o tú), nivel de revisión (ligera, normal o exhaustiva), aplicar tu perfil de estilo y añadir un glosario de nombres que se deben respetar.
+- Cada manual revisado enseña cuántas correcciones se han hecho, con ejemplos de «antes → después» y el nivel y tratamiento aplicados.
+- Grammarly queda dado de alta como herramienta externa para el repaso final: desde los manuales tienes el enlace para abrirlo antes de entregar el documento al cliente.
+
+
+
 ## 0.34.0 — Sincronización con Proyectian (6 de septiembre de 2026)
 
 - Nueva pantalla «Proyectian» en el menú: arriba se ve de un vistazo si la conexión funciona, con qué cuenta de GitHub entra y cuántos proyectos hay en Proyectian.
