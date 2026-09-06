@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.33.0 — Menú por categorías y empresa emisora (6 de septiembre de 2026)
+
+- El menú ya no es una lista interminable: arriba quedan fijos Inicio, Pídeme qué quieres, Bandeja y Avisos, y el resto se agrupa por temas que se abren de uno en uno.
+- Buscador en el menú con la tecla rápida Ctrl/Cmd + K: escribe dos letras y encuentra cualquier pantalla o proyecto, y con Intro entras en el primero.
+- El menú se puede encoger a una franja de iconos, y al pasar el ratón por un grupo se despliega su contenido.
+- En el móvil hay barra inferior con cuatro accesos que eliges tú en Ajustes, un botón «Menú» que abre el menú completo con su buscador y un botón redondo para dictar con una mano.
+- Todas las pantallas se ven bien en móvil y tableta: sin desplazamiento lateral, tablas anchas con desplazamiento propio y botones más cómodos de pulsar.
+- Facturación: cada proyecto se factura desde MODEONTECNO S.L. o SOLUCIONES EVOLUTEIA S.L., con una empresa por defecto que se cambia en Configuración.
+- Al enlazar un cliente eliges primero desde qué empresa se factura, y puedes pasar un proyecto a la otra empresa con un botón.
+- Las facturas y el resumen muestran la empresa emisora, con filtro por empresa, y arriba tienes el semáforo de cada una con su serie y su Verifactu.
+
+
+
 ## 0.32.0 — Facturación con EvoluteIA
 
 - NexDeveloper ya no factura por su cuenta: las facturas de verdad viven en EvoluteIA. Aquí se registran las horas y el gasto de IA de cada proyecto, y con eso se preparan y se emiten los borradores en EvoluteIA.
