@@ -173,11 +173,56 @@ export type ConexionEvoluteia = {
   ultima_comprobacion?: string | null;
 };
 
+/* --------------------------- Empresas emisoras ---------------------------- */
+
+/** Solo estas dos empresas pueden facturar, aunque en EvoluteIA existan más. */
+export const AVISO_EMPRESAS_PERMITIDAS =
+  "Solo pueden facturar MODEONTECNO S.L. y SOLUCIONES EVOLUTEIA S.L.";
+
+export type EmpresaEmisora = {
+  tenant_id: string;
+  nombre: string;
+  nif?: string | null;
+  por_defecto?: boolean;
+  activa?: boolean;
+  empresa_id?: string | null;
+  sede_id?: string | null;
+  forma_pago_id?: string | null;
+  impuesto_id?: string | null;
+};
+
+export type PruebaEmpresa = {
+  tenant_id: string;
+  nombre: string;
+  por_defecto?: boolean;
+  modulo_activo?: boolean;
+  empresa?: { razon_social?: string; nif?: string; verifactu_activo?: boolean; verifactu_modo?: string } | null;
+  serie?: { codigo?: string; siguiente_num?: number; ejercicio?: number } | null;
+  error?: string | null;
+};
+
+/** Color propio de cada empresa emisora, para distinguirlas de un vistazo. */
+export function tonoEmpresa(nombre?: string | null) {
+  if (!nombre) return "border-border bg-muted text-muted-foreground";
+  return /modeon/i.test(nombre)
+    ? "border-primary/40 bg-primary/10 text-primary"
+    : "border-warning/40 bg-warning/10 text-warning";
+}
+
+/** Nombre corto de la empresa, para insignias estrechas. */
+export function nombreCortoEmpresa(nombre?: string | null) {
+  if (!nombre) return "Sin empresa";
+  if (/modeon/i.test(nombre)) return "MODEONTECNO";
+  if (/evoluteia/i.test(nombre)) return "EVOLUTEIA";
+  return nombre;
+}
+
 export type EstadoFacturacion = {
   ok?: boolean;
   config?: FacturacionConfigRow | null;
   evoluteia?: ConexionEvoluteia | null;
   proyectian?: boolean;
+  empresas?: EmpresaEmisora[];
   resumen?: ResumenFacturacion | null;
 };
 
@@ -186,11 +231,13 @@ export type PruebaEvoluteia = {
   usuario?: string | null;
   empresa?: { razon_social?: string; nif?: string; verifactu_activo?: boolean; verifactu_modo?: string } | null;
   serie?: { codigo?: string; siguiente_num?: number; ejercicio?: number } | null;
+  empresas?: PruebaEmpresa[];
   facturas_sincronizadas?: number;
   error?: string;
 };
 
 export type OpcionEvoluteia = { id: string; nombre?: string; razon_social?: string; codigo?: string; [k: string]: unknown };
+
 
 export type TerceroEvoluteia = {
   id: string;
