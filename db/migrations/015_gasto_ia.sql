@@ -1,0 +1,8 @@
+-- 015_gasto_ia.sql — NexDeveloper 0.15.0 «Control de gasto real de IA»
+-- Tablas: gasto_ia_diario (fecha, proveedor, fuente interno|anthropic_admin|openai_admin|manual, proyecto_id, modelo, tokens, llamadas, creditos, coste €),
+--         gastos_ia_manuales (créditos Lovable, suscripciones…), presupuestos_ia (ambito global|proveedor|proyecto, limite_mensual, aviso_pct, accion avisar|bloquear, bloqueado),
+--         gasto_ia_config (tipo_cambio_usd, precio_credito_lovable). Presupuesto global inicial: 100 €/mes.
+-- Vistas: v_gasto_ia_mes, v_gasto_ia_proyecto_mes, v_gasto_ia_estado. RPC: gasto_ia_permitido(user, proveedor, proyecto) → bool; agregar_consumos_ia(user, desde).
+-- Cron: gasto-ia-diario 05:30 UTC → lanzar_gasto_ia() → función gasto-ia {accion: programado}.
+-- Secretos opcionales para coste real: ANTHROPIC_ADMIN_KEY, OPENAI_ADMIN_KEY.
+-- (El SQL completo se aplicó como migración 015_gasto_ia en Supabase; ver el historial de migraciones del proyecto.)

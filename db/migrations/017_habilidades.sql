@@ -1,0 +1,5 @@
+-- 017_habilidades.sql — NexDeveloper 0.17.0 «Catálogo de habilidades»
+-- Tablas: habilidades (slug, nombre, origen propia|experto|externa, categoria, descripcion, contenido_md, archivos, muestra_url, repositorio, ruta_repo, url_origen, etiquetas, estado activa|candidata|archivada, valoracion, usos),
+--         habilidades_usos, habilidades_config (repo_propias modeontecno-rgb/habilidades-propias, repo_externas modeontecno-rgb/habilidades-externas, temas_barrido).
+-- Vista v_habilidades_resumen. Cron habilidades-barrido (miércoles 05:00 UTC) → función habilidades {accion: programado} (sincronizar + barrer).
+-- Repositorio de propias creado y poblado el 6/09/2026 con 82 habilidades y 11 expertos (carpetas habilidades/ y expertos/, cada una con SKILL.md).

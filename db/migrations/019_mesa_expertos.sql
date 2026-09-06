@@ -1,0 +1,4 @@
+-- 019_mesa_expertos.sql — NexDeveloper 0.19.0 «Mesa de expertos»
+-- Tablas: mesas (proyecto_id, orden_id, titulo, pregunta, contexto, modo economico|equilibrado|maxima_calidad, estado preparada|deliberando|concluida|error, participantes jsonb [{rol,experto_slug,experto_nombre,proveedor,modelo,motivo}], recomendacion jsonb {equipo, plan, riesgos, coste_estimado, horas_estimadas, calidad_prevista, riesgo, requiere_aprobacion, motivo}, sintesis, tokens, coste),
+--         mesa_intervenciones (mesa_id, orden, rol planificar|opinar|revisar|sintesis, experto, proveedor, modelo, texto, tokens, coste), mesa_valoraciones (1-5).
+-- Realtime en mesas y mesa_intervenciones. Función mesa: recomendar · deliberar · crear_tareas. Respeta gasto_ia_permitido y ajustes.umbral_aprobacion_eur.

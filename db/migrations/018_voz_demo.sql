@@ -1,0 +1,4 @@
+-- 018_voz_demo.sql — NexDeveloper 0.18.0 «Voz ElevenLabs para vídeos demo»
+-- Tablas: guiones_demo (proyecto_id, titulo, publico, duracion_objetivo_seg, escenas jsonb [{orden,titulo,texto,url_pantalla,captura_url,duracion_seg}], generado_por, estado),
+--         locuciones (guion_id, escena, titulo, texto, voz_id, modelo, estado pendiente|generando|ok|error, ruta_remota mp3 en el almacén, bytes, caracteres, duracion_seg), voz_config (voz, modelo, estabilidad, similitud, estilo, velocidad, servicio_capturas).
+-- Realtime en locuciones. Función voz: voces · generar_guion · locutar · enlace. Clave de ElevenLabs desde proveedores_ia (slug elevenlabs).

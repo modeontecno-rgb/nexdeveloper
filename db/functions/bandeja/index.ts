@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
       }
       case "gmail_autorizar": {
         if (!G_ID || !G_SECRET) return json({ ok: false, error: "Faltan los secretos GOOGLE_OAUTH_CLIENT_ID y GOOGLE_OAUTH_CLIENT_SECRET en las Edge Functions (créalos en Google Cloud → APIs y servicios → Credenciales, tipo Aplicación web, con URI de redirección " + `${URL_FUNCION}?accion=gmail_callback` + ")." });
-        const p = new URLSearchParams({ client_id: G_ID, redirect_uri: `${URL_FUNCION}?accion=gmail_callback`, response_type: "code", access_type: "offline", prompt: "consent", include_granted_scopes: "true", scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email", state: userId! });
+        const p = new URLSearchParams({ client_id: G_ID, redirect_uri: `${URL_FUNCION}?accion=gmail_callback`, response_type: "code", access_type: "offline", prompt: "consent", include_granted_scopes: "true", scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email", state: userId! });
         return json({ ok: true, url: `https://accounts.google.com/o/oauth2/v2/auth?${p}` });
       }
       case "gmail_sincronizar": {
