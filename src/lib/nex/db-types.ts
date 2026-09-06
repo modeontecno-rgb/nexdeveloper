@@ -1248,7 +1248,79 @@ export type DocumentoNexRow = {
   creado_el: string
 }
 
+/* ------------------------------ Habilidades ------------------------------ */
+
+export type OrigenHabilidad = "propia" | "experto" | "externa"
+export type CategoriaHabilidad =
+  | "diseno"
+  | "backend"
+  | "datos"
+  | "documentos"
+  | "comercial"
+  | "calidad"
+  | "devops"
+  | "ia"
+  | "gestion"
+  | "otro"
+export type EstadoHabilidad = "activa" | "candidata" | "archivada"
+
+export type ArchivoHabilidad = { ruta: string; bytes?: number }
+
+export type HabilidadRow = {
+  id: string
+  user_id: string
+  slug: string
+  nombre: string
+  origen: OrigenHabilidad
+  categoria: CategoriaHabilidad
+  descripcion: string | null
+  cuando_usarla: string | null
+  contenido_md: string | null
+  archivos: ArchivoHabilidad[] | null
+  muestra_url: string | null
+  muestra_texto: string | null
+  repositorio: string | null
+  ruta_repo: string | null
+  url_origen: string | null
+  etiquetas: string[]
+  estado: EstadoHabilidad
+  valoracion: number | null
+  usos: number
+  ultimo_uso: string | null
+  sincronizada_el: string | null
+}
+
+export type HabilidadUsoRow = {
+  id: string
+  habilidad_id: string
+  proyecto_id: string | null
+  tarea_id: string | null
+  instrucciones: string | null
+  creado_el: string
+}
+
+export type HabilidadesConfigRow = {
+  id: string
+  user_id: string
+  repo_propias: string | null
+  repo_externas: string | null
+  barrido_activo: boolean
+  temas_barrido: string[]
+  ultimo_barrido: string | null
+  ultima_sincronizacion: string | null
+}
+
+export type HabilidadesResumenRow = {
+  propias: number
+  expertos: number
+  externas: number
+  candidatas: number
+  usos: number
+  sincronizada_el: string | null
+}
+
 export type Database = {
+
 
   __InternalSupabase: { PostgrestVersion: "14.5" }
   public: {
