@@ -223,6 +223,8 @@ export type ProyectoRow = {
   es_favorito: boolean
   orden: number
   palabras_clave: string[] | null
+  version_actual: string | null
+  proyectian_slug: string | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
   resumen_automatico: string | null
@@ -1169,6 +1171,82 @@ export type GastoIaEstadoRow = {
   gastado_mes: number
 }
 
+// ---- Documentación y cierre de versión (0.16.0) ----
+export type TipoCambioVersion =
+  | "nueva_funcion"
+  | "arreglo"
+  | "diseno"
+  | "seguridad"
+  | "rendimiento"
+  | "datos"
+  | "documentacion"
+  | "despliegue"
+  | "otro"
+
+export type ImportanciaCambio = "alta" | "media" | "baja"
+
+export type CambioVersion = {
+  tipo: TipoCambioVersion
+  titulo: string
+  descripcion?: string | null
+  motivo?: string | null
+  importancia: ImportanciaCambio
+}
+
+export type EstadoCierre = "borrador" | "cerrada" | "error"
+
+export type CierreVersionRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  version: string
+  titulo: string | null
+  resumen: string | null
+  cambios: CambioVersion[] | null
+  como_probar: string[] | null
+  pendiente_usuario: string[] | null
+  tecnico: string[] | null
+  estado: EstadoCierre
+  hoja_md: string | null
+  hoja_html: string | null
+  ruta_remota_html: string | null
+  ruta_remota_md: string | null
+  proyectian_version_id: string | null
+  proyectian_ok: boolean
+  github_tag: string | null
+  github_changelog: boolean
+  ruta_mac: string | null
+  redactado_por: string | null
+  error: string | null
+  creado_el: string
+  cerrada_el: string | null
+}
+
+export type TipoDocumentoNex =
+  | "hoja_cambios"
+  | "manual"
+  | "comercial"
+  | "informe"
+  | "video"
+  | "imagen"
+  | "otro"
+
+export type DocumentoNexRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  tipo: TipoDocumentoNex
+  titulo: string
+  version: string | null
+  nombre_archivo: string
+  mime: string | null
+  bytes: number | null
+  ruta_remota: string | null
+  origen: string | null
+  ruta_mac: string | null
+  creado_el: string
+}
+
 export type Database = {
 
   __InternalSupabase: { PostgrestVersion: "14.5" }
@@ -1269,6 +1347,12 @@ export type Database = {
         Partial<SinUsuario<PresupuestoIaRow>> & { ambito: AmbitoPresupuestoIa; limite_mensual: number }
       >
       gasto_ia_config: Tabla<GastoIaConfigRow, Partial<SinUsuario<GastoIaConfigRow>>>
+      cierres_version: Tabla<
+        CierreVersionRow,
+        Partial<SinUsuario<CierreVersionRow>> & { proyecto_id: string; version: string },
+        Partial<SinUsuario<CierreVersionRow>>
+      >
+      documentos_nex: Tabla<DocumentoNexRow>
 
 
 
