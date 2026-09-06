@@ -232,6 +232,8 @@ export type ProyectoRow = {
   salud_comprobada_el: string | null
   semaforo_infra: Semaforo | null
   semaforo_sincronizacion: Semaforo | null
+  alias: string[] | null
+  guia_estilo: string | null
 
   puntuacion_auditoria: number | null
   auditoria_el: string | null
