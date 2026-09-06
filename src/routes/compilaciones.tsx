@@ -626,7 +626,7 @@ function PantallaCompilaciones() {
       <Dialogo
         abierto={Boolean(conflicto)}
         titulo="Esa versión ya está compilada"
-        descripcion={conflicto?.mensaje}
+        {...(conflicto?.mensaje ? { descripcion: conflicto.mensaje } : {})}
         onCerrar={() => setConflicto(null)}
         ancho="max-w-lg"
       >
