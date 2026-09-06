@@ -1932,6 +1932,171 @@ export function TarjetaSoloFabricante() {
   );
 }
 
+/** Las dos empresas que pueden facturar, con su serie, Verifactu y semáforo del módulo. */
+function BloqueEmpresasEmisoras() {
+  const { data: opciones, refetch, isFetching } = useEmpresasEvoluteia();
+  const configurar = useConfigurarEmpresa();
+  const probar = useProbarEvoluteia();
+  const [prueba, setPrueba] = React.useState<PruebaEvoluteia | null>(null);
+
+  const catalogo = opciones?.catalogo ?? [];
+  const detalle = (tenantId: string) => prueba?.empresas?.find((e) => e.tenant_id === tenantId) ?? null;
+
+  return (
+    <div className="panel p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold">Empresas emisoras</h2>
+        <div className="flex flex-wrap gap-2">
+          <Boton
+            variante="suave"
+            disabled={probar.isPending}
+            onClick={async () => {
+              try {
+                setPrueba(await probar.mutateAsync());
+                toast.success("Comprobadas las dos empresas en EvoluteIA.");
+              } catch (e) {
+                toast.error((e as Error).message);
+              }
+            }}
+          >
+            <ShieldCheck className="size-3.5" /> Comprobar
+          </Boton>
+          <Boton
+            variante="suave"
+            disabled={isFetching}
+            onClick={async () => {
+              await refetch();
+              toast.success("Catálogo actualizado desde EvoluteIA.");
+            }}
+          >
+            <RefreshCw className="size-3.5" /> Refrescar desde EvoluteIA
+          </Boton>
+        </div>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">{AVISO_EMPRESAS_PERMITIDAS}</p>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {catalogo.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Todavía no se ha traído el catálogo. Pulsa «Refrescar desde EvoluteIA».
+          </p>
+        ) : (
+          catalogo.map((e) => {
+            const d = detalle(e.tenant_id);
+            return (
+              <div key={e.tenant_id} className="rounded-lg border border-border p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <InsigniaEmpresa nombre={e.nombre} />
+                  {d ? (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${
+                        d.modulo_activo
+                          ? "border-success/40 bg-success/10 text-success"
+                          : "border-destructive/40 bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      <span className={`size-1.5 rounded-full ${d.modulo_activo ? "bg-success" : "bg-destructive"}`} />
+                      {d.modulo_activo ? "Módulo activo" : "Módulo no activo"}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {d?.empresa?.razon_social ?? e.nombre}
+                  {(d?.empresa?.nif ?? e.nif) ? ` · ${d?.empresa?.nif ?? e.nif}` : ""}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Serie {d?.serie?.codigo ?? "—"} · siguiente número {d?.serie?.siguiente_num ?? "—"}
+                  {d?.serie?.ejercicio ? ` (${d.serie.ejercicio})` : ""}
+                </p>
+                <p className="mt-1 text-xs">
+                  <span className="text-muted-foreground">Verifactu:</span>{" "}
+                  {d?.empresa?.verifactu_activo ? (
+                    <span className="text-success">
+                      activo{d.empresa.verifactu_modo ? ` (${d.empresa.verifactu_modo})` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-warning">no activo</span>
+                  )}
+                </p>
+                {d?.error ? <p className="mt-1 text-xs text-destructive">{d.error}</p> : null}
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <SelectorEmpresa
+                    etiqueta="Sede"
+                    valor={e.sede_id ?? ""}
+                    lista={opciones?.sedes ?? []}
+                    onChange={(v) => configurar.mutate({ tenant_id: e.tenant_id, sede_id: v || null })}
+                  />
+                  <SelectorEmpresa
+                    etiqueta="Forma de pago"
+                    valor={e.forma_pago_id ?? ""}
+                    lista={opciones?.formas_pago ?? []}
+                    onChange={(v) => configurar.mutate({ tenant_id: e.tenant_id, forma_pago_id: v || null })}
+                  />
+                  <SelectorEmpresa
+                    etiqueta="Impuesto"
+                    valor={e.impuesto_id ?? ""}
+                    lista={opciones?.impuestos ?? []}
+                    onChange={(v) => configurar.mutate({ tenant_id: e.tenant_id, impuesto_id: v || null })}
+                  />
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="empresa-por-defecto"
+                      checked={Boolean(e.por_defecto)}
+                      disabled={configurar.isPending}
+                      onChange={() => configurar.mutate({ tenant_id: e.tenant_id, por_defecto: true })}
+                    />
+                    Por defecto
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={e.activa !== false}
+                      disabled={configurar.isPending}
+                      onChange={(ev) => configurar.mutate({ tenant_id: e.tenant_id, activa: ev.target.checked })}
+                    />
+                    Activa
+                  </label>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SelectorEmpresa({
+  etiqueta,
+  valor,
+  lista,
+  onChange,
+}: {
+  etiqueta: string;
+  valor: string;
+  lista: { id: string; nombre?: string; razon_social?: string; codigo?: string }[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Campo etiqueta={etiqueta}>
+      <select value={valor} onChange={(e) => onChange(e.target.value)} className={claseCampo}>
+        <option value="">Sin elegir</option>
+        {lista.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.nombre ?? o.razon_social ?? o.codigo ?? o.id}
+          </option>
+        ))}
+      </select>
+    </Campo>
+  );
+}
+
+
 function BloqueConfiguracion() {
   const { data: config } = useFacturacionConfig();
   const guardar = useGuardarFacturacionConfig();
