@@ -46,6 +46,7 @@ function Proveedores() {
   const { data: ajustes } = useAjustes();
   const [busqueda, setBusqueda] = React.useState("");
   const [soloActivos, setSoloActivos] = React.useState(false);
+  const [mostrarDesactivados, setMostrarDesactivados] = React.useState(true);
 
   useSembrarProveedores(!isPending && proveedores.length === 0);
 
@@ -63,7 +64,9 @@ function Proveedores() {
 
   const visibles = proveedores.filter(
     (p) =>
-      (!soloActivos || p.activo) && p.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()),
+      (!soloActivos || p.activo) &&
+      (mostrarDesactivados || p.activo) &&
+      p.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()),
   );
 
   if (isPending) return <Cargando />;
@@ -95,10 +98,20 @@ function Proveedores() {
           />
           Solo los activos
         </label>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={mostrarDesactivados}
+            onChange={(e) => setMostrarDesactivados(e.target.checked)}
+            className="size-4 rounded border-input accent-primary"
+          />
+          Mostrar desactivados
+        </label>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
         {visibles.map((p) => (
+          <div key={p.id} className={p.activo ? undefined : "opacity-60 transition-opacity hover:opacity-100"}>
           <TarjetaProveedor
             key={p.id}
             proveedor={p}
@@ -106,6 +119,7 @@ function Proveedores() {
             gastoMes={gastoPorProveedor.get(p.id) ?? 0}
             moneda={moneda}
           />
+          </div>
         ))}
         {visibles.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay proveedores que coincidan con la búsqueda.</p>

@@ -15,6 +15,7 @@ import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as AprobacionesRouteImport } from './routes/aprobaciones'
 import { Route as CalidadRouteImport } from './routes/calidad'
 import { Route as ColaRouteImport } from './routes/cola'
+import { Route as CopiasRouteImport } from './routes/copias'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
@@ -54,6 +55,11 @@ const CalidadRoute = CalidadRouteImport.update({
 const ColaRoute = ColaRouteImport.update({
   id: '/cola',
   path: '/cola',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CopiasRoute = CopiasRouteImport.update({
+  id: '/copias',
+  path: '/copias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstadoRoute = EstadoRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/aprobaciones': typeof AprobacionesRoute
   '/calidad': typeof CalidadRoute
   '/cola': typeof ColaRoute
+  '/copias': typeof CopiasRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/aprobaciones': typeof AprobacionesRoute
   '/calidad': typeof CalidadRoute
   '/cola': typeof ColaRoute
+  '/copias': typeof CopiasRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/aprobaciones': typeof AprobacionesRoute
   '/calidad': typeof CalidadRoute
   '/cola': typeof ColaRoute
+  '/copias': typeof CopiasRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/aprobaciones'
     | '/calidad'
     | '/cola'
+    | '/copias'
     | '/estado'
     | '/expertos'
     | '/integraciones'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/aprobaciones'
     | '/calidad'
     | '/cola'
+    | '/copias'
     | '/estado'
     | '/expertos'
     | '/integraciones'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/aprobaciones'
     | '/calidad'
     | '/cola'
+    | '/copias'
     | '/estado'
     | '/expertos'
     | '/integraciones'
@@ -227,6 +239,7 @@ export interface RootRouteChildren {
   AprobacionesRoute: typeof AprobacionesRoute
   CalidadRoute: typeof CalidadRoute
   ColaRoute: typeof ColaRoute
+  CopiasRoute: typeof CopiasRoute
   EstadoRoute: typeof EstadoRoute
   ExpertosRoute: typeof ExpertosRoute
   IntegracionesRoute: typeof IntegracionesRoute
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/cola'
       fullPath: '/cola'
       preLoaderRoute: typeof ColaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/copias': {
+      id: '/copias'
+      path: '/copias'
+      fullPath: '/copias'
+      preLoaderRoute: typeof CopiasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/estado': {
@@ -373,6 +393,7 @@ const rootRouteChildren: RootRouteChildren = {
   AprobacionesRoute: AprobacionesRoute,
   CalidadRoute: CalidadRoute,
   ColaRoute: ColaRoute,
+  CopiasRoute: CopiasRoute,
   EstadoRoute: EstadoRoute,
   ExpertosRoute: ExpertosRoute,
   IntegracionesRoute: IntegracionesRoute,
