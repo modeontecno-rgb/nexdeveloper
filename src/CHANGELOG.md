@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## 0.12.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Dominios»: todos tus dominios y subdominios en una tabla, con su estado de un vistazo.
+- Semáforo por dominio: verde si responde bien, ámbar si algo caduca pronto y rojo si falla.
+- Muestra el tiempo de respuesta, el emisor del certificado y los días que quedan para que caduquen certificado y dominio.
+- Botón «Comprobar todos» con progreso en vivo, y «Comprobar ahora» dominio a dominio con el resultado al instante.
+- Puedes añadir, editar y borrar dominios, asignarles proyecto y decidir con cuántos días de antelación quieres el aviso.
+- Historial de las últimas 30 comprobaciones de cada dominio, con un pequeño gráfico del tiempo de respuesta.
+- Comprobación automática todos los días a las 08:00: si algo falla o caduca pronto, aparece una tarea «Requiere tu atención».
+- En Inicio, tarjeta «Dominios y certificados» con los que necesitan atención; en cada proyecto, un aviso con el estado de sus dominios.
+- Estado del sistema: nuevos semáforos para los dominios y su comprobador.
+
 ## 0.10.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Compilaciones»: genera la aplicación de cada proyecto para Android, iPhone y iPad, escritorio o web sin salir de aquí.
