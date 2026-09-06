@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
 
+import { peorResultado, useDominios } from "@/lib/nex/queries/dominios";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge } from "@/components/nex/badges";
 import { SemaforoBadge } from "@/components/nex/semaforo";
@@ -127,6 +128,7 @@ function DetalleProyecto() {
                   {ETIQUETA_PLATAFORMA[c.plataforma]} v{c.version} · {c.estado === "ok" ? "correcta" : c.estado}
                 </Link>
               ))}
+            <ChipDominios proyectoId={proyectoId} />
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
             <EstadoProyectoBadge estado={proyecto.estado} />
             <PrioridadBadge prioridad={proyecto.prioridad} />
@@ -286,6 +288,38 @@ function DetalleProyecto() {
         })()
       ) : null}
     </>
+  );
+}
+
+function ChipDominios({ proyectoId }: { proyectoId: string }) {
+  const { data: dominios = [] } = useDominios();
+  const propios = dominios.filter((d) => d.proyecto_id === proyectoId);
+  if (propios.length === 0) return null;
+  const estado = peorResultado(propios);
+  const tono =
+    estado === "error"
+      ? "border-destructive/40 bg-destructive/10 text-destructive"
+      : estado === "aviso"
+        ? "border-warning/40 bg-warning/10 text-warning"
+        : estado === "ok"
+          ? "border-success/40 bg-success/10 text-success"
+          : "border-border bg-surface text-muted-foreground";
+  const texto =
+    estado === "error"
+      ? "Dominios con error"
+      : estado === "aviso"
+        ? "Dominios con aviso"
+        : estado === "ok"
+          ? "Dominios correctos"
+          : "Dominios sin comprobar";
+  return (
+    <Link
+      to="/dominios"
+      search={{ proyecto: proyectoId }}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition hover:opacity-80 ${tono}`}
+    >
+      {texto} ({propios.length})
+    </Link>
   );
 }
 
