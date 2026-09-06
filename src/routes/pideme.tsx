@@ -8,7 +8,6 @@ import {
   Send,
   Sparkles,
   Trash2,
-  Wand2,
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -555,7 +554,7 @@ function DialogoReclasificar({
               etiqueta="Guardar la palabra que usaste como nombre alternativo del proyecto"
               pista="Opcional. Así lo reconoceré la próxima vez que lo llames igual."
             >
-              <input value={alias} onChange={(e) => setAlias(e.target.value)} className={claseCampo} placeholter="" />
+              <input value={alias} onChange={(e) => setAlias(e.target.value)} className={claseCampo} />
             </Campo>
           </>
         ) : null}
@@ -883,5 +882,3 @@ export function usePropuestasPendientes() {
   const { data: peticiones = [] } = usePeticiones();
   return peticiones.filter((p) => p.estado === "propuesta").length;
 }
-
-export { Wand2 as IconoPideme };

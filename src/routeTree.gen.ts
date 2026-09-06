@@ -35,6 +35,7 @@ import { Route as ManualesRouteImport } from './routes/manuales'
 import { Route as MesaRouteImport } from './routes/mesa'
 import { Route as ModoClienteRouteImport } from './routes/modo-cliente'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
+import { Route as PidemeRouteImport } from './routes/pideme'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as RepositoriosRouteImport } from './routes/repositorios'
 import { Route as ResumenesRouteImport } from './routes/resumenes'
@@ -179,6 +180,11 @@ const NuevaOrdenRoute = NuevaOrdenRouteImport.update({
   path: '/nueva-orden',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PidemeRoute = PidemeRouteImport.update({
+  id: '/pideme',
+  path: '/pideme',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReferenciaRoute = ReferenciaRouteImport.update({
   id: '/referencia',
   path: '/referencia',
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/pideme': typeof PidemeRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
@@ -314,6 +321,7 @@ export interface FileRoutesByTo {
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/pideme': typeof PidemeRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
@@ -356,6 +364,7 @@ export interface FileRoutesById {
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/pideme': typeof PidemeRoute
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
@@ -399,6 +408,7 @@ export interface FileRouteTypes {
     | '/mesa'
     | '/modo-cliente'
     | '/nueva-orden'
+    | '/pideme'
     | '/referencia'
     | '/repositorios'
     | '/resumenes'
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/mesa'
     | '/modo-cliente'
     | '/nueva-orden'
+    | '/pideme'
     | '/referencia'
     | '/repositorios'
     | '/resumenes'
@@ -481,6 +492,7 @@ export interface FileRouteTypes {
     | '/mesa'
     | '/modo-cliente'
     | '/nueva-orden'
+    | '/pideme'
     | '/referencia'
     | '/repositorios'
     | '/resumenes'
@@ -523,6 +535,7 @@ export interface RootRouteChildren {
   MesaRoute: typeof MesaRoute
   ModoClienteRoute: typeof ModoClienteRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
+  PidemeRoute: typeof PidemeRoute
   ReferenciaRoute: typeof ReferenciaRoute
   RepositoriosRoute: typeof RepositoriosRoute
   ResumenesRoute: typeof ResumenesRoute
@@ -721,6 +734,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NuevaOrdenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pideme': {
+      id: '/pideme'
+      path: '/pideme'
+      fullPath: '/pideme'
+      preLoaderRoute: typeof PidemeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/referencia': {
       id: '/referencia'
       path: '/referencia'
@@ -853,6 +873,7 @@ const rootRouteChildren: RootRouteChildren = {
   MesaRoute: MesaRoute,
   ModoClienteRoute: ModoClienteRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
+  PidemeRoute: PidemeRoute,
   ReferenciaRoute: ReferenciaRoute,
   RepositoriosRoute: RepositoriosRoute,
   ResumenesRoute: ResumenesRoute,
