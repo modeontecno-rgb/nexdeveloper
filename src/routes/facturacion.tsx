@@ -1821,6 +1821,8 @@ function DialogoEnlazar({
                   try {
                     const r = await crear.mutateAsync({
                       razon_social: nuevo.razon_social,
+                      ...(tenantElegido ? { tenant_id: tenantElegido } : {}),
+
                       ...(nuevo.nif ? { nif: nuevo.nif } : {}),
                       ...(nuevo.email ? { email: nuevo.email } : {}),
                       ...(nuevo.telefono ? { telefono: nuevo.telefono } : {}),
