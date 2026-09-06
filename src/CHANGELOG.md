@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.18.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Voz y demos»: escribe el guion de la demostración de cualquier proyecto y ponle voz sin salir de la aplicación.
+- «Nuevo guion» redacta las escenas solo: eliges proyecto, público (cliente, distribuidor o formación interna), duración (60, 120 o 180 segundos) y añades tus notas.
+- Editor de escenas: cambias el título y el texto, ves los caracteres y los segundos estimados, eliges la pantalla desde tus vistas previas y ordenas las escenas arrastrándolas.
+- Botones «Locutar escena» y «Locutar todo»; si el guion es largo, se locuta escena por escena mostrando el progreso.
+- «Reproducir demo» abre la presentación a pantalla completa con la captura de cada pantalla, el título encima y la voz sonando, avanzando sola; con anterior, siguiente y pausa, y las instrucciones para grabarla con el Mac o el iPad.
+- Pestaña «Locuciones» con todas las grabaciones: escucharlas, descargar el mp3, ver el texto o repetirlas, y el estado al momento mientras se generan.
+- «Locutar texto libre» para cualquier frase suelta, con título, proyecto y voz.
+- Configuración: eliges la voz (con filtro por idioma y género y botón para escucharla), el modelo, la estabilidad, la similitud, el estilo y la velocidad, y pruebas el resultado con un clic.
+- En cada proyecto, bloque «Demo» con el último guion y su botón de reproducción.
+- Estado del sistema: nuevos semáforos para la voz y las demostraciones.
+
 ## 0.17.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Habilidades»: el catálogo con tus 82 habilidades propias, los 11 expertos y las encontradas en la red, todo en un sitio.

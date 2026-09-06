@@ -120,6 +120,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaHabilidadesUsos,
         tablaHabilidadesConfig,
         funcionHabilidades,
+        tablaGuionesDemo,
+        tablaLocuciones,
+        tablaVozConfig,
+        funcionVoz,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -173,7 +177,20 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("habilidades_usos"),
         verificarTabla("habilidades_config"),
         verificarFuncion("habilidades"),
+        verificarTabla("guiones_demo"),
+        verificarTabla("locuciones"),
+        verificarTabla("voz_config"),
+        verificarFuncion("voz"),
       ]);
+      const pingVoz = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("voz", { body: {} });
+          const r = data as { elevenlabs?: boolean; almacen?: boolean } | null;
+          return { elevenlabs: Boolean(r?.elevenlabs), almacen: Boolean(r?.almacen) };
+        } catch {
+          return { elevenlabs: false, almacen: false };
+        }
+      })();
       const pingHabilidades = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("habilidades", { body: {} });
@@ -284,6 +301,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaHabilidadesConfig,
         funcionHabilidades,
         pingHabilidades,
+        tablaGuionesDemo,
+        tablaLocuciones,
+        tablaVozConfig,
+        funcionVoz,
+        pingVoz,
       };
     },
   });
@@ -542,6 +564,39 @@ function EstadoSistema() {
           : verificaciones.data?.pingHabilidades?.repoOk
             ? "Conectado / OK (repositorio accesible)"
             : "Sin acceso al repositorio de habilidades",
+    },
+    {
+      nombre: "Tablas de voz y demos",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.tablaGuionesDemo && verificaciones.data?.tablaLocuciones && verificaciones.data?.tablaVozConfig
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaGuionesDemo && verificaciones.data?.tablaLocuciones && verificaciones.data?.tablaVozConfig
+          ? "Conectado / OK"
+          : "No responden o faltan (migración 018)",
+    },
+    {
+      nombre: "Edge Function voz",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : verificaciones.data?.funcionVoz && verificaciones.data?.pingVoz?.elevenlabs && verificaciones.data?.pingVoz?.almacen
+          ? "ok"
+          : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionVoz
+          ? "No encontrada"
+          : verificaciones.data?.pingVoz?.elevenlabs && verificaciones.data?.pingVoz?.almacen
+            ? "Conectado / OK (ElevenLabs y almacén)"
+            : `Falta: ${[
+                verificaciones.data?.pingVoz?.elevenlabs ? null : "clave de ElevenLabs",
+                verificaciones.data?.pingVoz?.almacen ? null : "almacén",
+              ]
+                .filter(Boolean)
+                .join(" y ")}`,
     },
     {
       nombre: "Tablas de gasto de IA",
