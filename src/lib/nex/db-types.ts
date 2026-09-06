@@ -2579,7 +2579,11 @@ export type Database = {
         Partial<SinUsuario<HoraRegistroRow>> & { proyecto_id: string; horas: number },
         Partial<SinUsuario<HoraRegistroRow>>
       >
-      facturas: Tabla<FacturaRow, Partial<SinUsuario<FacturaRow>>, Partial<SinUsuario<FacturaRow>>>
+      facturas_evoluteia: Tabla<
+        FacturaEvoluteiaRow,
+        Partial<SinUsuario<FacturaEvoluteiaRow>> & { documento_id: string },
+        Partial<SinUsuario<FacturaEvoluteiaRow>>
+      >
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },
