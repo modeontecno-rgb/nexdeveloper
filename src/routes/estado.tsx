@@ -165,6 +165,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("cierres_version"),
         verificarTabla("documentos_nex"),
         verificarFuncion("documentar"),
+        verificarTabla("habilidades"),
+        verificarTabla("habilidades_usos"),
+        verificarTabla("habilidades_config"),
+        verificarFuncion("habilidades"),
       ]);
       const pingDocumentar = await (async () => {
         try {
