@@ -135,6 +135,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaMesaIntervenciones,
         tablaMesaValoraciones,
         funcionMesa,
+        tablaAvisos,
+        tablaAvisosSuscripciones,
+        tablaAvisosConfig,
+        funcionAvisos,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -203,6 +207,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("mesa_intervenciones"),
         verificarTabla("mesa_valoraciones"),
         verificarFuncion("mesa"),
+        verificarTabla("avisos"),
+        verificarTabla("avisos_suscripciones"),
+        verificarTabla("avisos_config"),
+        verificarFuncion("avisos"),
       ]);
       const pingMesa = await (async () => {
         try {
@@ -349,9 +357,26 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaMesaValoraciones,
         funcionMesa,
         pingMesa,
+        tablaAvisos,
+        tablaAvisosSuscripciones,
+        tablaAvisosConfig,
+        funcionAvisos,
       };
     },
   });
+}
+
+/** Estado del trabajador de segundo plano (avisos en el móvil). */
+function useEstadoTrabajador() {
+  const [estado, setEstado] = React.useState<"comprobando" | "activo" | "inactivo" | "no-soportado">("comprobando");
+  React.useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+      setEstado("no-soportado");
+      return;
+    }
+    void navigator.serviceWorker.getRegistration("/").then((r) => setEstado(r?.active ? "activo" : "inactivo"));
+  }, []);
+  return estado;
 }
 
 function EstadoSistema() {
@@ -364,6 +389,7 @@ function EstadoSistema() {
   const alertas = useAlertas();
   const verificaciones = useVerificacionesBackend(Boolean(sesion));
   const secretos = useComprobarSecretos(Boolean(sesion));
+  const trabajador = useEstadoTrabajador();
 
   const piezas: { nombre: string; nivel: Nivel; detalle: string }[] = [
     {
@@ -406,6 +432,52 @@ function EstadoSistema() {
           ? "aviso"
           : "ok",
       detalle: `${alertas.data?.length ?? 0} sin resolver`,
+    },
+    {
+      nombre: "Avisos push (bandeja)",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAvisos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAvisos
+          ? "Conectado / OK"
+          : "No responde o falta (migración 023)",
+    },
+    {
+      nombre: "Dispositivos suscritos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAvisosSuscripciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAvisosSuscripciones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 023)",
+    },
+    {
+      nombre: "Preferencias de avisos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAvisosConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAvisosConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 023)",
+    },
+    {
+      nombre: "Servicio de avisos",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionAvisos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionAvisos
+          ? "Conectado / OK"
+          : "No responde o falta (migración 023)",
+    },
+    {
+      nombre: "Aplicación instalable",
+      nivel: trabajador === "activo" ? "ok" : trabajador === "no-soportado" ? "error" : "aviso",
+      detalle:
+        trabajador === "activo"
+          ? "Instalable y con avisos en segundo plano"
+          : trabajador === "no-soportado"
+            ? "Este navegador no la admite"
+            : "Solo disponible en la aplicación publicada",
     },
     {
       nombre: "Tabla de restauraciones",

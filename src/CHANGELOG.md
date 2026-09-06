@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.23.0 — 6 de septiembre de 2026 — NexDeveloper en el móvil con avisos
+
+- Ya puedes instalar NexDeveloper en el iPhone, el iPad, el Mac o el ordenador como si fuera una aplicación, con su propio icono y sin barra del navegador.
+- Nueva pantalla «Avisos»: activa los avisos en cada dispositivo con un botón y envía un aviso de prueba para comprobar que llegan.
+- Recibirás un aviso cuando termine una compilación, cuando un dominio esté a punto de caducar, cuando una tarea necesite tu aprobación, cuando se dispare un presupuesto de IA, cuando la salud de un proyecto se ponga en rojo y cuando pase algo con las copias o las ejecuciones.
+- Puedes elegir qué avisos quieres recibir y fijar horas de silencio nocturno para que no suene nada de madrugada.
+- Lista de dispositivos con la fecha del último aviso y un botón para quitar los que ya no uses.
+- Bandeja de avisos en directo: al tocar un aviso vas directo a la pantalla correspondiente y queda marcado como leído; también puedes filtrar y marcarlos todos.
+- En el móvil aparece una barra inferior con accesos rápidos (Panel, Tareas, Ejecución y Avisos), la campana con el contador en la cabecera y márgenes adaptados a las pantallas con muesca.
+- En el panel principal tienes la tarjeta «Últimos avisos» con los que quedan sin leer, y en «Estado del sistema» los nuevos semáforos de los avisos y de la aplicación instalable.
+- Aviso para iPhone y iPad: los avisos solo funcionan si añades NexDeveloper a la pantalla de inicio y la abres desde ahí.
+
+
 ## 0.22.0 — Restaurar copias con un clic
 
 - La pantalla «Copias» tiene ahora tres pestañas: Copias, Restaurar y Pruebas.
