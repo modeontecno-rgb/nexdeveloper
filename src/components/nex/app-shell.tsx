@@ -27,6 +27,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkle,
+  Sparkles,
   Sun,
   X,
   BadgeCheck,
@@ -37,6 +38,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+import { PaletaAsistente } from "@/components/nex/paleta-asistente";
 import { PastillaVersion } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
 import { useAuth } from "@/lib/nex/auth";
@@ -46,6 +48,7 @@ import { useAvisosSinLeer } from "@/lib/nex/queries/avisos";
 import { cn } from "@/lib/utils";
 
 const NAVEGACION = [
+  { to: "/asistente", etiqueta: "Asistente", icono: Sparkles },
   { to: "/", etiqueta: "Inicio", icono: LayoutDashboard },
   { to: "/bandeja", etiqueta: "Bandeja", icono: Inbox },
   { to: "/resumenes", etiqueta: "Resúmenes", icono: Newspaper },
@@ -186,6 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <BarraInferior ruta={ruta} avisosSinLeer={avisosSinLeer} />
+      <PaletaAsistente />
     </div>
   );
 }
@@ -193,6 +197,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 const ACCESOS_RAPIDOS = [
   { to: "/", etiqueta: "Panel", icono: LayoutDashboard },
   { to: "/cola", etiqueta: "Tareas", icono: ListTodo },
+  { to: "/asistente", etiqueta: "Asistente", icono: Sparkles },
   { to: "/ejecucion", etiqueta: "Ejecución", icono: Zap },
   { to: "/avisos", etiqueta: "Avisos", icono: Bell },
 ] as const;
@@ -201,7 +206,7 @@ function BarraInferior({ ruta, avisosSinLeer }: { ruta: string; avisosSinLeer: n
   return (
     <nav
       aria-label="Accesos rápidos"
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       {ACCESOS_RAPIDOS.map(({ to, etiqueta, icono: Icono }) => {
         const activo = to === "/" ? ruta === "/" : ruta.startsWith(to);

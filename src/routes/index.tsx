@@ -14,6 +14,7 @@ import { TarjetaResumenHoy } from "@/routes/resumenes";
 import { TarjetaGastoIa } from "@/routes/gasto-ia";
 import { TarjetaSalud } from "@/routes/salud";
 import { TarjetaAvisos } from "@/components/nex/tarjeta-avisos";
+import { CajaRapidaAsistente } from "@/routes/asistente";
 import {
   useAjustes,
   useAlertas,
@@ -179,6 +180,8 @@ function Inicio() {
         </div>
 
         <aside className="space-y-4">
+          <CajaRapidaAsistente />
+
           <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Alertas y decisiones</h2>
             <ul className="mt-3 space-y-3">

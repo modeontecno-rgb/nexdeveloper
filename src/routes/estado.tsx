@@ -139,6 +139,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAvisosSuscripciones,
         tablaAvisosConfig,
         funcionAvisos,
+        tablaAsistenteConversaciones,
+        tablaAsistenteMensajes,
+        funcionAsistente,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -211,6 +214,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("avisos_suscripciones"),
         verificarTabla("avisos_config"),
         verificarFuncion("avisos"),
+        verificarTabla("asistente_conversaciones"),
+        verificarTabla("asistente_mensajes"),
+        verificarFuncion("asistente"),
       ]);
       const pingMesa = await (async () => {
         try {
@@ -361,7 +367,11 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaAvisosSuscripciones,
         tablaAvisosConfig,
         funcionAvisos,
+        tablaAsistenteConversaciones,
+        tablaAsistenteMensajes,
+        funcionAsistente,
       };
+
     },
   });
 }
@@ -468,6 +478,33 @@ function EstadoSistema() {
         : verificaciones.data?.funcionAvisos
           ? "Conectado / OK"
           : "No responde o falta (migración 023)",
+    },
+    {
+      nombre: "Conversaciones del asistente",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAsistenteConversaciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAsistenteConversaciones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 024)",
+    },
+    {
+      nombre: "Mensajes del asistente",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaAsistenteMensajes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaAsistenteMensajes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 024)",
+    },
+    {
+      nombre: "Servicio del asistente",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionAsistente ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionAsistente
+          ? "Conectado / OK"
+          : "No responde o falta (migración 024)",
     },
     {
       nombre: "Aplicación instalable",
