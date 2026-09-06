@@ -576,6 +576,7 @@ function PantallaCopias() {
           </table>
         </div>
       </section>
+      </div>
     </>
   );
 
