@@ -5,6 +5,7 @@ import { SelectorHabilidad } from "@/routes/habilidades";
 import { BotonConvocarMesa } from "@/routes/mesa";
 import { ChipRestaurarProyecto } from "@/components/nex/restaurar";
 import { ChipSalud } from "@/routes/salud";
+import { BotonPreguntarAsistente } from "@/routes/asistente";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
@@ -143,6 +144,7 @@ function DetalleProyecto() {
 
             <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
+            <BotonPreguntarAsistente proyectoId={proyectoId} />
             <ChipRestaurarProyecto proyectoId={proyectoId} />
             <ChipSalud semaforo={proyecto.semaforo_salud ?? "gris"} fecha={proyecto.salud_comprobada_el} />
             <ChipGastoIa proyectoId={proyectoId} />
