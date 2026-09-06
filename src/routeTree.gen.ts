@@ -21,6 +21,7 @@ import { Route as CopiasRouteImport } from './routes/copias'
 import { Route as DominiosRouteImport } from './routes/dominios'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
+import { Route as GastoIaRouteImport } from './routes/gasto-ia'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
@@ -92,6 +93,11 @@ const ExpertosRoute = ExpertosRouteImport.update({
   path: '/expertos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GastoIaRoute = GastoIaRouteImport.update({
+  id: '/gasto-ia',
+  path: '/gasto-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IntegracionesRoute = IntegracionesRouteImport.update({
   id: '/integraciones',
   path: '/integraciones',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
+  '/gasto-ia': typeof GastoIaRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
+  '/gasto-ia': typeof GastoIaRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
+  '/gasto-ia': typeof GastoIaRoute
   '/integraciones': typeof IntegracionesRoute
   '/nueva-orden': typeof NuevaOrdenRoute
   '/referencia': typeof ReferenciaRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/dominios'
     | '/estado'
     | '/expertos'
+    | '/gasto-ia'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/dominios'
     | '/estado'
     | '/expertos'
+    | '/gasto-ia'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/dominios'
     | '/estado'
     | '/expertos'
+    | '/gasto-ia'
     | '/integraciones'
     | '/nueva-orden'
     | '/referencia'
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   DominiosRoute: typeof DominiosRoute
   EstadoRoute: typeof EstadoRoute
   ExpertosRoute: typeof ExpertosRoute
+  GastoIaRoute: typeof GastoIaRoute
   IntegracionesRoute: typeof IntegracionesRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
   ReferenciaRoute: typeof ReferenciaRoute
@@ -400,6 +413,13 @@ declare module '@tanstack/react-router' {
       path: '/expertos'
       fullPath: '/expertos'
       preLoaderRoute: typeof ExpertosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gasto-ia': {
+      id: '/gasto-ia'
+      path: '/gasto-ia'
+      fullPath: '/gasto-ia'
+      preLoaderRoute: typeof GastoIaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/integraciones': {
@@ -499,6 +519,7 @@ const rootRouteChildren: RootRouteChildren = {
   DominiosRoute: DominiosRoute,
   EstadoRoute: EstadoRoute,
   ExpertosRoute: ExpertosRoute,
+  GastoIaRoute: GastoIaRoute,
   IntegracionesRoute: IntegracionesRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
   ReferenciaRoute: ReferenciaRoute,
