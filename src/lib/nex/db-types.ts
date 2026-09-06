@@ -792,6 +792,13 @@ export type Database = {
         RepositorioSubidaRow,
         Partial<RepositorioSubidaRow> & { repositorio_id: string }
       >
+      copias_destinos: Tabla<
+        Omit<CopiaDestinoRow, "tiene_secreto">,
+        Partial<SinUsuario<Omit<CopiaDestinoRow, "tiene_secreto">>> & { nombre: string }
+      >
+      copias_config: Tabla<CopiaConfigRow, Partial<SinUsuario<CopiaConfigRow>>>
+      copias_origenes: Tabla<CopiaOrigenRow>
+      copias: Tabla<CopiaRow>
     }
     Views: {
       v_resumen_proyecto: { Row: ResumenProyectoRow; Relationships: [] }
@@ -799,9 +806,19 @@ export type Database = {
       v_tareas_atencion: { Row: TareaAtencionRow; Relationships: [] }
       v_proveedores_ia: { Row: ProveedorIaRow; Relationships: [] }
       v_rendimiento_modelos: { Row: RendimientoModeloRow; Relationships: [] }
+      v_copias_destinos: { Row: CopiaDestinoRow; Relationships: [] }
     }
 
     Functions: {
+      guardar_secreto_copias: {
+        Args: { p_destino_id: string; p_secreto: string }
+        Returns: boolean
+      }
+      lanzar_mis_copias: {
+        Args: { p_tipos: string[] }
+        Returns: string
+      }
+
       sugerir_proyecto: {
         Args: { p_texto: string }
         Returns: { proyecto_id: string; nombre: string; confianza: number }[]
