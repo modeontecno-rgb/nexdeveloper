@@ -5,8 +5,9 @@ import * as React from "react";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
 import { Selector } from "@/components/nex/campos";
-import type { EstadoProyecto, Prioridad } from "@/lib/nex/db-types";
+import type { DominioRow, EstadoProyecto, Prioridad } from "@/lib/nex/db-types";
 import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_PRIORIDAD, desde, formatoDinero } from "@/lib/nex/labels";
+import { useDominios } from "@/lib/nex/queries/dominios";
 import {
   useAjustes,
   useAlertas,
@@ -39,6 +40,7 @@ function Inicio() {
   const { data: alertas = [] } = useAlertas();
   const { data: carga = [] } = useCargaAgentes();
   const { data: ajustes } = useAjustes();
+  const { data: dominios = [] } = useDominios();
   const moneda = ajustes?.moneda ?? "EUR";
 
   const [estado, setEstado] = React.useState<EstadoProyecto | "todos">("todos");
@@ -190,6 +192,8 @@ function Inicio() {
             </ul>
           </div>
 
+          <TarjetaDominios dominios={dominios} />
+
           <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Capacidad de agentes</h2>
             <ul className="mt-3 space-y-3">
@@ -217,6 +221,55 @@ function Inicio() {
         </aside>
       </section>
     </>
+  );
+}
+
+function TarjetaDominios({ dominios }: { dominios: DominioRow[] }) {
+  const activos = dominios.filter((d) => d.activo);
+  const problemas = activos.filter((d) => d.resultado === "aviso" || d.resultado === "error");
+  const nivel = problemas.some((d) => d.resultado === "error")
+    ? "error"
+    : problemas.length > 0
+      ? "aviso"
+      : "ok";
+  const tono =
+    nivel === "error" ? "bg-destructive" : nivel === "aviso" ? "bg-warning" : "bg-success";
+  const ultima = activos
+    .map((d) => d.ultima_comprobacion)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
+  return (
+    <div className="panel p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold">Dominios y certificados</h2>
+        <span className={`size-2.5 rounded-full ${tono}`} aria-hidden />
+      </div>
+      {problemas.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Todo en orden · última comprobación {desde(ultima ?? null)}
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {problemas.slice(0, 6).map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-2 text-sm">
+              <span className="truncate">{d.dominio}</span>
+              <span
+                className={
+                  d.resultado === "error" ? "text-xs text-destructive" : "text-xs text-warning"
+                }
+              >
+                {d.resultado === "error" ? "no responde" : "revisar"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to="/dominios" className="mt-3 inline-flex text-xs text-primary hover:underline">
+        Ver todos los dominios
+      </Link>
+    </div>
   );
 }
 
