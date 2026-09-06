@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 const NAVEGACION = [
   { to: "/", etiqueta: "Inicio", icono: LayoutDashboard },
   { to: "/bandeja", etiqueta: "Bandeja", icono: Inbox },
+  { to: "/resumenes", etiqueta: "Resúmenes", icono: Newspaper },
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },
   { to: "/nueva-orden", etiqueta: "Nueva orden", icono: Sparkle },
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },
@@ -45,6 +46,7 @@ const NAVEGACION = [
   { to: "/repositorios", etiqueta: "Repositorios", icono: GitBranch },
   { to: "/compilaciones", etiqueta: "Compilaciones", icono: Package },
   { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
+  { to: "/vigilancia", etiqueta: "Vigilancia", icono: Radar },
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
   { to: "/dominios", etiqueta: "Dominios", icono: Globe },
 
