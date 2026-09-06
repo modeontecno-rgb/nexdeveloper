@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## 0.32.0 — Facturación con EvoluteIA
+
+- NexDeveloper ya no factura por su cuenta: las facturas de verdad viven en EvoluteIA. Aquí se registran las horas y el gasto de IA de cada proyecto, y con eso se preparan y se emiten los borradores en EvoluteIA.
+- La pantalla «Facturación» pasa a ser un puente: enlazar cada proyecto con su cliente y su contrato de EvoluteIA, preparar la factura, emitirla, ver el estado de cobro y abrir cada factura en EvoluteIA con un enlace.
+- Chip de conexión siempre visible con prueba en un clic: usuario, empresa, serie de numeración, Verifactu y facturas sincronizadas.
+- Buscador de clientes de EvoluteIA, creación de clientes nuevos sin salir de aquí y «Sugerir enlaces» para emparejar proyectos y clientes por parecido.
+- Las horas ya facturadas quedan bloqueadas y muestran el número de la factura, con enlace directo a EvoluteIA.
+- Ficha de cada factura con líneas, base, IVA, total, vencimientos y registro de Verifactu.
+- Aviso permanente: esta forma de trabajar es exclusiva del fabricante (MODEONTECNO S.L. / Soluciones EvoluteIA) y depende del módulo privado «NexDeveloper (solo fabricante)» en EvoluteIA.
+- Estado del sistema actualizado con los semáforos de la nueva facturación.
+
 ## 0.31.0 — 6 de septiembre de 2026 — Mi IA
 
 - Botón «Pídeme qué quieres» arriba del todo en la pantalla de inicio: escribe o dicta lo que necesitas y NexDeveloper decide solo si es de un proyecto o algo personal, y actúa. Atajo de teclado Ctrl/Cmd + J.
