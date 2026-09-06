@@ -1,4 +1,6 @@
-// NexDeveloper · Edge Function «facturacion» v2 (0.32.0) · Puente con EvoluteIA
+// NexDeveloper · Edge Function «facturacion» v3 (0.33.0) · Puente con EvoluteIA · empresa emisora elegible por proyecto
+// (SOLO MODEONTECNO S.L. o SOLUCIONES EVOLUTEIA S.L., decisión de Javier 6/09/2026: ninguna otra empresa de EvoluteIA puede emitir
+// desde NexDeveloper. Cada proyecto se factura desde la que se elija; si no, la de por defecto)
 // La facturación NO vive en NexDeveloper: los clientes (terceros), contratos, facturas, numeración, Verifactu, vencimientos y cobros
 // están en EvoluteIA (el ERP propio, Supabase eykvsbqwkvfnfiztehsy, empresa MODEONTECNO S.L. por defecto). NexDeveloper aporta las
 // HORAS por proyecto (manual, cronómetro, automáticas) y el GASTO DE IA, y con ellas prepara borradores de factura en EvoluteIA,
@@ -11,6 +13,8 @@ const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
 const CLAVE_SERVICIO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const TOKEN_CUENTA = Deno.env.get("CUENTA_SUPABASE_TOKEN") ?? "";
 const REF_PROYECTIAN = "hjtweberlereyfhagkvx";
+// Empresas emisoras PERMITIDAS (las dos del fabricante). Cualquier otra empresa de EvoluteIA queda fuera aunque exista.
+const TENANTS_PERMITIDOS: Record<string, string> = { "0440f414-d6a3-4a34-934f-7e581d6e9881": "MODEONTECNO S.L.", "11111111-2222-4333-8444-555555555555": "SOLUCIONES EVOLUTEIA S.L." };
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-token", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 const servicio = () => createClient(URL_SUPABASE, CLAVE_SERVICIO, { auth: { persistSession: false } });
@@ -34,12 +38,22 @@ async function sqlEn(ref: string, query: string, readOnly = true) { const r = aw
 async function claveAnon(ref: string) { const keys = await admin(`/projects/${ref}/api-keys?reveal=true`); const k = (keys ?? []).find((x: any) => x.name === "anon" || x.type === "publishable" || x.id === "anon"); if (!k?.api_key) throw new Error("No se pudo obtener la clave pública de EvoluteIA"); return String(k.api_key); }
 
 // ---------- Sesión en EvoluteIA como Javier ----------
-type Evo = { ref: string; base: string; anon: string; token: string; cfg: any };
+type Empresa = { tenant_id: string; empresa_id: string; sede_id: string | null; forma_pago_id: string | null; impuesto_id: string | null; nombre: string; nif: string | null; por_defecto: boolean; activa: boolean };
+type Evo = { ref: string; base: string; anon: string; token: string; cfg: any; empresas: Empresa[] };
+// Catálogo de empresas emisoras (facturacion_empresas) y resolución de la empresa de un proyecto
+async function catalogoEmpresas(sb: SB, userId: string): Promise<Empresa[]> { const { data } = await sb.from("facturacion_empresas").select("*").eq("user_id", userId).eq("activa", true).order("por_defecto", { ascending: false }); return ((data ?? []) as Empresa[]).filter((x) => !!TENANTS_PERMITIDOS[x.tenant_id]); }
+function empresaPara(e: Evo, tenantId?: string | null): Empresa {
+  const t = tenantId ?? e.cfg.evoluteia_tenant_id;
+  if (t && !TENANTS_PERMITIDOS[t]) throw new Error("Solo pueden facturar MODEONTECNO S.L. o SOLUCIONES EVOLUTEIA S.L.; ninguna otra empresa de EvoluteIA");
+  const emp = e.empresas.find((x) => x.tenant_id === t) ?? e.empresas.find((x) => x.por_defecto) ?? e.empresas[0];
+  if (!emp) throw new Error("No hay ninguna empresa emisora configurada (Facturación → Configuración → Empresas)");
+  return emp;
+}
 async function conectarEvoluteia(sb: SB, userId: string, cfg: any): Promise<Evo> {
-  const ref = cfg.evoluteia_ref; const base = `https://${ref}.supabase.co`; const anon = await claveAnon(ref);
+  const ref = cfg.evoluteia_ref; const base = `https://${ref}.supabase.co`; const anon = await claveAnon(ref); const empresas = await catalogoEmpresas(sb, userId);
   const { data } = await sb.rpc("leer_secretos_conexion", { p_user_id: userId, p_proveedor: "evoluteia" });
   const c = (data ?? [])[0];
-  if (c?.access_token && c.expira_el && new Date(c.expira_el).getTime() - Date.now() > 60_000) { const e0: Evo = { ref, base, anon, token: c.access_token, cfg }; await comprobarModulo(e0); return e0; }
+  if (c?.access_token && c.expira_el && new Date(c.expira_el).getTime() - Date.now() > 60_000) { const e0: Evo = { ref, base, anon, token: c.access_token, cfg, empresas }; await comprobarModulo(e0, empresaPara(e0).tenant_id); return e0; }
   let tok: any = null;
   if (c?.refresh_token) {
     const r = await fetch(`${base}/auth/v1/token?grant_type=refresh_token`, { method: "POST", headers: { apikey: anon, "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token: c.refresh_token }) });
@@ -57,13 +71,13 @@ async function conectarEvoluteia(sb: SB, userId: string, cfg: any): Promise<Evo>
   const expira = new Date(Date.now() + Number(tok.expires_in ?? 3600) * 1000).toISOString();
   await sb.rpc("guardar_secreto_conexion", { p_user_id: userId, p_proveedor: "evoluteia", p_refresh: tok.refresh_token ?? null, p_acceso: tok.access_token, p_expira: expira });
   await sb.from("conexiones_externas").update({ estado: "conectada", cuenta: cfg.evoluteia_usuario, ultimo_error: null, ultima_comprobacion: ahora(), actualizado_el: ahora() }).eq("user_id", userId).eq("proveedor", "evoluteia");
-  const e: Evo = { ref, base, anon, token: tok.access_token, cfg };
-  await comprobarModulo(e);
+  const e: Evo = { ref, base, anon, token: tok.access_token, cfg, empresas };
+  await comprobarModulo(e, empresaPara(e).tenant_id);
   return e;
 }
 // El módulo «NexDeveloper (solo fabricante)» debe estar activo en el espacio de trabajo de EvoluteIA: no se opera con clientes de EvoluteIA
-async function comprobarModulo(e: Evo) {
-  const activo = await evoRpc(e, "nexdeveloper_activo", { p_tenant: e.cfg.evoluteia_tenant_id }).catch(() => null);
+async function comprobarModulo(e: Evo, tenantId: string) {
+  const activo = await evoRpc(e, "nexdeveloper_activo", { p_tenant: tenantId }).catch(() => null);
   if (activo !== true) throw new Error("El módulo «NexDeveloper (solo fabricante)» no está activo en este espacio de EvoluteIA. Esta integración es exclusiva del fabricante (MODEONTECNO / Soluciones EvoluteIA); para un cliente solo se activa si se le vende NexDeveloper o se enlaza expresamente.");
 }
 // PostgREST como el usuario
@@ -74,13 +88,16 @@ async function evoRest(e: Evo, ruta: string, init: RequestInit = {}, prefer?: st
   return j;
 }
 const evoRpc = (e: Evo, fn: string, args: Record<string, unknown>) => evoRest(e, `rpc/${fn}`, { method: "POST", body: JSON.stringify(args) });
-async function asegurarTenantActivo(e: Evo) {
-  // auth_tenants() usa perfiles.tenant_activo_id: lo ponemos en la empresa configurada y devolvemos el anterior para restaurarlo
+async function asegurarTenantActivo(e: Evo, tenantId?: string) {
+  // auth_tenants() usa perfiles.tenant_activo_id: lo ponemos en la empresa que corresponda y devolvemos el anterior para restaurarlo
+  const t = tenantId ?? empresaPara(e).tenant_id;
+  await comprobarModulo(e, t);
   const yo = await evoRest(e, `perfiles?select=id,tenant_activo_id&id=eq.${await miPerfilId(e)}`);
   const anterior = yo?.[0]?.tenant_activo_id ?? null;
-  if (anterior !== e.cfg.evoluteia_tenant_id) await evoRest(e, `perfiles?id=eq.${yo[0].id}`, { method: "PATCH", body: JSON.stringify({ tenant_activo_id: e.cfg.evoluteia_tenant_id }) }, "return=minimal");
-  return async () => { if (anterior && anterior !== e.cfg.evoluteia_tenant_id) await evoRest(e, `perfiles?id=eq.${yo[0].id}`, { method: "PATCH", body: JSON.stringify({ tenant_activo_id: anterior }) }, "return=minimal").catch(() => {}); };
+  if (anterior !== t) await evoRest(e, `perfiles?id=eq.${yo[0].id}`, { method: "PATCH", body: JSON.stringify({ tenant_activo_id: t }) }, "return=minimal");
+  return async () => { if (anterior && anterior !== t) await evoRest(e, `perfiles?id=eq.${yo[0].id}`, { method: "PATCH", body: JSON.stringify({ tenant_activo_id: anterior }) }, "return=minimal").catch(() => {}); };
 }
+async function tenantDeDocumento(e: Evo, documentoId: string) { const d = (await evoRest(e, `documentos?select=tenant_id&id=eq.${documentoId}`))?.[0]; if (!d) throw new Error("Factura no encontrada en EvoluteIA"); return String(d.tenant_id); }
 let _perfil: string | null = null;
 async function miPerfilId(e: Evo) { if (_perfil) return _perfil; const r = await fetch(`${e.base}/auth/v1/user`, { headers: { apikey: e.anon, Authorization: `Bearer ${e.token}` } }); const j = await r.json(); _perfil = j?.id; if (!_perfil) throw new Error("No se pudo leer el usuario de EvoluteIA"); return _perfil; }
 
@@ -96,7 +113,7 @@ function periodoMesAnterior() { const d = new Date(); const desde = new Date(Dat
 
 // ---------- Preparar factura en EvoluteIA ----------
 async function prepararFactura(sb: SB, userId: string, e: Evo, proyectoId: string, desde: string, hasta: string, opciones: { incluir_horas?: boolean; incluir_ia?: boolean; lineas_extra?: any[]; notas?: string } = {}) {
-  const cfg = e.cfg; const cli = await clienteDe(sb, userId, proyectoId);
+  const cfg = e.cfg; const cli = await clienteDe(sb, userId, proyectoId); const emp = empresaPara(e, cli.evoluteia_tenant_id);
   const { data: p } = await sb.from("proyectos").select("id, nombre, slug").eq("id", proyectoId).eq("user_id", userId).single();
   if (!p) throw new Error("Proyecto no encontrado");
   if (!cli.tercero_id) throw new Error(`${p.nombre} no está enlazado a un cliente de EvoluteIA: Facturación → Clientes → «Enlazar con EvoluteIA»`);
@@ -110,12 +127,12 @@ async function prepararFactura(sb: SB, userId: string, e: Evo, proyectoId: strin
   const lineas: { descripcion: string; cantidad: number; precio: number }[] = [];
   const detalleHoras = (horas ?? []).slice(0, 15).map((h) => `${h.fecha} · ${h.horas} h${h.descripcion ? ` · ${String(h.descripcion).slice(0, 60)}` : ""}`).join("; ");
   let documentoId: string; let numeroPrevisto: string | null = null; let deContrato = false;
-  const restaurar = await asegurarTenantActivo(e);
+  const restaurar = await asegurarTenantActivo(e, emp.tenant_id);
   try {
     if (cli.contrato === "mensual" && cli.contrato_id) {
       // Cuota del contrato: la factura EvoluteIA (facturar_contrato); añadimos horas extra e IA si sigue en borrador
       const periodo = desde.slice(0, 7);
-      const r = await evoRpc(e, "facturar_contrato", { p_contrato: cli.contrato_id, p_periodo: periodo, p_forma_pago: cfg.evoluteia_forma_pago_id ?? null, p_fecha: hoy() });
+      const r = await evoRpc(e, "facturar_contrato", { p_contrato: cli.contrato_id, p_periodo: periodo, p_forma_pago: emp.forma_pago_id ?? null, p_fecha: hoy() });
       const fila = Array.isArray(r) ? r[0] : r; documentoId = fila?.documento_id; deContrato = true;
       if (!documentoId) throw new Error("EvoluteIA no devolvió la factura del contrato");
       const extra = r2(Math.max(0, totalHoras - Number(cli.horas_incluidas ?? 0)));
@@ -126,7 +143,7 @@ async function prepararFactura(sb: SB, userId: string, e: Evo, proyectoId: strin
       if (refacturarIa && opciones.incluir_ia !== false && costeIa > 0) lineas.push({ descripcion: `USO DE INTELIGENCIA ARTIFICIAL · ${p.nombre} · ${desde.slice(0, 7)} (coste ${eur(costeIa)}${Number(cfg.recargo_ia_pct) ? ` + ${cfg.recargo_ia_pct} % gestión` : ""})`, cantidad: 1, precio: r2(costeIa * (1 + Number(cfg.recargo_ia_pct ?? 0) / 100)) });
       for (const l of opciones.lineas_extra ?? []) lineas.push({ descripcion: String(l.concepto ?? l.descripcion ?? ""), cantidad: Number(l.cantidad ?? 1), precio: r2(Number(l.precio ?? 0)) });
       if (!lineas.length) throw new Error(`No hay nada que facturar en ${p.nombre} para ${fechaEs(desde)} – ${fechaEs(hasta)} (sin horas facturables ni gasto de IA)`);
-      const doc = await evoRest(e, "documentos", { method: "POST", body: JSON.stringify({ tenant_id: cfg.evoluteia_tenant_id, empresa_id: cfg.evoluteia_empresa_id, sede_id: cfg.evoluteia_sede_id, tipo: "factura", fecha: hoy(), tercero_id: cli.tercero_id, estado: "borrador", forma_pago_id: cfg.evoluteia_forma_pago_id ?? null, observaciones: `${opciones.notas ? opciones.notas + " · " : ""}Preparada por NexDeveloper · proyecto ${p.nombre} · periodo ${desde} a ${hasta}`, datos_extra: { nexdeveloper: { proyecto_id: p.id, proyecto: p.nombre, desde, hasta, horas: totalHoras, coste_ia: costeIa } } }) }, "return=representation");
+      const doc = await evoRest(e, "documentos", { method: "POST", body: JSON.stringify({ tenant_id: emp.tenant_id, empresa_id: emp.empresa_id, sede_id: emp.sede_id, tipo: "factura", fecha: hoy(), tercero_id: cli.tercero_id, estado: "borrador", forma_pago_id: emp.forma_pago_id ?? null, observaciones: `${opciones.notas ? opciones.notas + " · " : ""}Preparada por NexDeveloper · proyecto ${p.nombre} · periodo ${desde} a ${hasta}`, datos_extra: { nexdeveloper: { proyecto_id: p.id, proyecto: p.nombre, desde, hasta, horas: totalHoras, coste_ia: costeIa, empresa: emp.nombre } } }) }, "return=representation");
       documentoId = (Array.isArray(doc) ? doc[0] : doc)?.id; if (!documentoId) throw new Error("EvoluteIA no devolvió el documento");
     }
     if (deContrato && refacturarIa && opciones.incluir_ia !== false && costeIa > 0) lineas.push({ descripcion: `USO DE INTELIGENCIA ARTIFICIAL · ${p.nombre} · ${desde.slice(0, 7)} (coste ${eur(costeIa)}${Number(cfg.recargo_ia_pct) ? ` + ${cfg.recargo_ia_pct} % gestión` : ""})`, cantidad: 1, precio: r2(costeIa * (1 + Number(cfg.recargo_ia_pct ?? 0) / 100)) });
@@ -134,13 +151,13 @@ async function prepararFactura(sb: SB, userId: string, e: Evo, proyectoId: strin
       const est = await evoRest(e, `documentos?select=estado&id=eq.${documentoId}`); const estado = est?.[0]?.estado;
       if (estado === "borrador") {
         const previas = await evoRest(e, `documento_lineas?select=orden&documento_id=eq.${documentoId}&order=orden.desc&limit=1`); let orden = Number(previas?.[0]?.orden ?? -1) + 1;
-        await evoRest(e, "documento_lineas", { method: "POST", body: JSON.stringify(lineas.map((l) => ({ tenant_id: cfg.evoluteia_tenant_id, documento_id: documentoId, orden: orden++, descripcion: l.descripcion.slice(0, 500), cantidad: l.cantidad, precio: l.precio, descuento: 0, tipo_iva: 21, importe: r2(l.cantidad * l.precio), impuesto_id: cfg.evoluteia_impuesto_id }))) }, "return=minimal");
+        await evoRest(e, "documento_lineas", { method: "POST", body: JSON.stringify(lineas.map((l) => ({ tenant_id: emp.tenant_id, documento_id: documentoId, orden: orden++, descripcion: l.descripcion.slice(0, 500), cantidad: l.cantidad, precio: l.precio, descuento: 0, tipo_iva: 21, importe: r2(l.cantidad * l.precio), impuesto_id: emp.impuesto_id }))) }, "return=minimal");
         await evoRpc(e, "recalcular_documento", { p_doc: documentoId });
       } else if (deContrato) {
         // El contrato ya emitió su factura: las horas extra/IA van en una factura aparte
-        const doc2 = await evoRest(e, "documentos", { method: "POST", body: JSON.stringify({ tenant_id: cfg.evoluteia_tenant_id, empresa_id: cfg.evoluteia_empresa_id, sede_id: cfg.evoluteia_sede_id, tipo: "factura", fecha: hoy(), tercero_id: cli.tercero_id, estado: "borrador", forma_pago_id: cfg.evoluteia_forma_pago_id ?? null, observaciones: `Preparada por NexDeveloper · ${p.nombre} · extras del periodo ${desde} a ${hasta}`, datos_extra: { nexdeveloper: { proyecto_id: p.id, proyecto: p.nombre, desde, hasta, horas: totalHoras, coste_ia: costeIa, extras_de_contrato: documentoId } } }) }, "return=representation");
+        const doc2 = await evoRest(e, "documentos", { method: "POST", body: JSON.stringify({ tenant_id: emp.tenant_id, empresa_id: emp.empresa_id, sede_id: emp.sede_id, tipo: "factura", fecha: hoy(), tercero_id: cli.tercero_id, estado: "borrador", forma_pago_id: emp.forma_pago_id ?? null, observaciones: `Preparada por NexDeveloper · ${p.nombre} · extras del periodo ${desde} a ${hasta}`, datos_extra: { nexdeveloper: { proyecto_id: p.id, proyecto: p.nombre, desde, hasta, horas: totalHoras, coste_ia: costeIa, extras_de_contrato: documentoId } } }) }, "return=representation");
         const id2 = (Array.isArray(doc2) ? doc2[0] : doc2)?.id;
-        await evoRest(e, "documento_lineas", { method: "POST", body: JSON.stringify(lineas.map((l, i) => ({ tenant_id: cfg.evoluteia_tenant_id, documento_id: id2, orden: i, descripcion: l.descripcion.slice(0, 500), cantidad: l.cantidad, precio: l.precio, descuento: 0, tipo_iva: 21, importe: r2(l.cantidad * l.precio), impuesto_id: cfg.evoluteia_impuesto_id }))) }, "return=minimal");
+        await evoRest(e, "documento_lineas", { method: "POST", body: JSON.stringify(lineas.map((l, i) => ({ tenant_id: emp.tenant_id, documento_id: id2, orden: i, descripcion: l.descripcion.slice(0, 500), cantidad: l.cantidad, precio: l.precio, descuento: 0, tipo_iva: 21, importe: r2(l.cantidad * l.precio), impuesto_id: emp.impuesto_id }))) }, "return=minimal");
         await evoRpc(e, "recalcular_documento", { p_doc: id2 }); documentoId = id2;
       }
     }
@@ -148,16 +165,16 @@ async function prepararFactura(sb: SB, userId: string, e: Evo, proyectoId: strin
   } finally { await restaurar(); }
   if ((horas ?? []).length) await sb.from("horas_registro").update({ evoluteia_documento_id: documentoId, actualizado_el: ahora() }).in("id", (horas ?? []).map((h) => h.id));
   await refrescarFactura(sb, userId, e, documentoId, p.id, totalHoras, costeIa);
-  return { documento_id: documentoId, numero_previsto: numeroPrevisto, horas: totalHoras, coste_ia: costeIa, lineas: lineas.length, de_contrato: deContrato, url: `${cfg.evoluteia_url}/documentos/${documentoId}` };
+  return { documento_id: documentoId, numero_previsto: numeroPrevisto, empresa: emp.nombre, horas: totalHoras, coste_ia: costeIa, lineas: lineas.length, de_contrato: deContrato, url: `${cfg.evoluteia_url}/documentos/${documentoId}` };
 }
 async function refrescarFactura(sb: SB, userId: string, e: Evo, documentoId: string, proyectoId: string | null, horas = 0, costeIa = 0) {
-  const d = (await evoRest(e, `documentos?select=id,tercero_id,numero,fecha,estado,base,cuota_iva,total,datos_extra&id=eq.${documentoId}`))?.[0]; if (!d) return null;
+  const d = (await evoRest(e, `documentos?select=id,tenant_id,tercero_id,numero,fecha,estado,base,cuota_iva,total,datos_extra&id=eq.${documentoId}`))?.[0]; if (!d) return null;
   const v = await evoRest(e, `vencimientos?select=importe,cobrado,estado,fecha&documento_id=eq.${documentoId}`);
   const pendiente = r2((v ?? []).reduce((a: number, x: any) => a + Math.max(0, Number(x.importe ?? 0) - Number(x.cobrado ?? 0)), 0));
   const vencido = (v ?? []).some((x: any) => Number(x.importe ?? 0) - Number(x.cobrado ?? 0) > 0 && x.fecha && x.fecha < hoy());
   const reg = await evoRest(e, `registro_facturacion?select=id&documento_id=eq.${documentoId}&limit=1`);
   const pid = proyectoId ?? d.datos_extra?.nexdeveloper?.proyecto_id ?? null;
-  await sb.from("facturas_evoluteia").upsert({ documento_id: d.id, user_id: userId, proyecto_id: pid, tercero_id: d.tercero_id, numero: d.numero, fecha: d.fecha, estado: d.estado, base: d.base, cuota_iva: d.cuota_iva, total: d.total, pendiente, vencido, verifactu: (reg ?? []).length > 0, pdf_ruta: d.datos_extra?.pdf_ruta ?? null, horas: horas || Number(d.datos_extra?.nexdeveloper?.horas ?? 0), coste_ia: costeIa || Number(d.datos_extra?.nexdeveloper?.coste_ia ?? 0), origen: d.datos_extra?.nexdeveloper ? "nexdeveloper" : "evoluteia", actualizado_el: ahora() });
+  await sb.from("facturas_evoluteia").upsert({ documento_id: d.id, user_id: userId, proyecto_id: pid, tenant_id: d.tenant_id, empresa: e.empresas.find((x) => x.tenant_id === d.tenant_id)?.nombre ?? null, tercero_id: d.tercero_id, numero: d.numero, fecha: d.fecha, estado: d.estado, base: d.base, cuota_iva: d.cuota_iva, total: d.total, pendiente, vencido, verifactu: (reg ?? []).length > 0, pdf_ruta: d.datos_extra?.pdf_ruta ?? null, horas: horas || Number(d.datos_extra?.nexdeveloper?.horas ?? 0), coste_ia: costeIa || Number(d.datos_extra?.nexdeveloper?.coste_ia ?? 0), origen: d.datos_extra?.nexdeveloper ? "nexdeveloper" : "evoluteia", actualizado_el: ahora() });
   return { ...d, pendiente, vencido, verifactu: (reg ?? []).length > 0 };
 }
 async function sincronizarFacturas(sb: SB, userId: string, e: Evo) {
@@ -165,7 +182,8 @@ async function sincronizarFacturas(sb: SB, userId: string, e: Evo) {
   const { data: clientes } = await sb.from("facturacion_clientes").select("proyecto_id, tercero_id").eq("user_id", userId).not("tercero_id", "is", null);
   const terceros = [...new Set((clientes ?? []).map((c) => c.tercero_id))]; if (!terceros.length) return { facturas: 0 };
   const desde = new Date(Date.now() - 548 * 86400000).toISOString().slice(0, 10);
-  const docs = await evoRest(e, `documentos?select=id,tercero_id,numero,fecha,estado,base,cuota_iva,total,datos_extra&tenant_id=eq.${e.cfg.evoluteia_tenant_id}&tipo=in.(factura,rectificativa)&tercero_id=in.(${terceros.join(",")})&fecha=gte.${desde}&order=fecha.desc&limit=500`);
+  const tenants = e.empresas.map((x) => x.tenant_id); if (!tenants.length) return { facturas: 0 };
+  const docs = await evoRest(e, `documentos?select=id,tenant_id,tercero_id,numero,fecha,estado,base,cuota_iva,total,datos_extra&tenant_id=in.(${tenants.join(",")})&tipo=in.(factura,rectificativa)&tercero_id=in.(${terceros.join(",")})&fecha=gte.${desde}&order=fecha.desc&limit=500`);
   const ids = (docs ?? []).map((d: any) => d.id); if (!ids.length) return { facturas: 0 };
   const vencs = await evoRest(e, `vencimientos?select=documento_id,importe,cobrado,fecha&documento_id=in.(${ids.join(",")})`);
   const regs = await evoRest(e, `registro_facturacion?select=documento_id&documento_id=in.(${ids.join(",")})`);
@@ -175,7 +193,7 @@ async function sincronizarFacturas(sb: SB, userId: string, e: Evo) {
     const pendiente = r2(v.reduce((a: number, x: any) => a + Math.max(0, Number(x.importe ?? 0) - Number(x.cobrado ?? 0)), 0));
     const vencido = v.some((x: any) => Number(x.importe ?? 0) - Number(x.cobrado ?? 0) > 0 && x.fecha && x.fecha < hoy());
     const pid = d.datos_extra?.nexdeveloper?.proyecto_id ?? (clientes ?? []).find((c) => c.tercero_id === d.tercero_id)?.proyecto_id ?? null;
-    return { documento_id: d.id, user_id: userId, proyecto_id: pid, tercero_id: d.tercero_id, numero: d.numero, fecha: d.fecha, estado: d.estado, base: d.base, cuota_iva: d.cuota_iva, total: d.total, pendiente, vencido, verifactu: conReg.has(d.id), pdf_ruta: d.datos_extra?.pdf_ruta ?? null, horas: Number(d.datos_extra?.nexdeveloper?.horas ?? 0), coste_ia: Number(d.datos_extra?.nexdeveloper?.coste_ia ?? 0), origen: d.datos_extra?.nexdeveloper ? "nexdeveloper" : "evoluteia", actualizado_el: ahora() };
+    return { documento_id: d.id, user_id: userId, proyecto_id: pid, tenant_id: d.tenant_id, empresa: e.empresas.find((x) => x.tenant_id === d.tenant_id)?.nombre ?? null, tercero_id: d.tercero_id, numero: d.numero, fecha: d.fecha, estado: d.estado, base: d.base, cuota_iva: d.cuota_iva, total: d.total, pendiente, vencido, verifactu: conReg.has(d.id), pdf_ruta: d.datos_extra?.pdf_ruta ?? null, horas: Number(d.datos_extra?.nexdeveloper?.horas ?? 0), coste_ia: Number(d.datos_extra?.nexdeveloper?.coste_ia ?? 0), origen: d.datos_extra?.nexdeveloper ? "nexdeveloper" : "evoluteia", actualizado_el: ahora() };
   });
   for (let i = 0; i < filas.length; i += 100) await sb.from("facturas_evoluteia").upsert(filas.slice(i, i + 100));
   return { facturas: filas.length };
@@ -190,7 +208,8 @@ async function resumen(sb: SB, userId: string, mes?: string) {
   const { data: fs } = await sb.from("facturas_evoluteia").select("*").eq("user_id", userId);
   const { data: ia } = await sb.from("consumos_ia").select("proyecto_id, coste").eq("user_id", userId).gte("created_at", `${desde}T00:00:00Z`).lte("created_at", `${hastaD}T23:59:59Z`);
   const { data: ej } = await sb.from("ejecuciones_orden").select("proyecto_id, coste_ia").eq("user_id", userId).gte("creado_el", `${desde}T00:00:00Z`).lte("creado_el", `${hastaD}T23:59:59Z`);
-  const { data: clientes } = await sb.from("facturacion_clientes").select("proyecto_id, contrato, cuota_mensual, tarifa_hora, tercero_id, nombre_fiscal").eq("user_id", userId);
+  const { data: clientes } = await sb.from("facturacion_clientes").select("proyecto_id, contrato, cuota_mensual, tarifa_hora, tercero_id, nombre_fiscal, evoluteia_tenant_id").eq("user_id", userId);
+  const catalogo = await catalogoEmpresas(sb, userId); const nombreEmpresa = (t?: string | null) => (catalogo.find((x) => x.tenant_id === (t ?? cfg.evoluteia_tenant_id)) ?? catalogo.find((x) => x.por_defecto))?.nombre ?? null;
   const porProyecto = (proyectos ?? []).map((p) => {
     const h = (horas ?? []).filter((x) => x.proyecto_id === p.id);
     const hs = r2(h.reduce((a, x) => a + Number(x.horas), 0)); const hsPend = r2(h.filter((x) => x.facturable && !x.evoluteia_documento_id).reduce((a, x) => a + Number(x.horas), 0));
@@ -200,7 +219,7 @@ async function resumen(sb: SB, userId: string, mes?: string) {
     const cobrado = r2(delMes.reduce((a, f) => a + (Number(f.total ?? 0) - Number(f.pendiente ?? 0)), 0));
     const costeIa = r2((ia ?? []).filter((x) => x.proyecto_id === p.id).reduce((a, x) => a + Number(x.coste ?? 0), 0) + (ej ?? []).filter((x) => x.proyecto_id === p.id).reduce((a, x) => a + Number(x.coste_ia ?? 0), 0));
     const cli = (clientes ?? []).find((c) => c.proyecto_id === p.id); const tarifa = Number(cli?.tarifa_hora ?? cfg.tarifa_hora);
-    return { proyecto_id: p.id, nombre: p.nombre, slug: p.slug, color: p.color, enlazado: !!cli?.tercero_id, cliente: cli?.nombre_fiscal ?? null, contrato: cli?.contrato ?? "horas", horas: hs, horas_sin_facturar: hsPend, facturado, cobrado, coste_ia: costeIa, margen: r2(facturado - costeIa), pendiente_facturar: cli?.contrato === "mensual" ? r2(Number(cli.cuota_mensual ?? 0)) : r2(hsPend * tarifa), borradores: mias.filter((f) => f.estado === "borrador").length, pendiente_cobro: r2(mias.reduce((a, f) => a + Number(f.pendiente ?? 0), 0)), vencidas: mias.filter((f) => f.vencido).length };
+    return { proyecto_id: p.id, nombre: p.nombre, slug: p.slug, color: p.color, enlazado: !!cli?.tercero_id, cliente: cli?.nombre_fiscal ?? null, empresa: nombreEmpresa(cli?.evoluteia_tenant_id), tenant_id: cli?.evoluteia_tenant_id ?? cfg.evoluteia_tenant_id, contrato: cli?.contrato ?? "horas", horas: hs, horas_sin_facturar: hsPend, facturado, cobrado, coste_ia: costeIa, margen: r2(facturado - costeIa), pendiente_facturar: cli?.contrato === "mensual" ? r2(Number(cli.cuota_mensual ?? 0)) : r2(hsPend * tarifa), borradores: mias.filter((f) => f.estado === "borrador").length, pendiente_cobro: r2(mias.reduce((a, f) => a + Number(f.pendiente ?? 0), 0)), vencidas: mias.filter((f) => f.vencido).length };
   });
   const suma = (k: string) => r2(porProyecto.reduce((a, x: any) => a + Number(x[k] ?? 0), 0));
   return { mes: m, desde, hasta: hastaD, totales: { horas: suma("horas"), horas_sin_facturar: suma("horas_sin_facturar"), facturado: suma("facturado"), cobrado: suma("cobrado"), coste_ia: suma("coste_ia"), margen: suma("margen"), pendiente_facturar: suma("pendiente_facturar"), pendiente_cobro: suma("pendiente_cobro"), vencidas: suma("vencidas"), sin_enlazar: porProyecto.filter((x) => !x.enlazado).length }, proyectos: porProyecto };
@@ -257,7 +276,7 @@ Deno.serve(async (req) => {
     switch (accion) {
       case "estado": {
         const { data: con } = await sb.from("conexiones_externas").select("estado, cuenta, ultimo_error, ultima_comprobacion").eq("user_id", userId).eq("proveedor", "evoluteia").maybeSingle();
-        return json({ ok: true, config: cfg, evoluteia: con ?? { estado: "desconectada" }, proyectian: !!TOKEN_CUENTA, resumen: await resumen(sb, userId, cuerpo.mes ? String(cuerpo.mes) : undefined) });
+        return json({ ok: true, config: cfg, empresas: await catalogoEmpresas(sb, userId), evoluteia: con ?? { estado: "desconectada" }, proyectian: !!TOKEN_CUENTA, resumen: await resumen(sb, userId, cuerpo.mes ? String(cuerpo.mes) : undefined) });
       }
       case "resumen": return json({ ok: true, resumen: await resumen(sb, userId, cuerpo.mes ? String(cuerpo.mes) : undefined) });
       case "configurar": {
@@ -265,48 +284,89 @@ Deno.serve(async (req) => {
         const cambios: Record<string, unknown> = { user_id: userId, actualizado_el: ahora() };
         for (const k of permitidos) if (k in cuerpo) cambios[k] = cuerpo[k];
         const { data } = await sb.from("facturacion_config").upsert(cambios).select("*").single();
+        if (cuerpo.evoluteia_tenant_id && !TENANTS_PERMITIDOS[String(cuerpo.evoluteia_tenant_id)]) return json({ ok: false, error: "Solo MODEONTECNO S.L. o SOLUCIONES EVOLUTEIA S.L." }, 400);
+        if (cuerpo.evoluteia_tenant_id) { await sb.from("facturacion_empresas").update({ por_defecto: false }).eq("user_id", userId); await sb.from("facturacion_empresas").update({ por_defecto: true }).eq("user_id", userId).eq("tenant_id", String(cuerpo.evoluteia_tenant_id)); }
         return json({ ok: true, config: data });
       }
       case "probar_evoluteia": {
-        try { const e = await conectarEvoluteia(sb, userId, cfg); const emp = await evoRest(e, `empresas?select=razon_social,nif,verifactu_activo,verifactu_modo&id=eq.${cfg.evoluteia_empresa_id}`); const serie = await evoRest(e, `series_documento?select=codigo,siguiente_num,ejercicio&empresa_id=eq.${cfg.evoluteia_empresa_id}&tipo=eq.factura&activa=eq.true`); const s = await sincronizarFacturas(sb, userId, e); return json({ ok: true, usuario: cfg.evoluteia_usuario, empresa: emp?.[0] ?? null, serie: serie?.[0] ?? null, facturas_sincronizadas: s.facturas }); }
+        try {
+          const e = await conectarEvoluteia(sb, userId, cfg); const lista: any[] = [];
+          for (const emp of e.empresas) {
+            const activo = await evoRpc(e, "nexdeveloper_activo", { p_tenant: emp.tenant_id }).catch(() => false);
+            const datos = (await evoRest(e, `empresas?select=razon_social,nif,verifactu_activo,verifactu_modo&id=eq.${emp.empresa_id}`))?.[0] ?? null;
+            const serie = (await evoRest(e, `series_documento?select=codigo,siguiente_num,ejercicio&empresa_id=eq.${emp.empresa_id}&tipo=eq.factura&activa=eq.true`))?.[0] ?? null;
+            lista.push({ tenant_id: emp.tenant_id, nombre: emp.nombre, por_defecto: emp.por_defecto, modulo_activo: activo === true, empresa: datos, serie });
+          }
+          const s = await sincronizarFacturas(sb, userId, e); const def = lista.find((x) => x.por_defecto) ?? lista[0];
+          return json({ ok: true, usuario: cfg.evoluteia_usuario, empresa: def?.empresa ?? null, serie: def?.serie ?? null, empresas: lista, facturas_sincronizadas: s.facturas });
+        }
         catch (err) { return json({ ok: false, error: String(err?.message ?? err) }); }
       }
-      case "empresas": { const e = await conectarEvoluteia(sb, userId, cfg); const emp = await evoRest(e, `empresas?select=id,tenant_id,razon_social,nif,verifactu_activo,verifactu_modo,efactura_activo&order=razon_social`); const sedes = await evoRest(e, `sedes?select=id,empresa_id,nombre`); const fp = await evoRest(e, `formas_pago?select=id,tenant_id,nombre&order=nombre`); const imp = await evoRest(e, `impuestos?select=id,tenant_id,nombre,porcentaje&order=porcentaje.desc`); return json({ ok: true, empresas: emp, sedes, formas_pago: fp, impuestos: imp }); }
-      case "terceros": {
-        const e = await conectarEvoluteia(sb, userId, cfg); const q = String(cuerpo.q ?? "").trim();
-        const filtro = q ? `&or=(razon_social.ilike.*${encodeURIComponent(q)}*,nombre_comercial.ilike.*${encodeURIComponent(q)}*,nif.ilike.*${encodeURIComponent(q)}*,codigo.ilike.*${encodeURIComponent(q)}*)` : "";
-        const t = await evoRest(e, `terceros?select=id,codigo,razon_social,nombre_comercial,nif,email,telefono,poblacion&tenant_id=eq.${cfg.evoluteia_tenant_id}&es_cliente=eq.true&activo=eq.true${filtro}&order=razon_social&limit=60`);
-        return json({ ok: true, terceros: t });
+      case "empresas": {
+        // Catálogo de empresas emisoras (facturacion_empresas) refrescado con los datos reales de EvoluteIA
+        const e = await conectarEvoluteia(sb, userId, cfg); const emp = await evoRest(e, `empresas?select=id,tenant_id,razon_social,nif,verifactu_activo,verifactu_modo,efactura_activo&order=razon_social`); const sedes = await evoRest(e, `sedes?select=id,empresa_id,nombre`); const fp = await evoRest(e, `formas_pago?select=id,tenant_id,nombre&order=nombre`); const imp = await evoRest(e, `impuestos?select=id,tenant_id,nombre,porcentaje&order=porcentaje.desc`);
+        for (const x of emp ?? []) { if (!TENANTS_PERMITIDOS[x.tenant_id]) continue; const ya = e.empresas.find((c) => c.tenant_id === x.tenant_id); const sede = (sedes ?? []).find((s: any) => s.empresa_id === x.id); const tr = (fp ?? []).find((f: any) => f.tenant_id === x.tenant_id && /transferencia$/i.test(f.nombre)) ?? (fp ?? []).find((f: any) => f.tenant_id === x.tenant_id); const iva = (imp ?? []).find((i: any) => i.tenant_id === x.tenant_id && Number(i.porcentaje) === 21); await sb.from("facturacion_empresas").upsert({ tenant_id: x.tenant_id, user_id: userId, empresa_id: x.id, sede_id: ya?.sede_id ?? sede?.id ?? null, forma_pago_id: ya?.forma_pago_id ?? tr?.id ?? null, impuesto_id: ya?.impuesto_id ?? iva?.id ?? null, nombre: x.razon_social, nif: x.nif, por_defecto: ya?.por_defecto ?? false, activa: ya?.activa ?? true, actualizado_el: ahora() }); }
+        return json({ ok: true, catalogo: await catalogoEmpresas(sb, userId), permitidas: TENANTS_PERMITIDOS, empresas: (emp ?? []).filter((x: any) => !!TENANTS_PERMITIDOS[x.tenant_id]), sedes, formas_pago: fp, impuestos: imp });
       }
-      case "contratos": { const e = await conectarEvoluteia(sb, userId, cfg); const c = await evoRest(e, `contratos?select=id,numero,titulo,cuota,periodicidad,estado,tercero_id,fecha_inicio,fecha_fin&tenant_id=eq.${cfg.evoluteia_tenant_id}${cuerpo.tercero_id ? `&tercero_id=eq.${cuerpo.tercero_id}` : ""}&order=creado_en.desc&limit=100`); return json({ ok: true, contratos: c }); }
+      case "empresa_configurar": {
+        // {tenant_id, por_defecto?, activa?, sede_id?, forma_pago_id?, impuesto_id?}
+        const t = String(cuerpo.tenant_id ?? ""); if (!TENANTS_PERMITIDOS[t]) return json({ ok: false, error: "Solo MODEONTECNO S.L. o SOLUCIONES EVOLUTEIA S.L." }, 400); const cambios: Record<string, unknown> = { actualizado_el: ahora() };
+        for (const k of ["activa", "sede_id", "forma_pago_id", "impuesto_id"]) if (k in cuerpo) cambios[k] = cuerpo[k];
+        if (cuerpo.por_defecto === true) { await sb.from("facturacion_empresas").update({ por_defecto: false }).eq("user_id", userId); cambios.por_defecto = true; const { data: emp } = await sb.from("facturacion_empresas").select("*").eq("tenant_id", t).eq("user_id", userId).single(); if (emp) await sb.from("facturacion_config").update({ evoluteia_tenant_id: emp.tenant_id, evoluteia_empresa_id: emp.empresa_id, evoluteia_sede_id: emp.sede_id, evoluteia_forma_pago_id: emp.forma_pago_id, evoluteia_impuesto_id: emp.impuesto_id, actualizado_el: ahora() }).eq("user_id", userId); }
+        await sb.from("facturacion_empresas").update(cambios).eq("tenant_id", t).eq("user_id", userId);
+        return json({ ok: true, catalogo: await catalogoEmpresas(sb, userId) });
+      }
+      case "terceros": {
+        const e = await conectarEvoluteia(sb, userId, cfg); const q = String(cuerpo.q ?? "").trim(); const tenant = empresaPara(e, cuerpo.tenant_id ?? null).tenant_id;
+        const filtro = q ? `&or=(razon_social.ilike.*${encodeURIComponent(q)}*,nombre_comercial.ilike.*${encodeURIComponent(q)}*,nif.ilike.*${encodeURIComponent(q)}*,codigo.ilike.*${encodeURIComponent(q)}*)` : "";
+        const t = await evoRest(e, `terceros?select=id,tenant_id,codigo,razon_social,nombre_comercial,nif,email,telefono,poblacion&tenant_id=eq.${tenant}&es_cliente=eq.true&activo=eq.true${filtro}&order=razon_social&limit=60`);
+        return json({ ok: true, tenant_id: tenant, terceros: t });
+      }
+      case "contratos": { const e = await conectarEvoluteia(sb, userId, cfg); const tenant = empresaPara(e, cuerpo.tenant_id ?? null).tenant_id; const c = await evoRest(e, `contratos?select=id,numero,titulo,cuota,periodicidad,estado,tercero_id,fecha_inicio,fecha_fin&tenant_id=eq.${tenant}${cuerpo.tercero_id ? `&tercero_id=eq.${cuerpo.tercero_id}` : ""}&order=creado_en.desc&limit=100`); return json({ ok: true, contratos: c }); }
       case "tercero_crear": {
-        const e = await conectarEvoluteia(sb, userId, cfg); const restaurar = await asegurarTenantActivo(e);
-        try { const t = await evoRest(e, "terceros", { method: "POST", body: JSON.stringify({ tenant_id: cfg.evoluteia_tenant_id, es_cliente: true, es_proveedor: false, razon_social: String(cuerpo.razon_social ?? "").toUpperCase(), nombre_comercial: cuerpo.nombre_comercial ?? null, nif: cuerpo.nif ?? null, direccion: cuerpo.direccion ?? null, poblacion: cuerpo.poblacion ?? null, provincia: cuerpo.provincia ?? null, cp: cuerpo.cp ?? null, pais: cuerpo.pais ?? "España", email: cuerpo.email ?? null, telefono: cuerpo.telefono ?? null, activo: true }) }, "return=representation"); return json({ ok: true, tercero: Array.isArray(t) ? t[0] : t }); }
+        const e = await conectarEvoluteia(sb, userId, cfg); const tenant = empresaPara(e, cuerpo.tenant_id ?? null).tenant_id; const restaurar = await asegurarTenantActivo(e, tenant);
+        try { const t = await evoRest(e, "terceros", { method: "POST", body: JSON.stringify({ tenant_id: tenant, es_cliente: true, es_proveedor: false, razon_social: String(cuerpo.razon_social ?? "").toUpperCase(), nombre_comercial: cuerpo.nombre_comercial ?? null, nif: cuerpo.nif ?? null, direccion: cuerpo.direccion ?? null, poblacion: cuerpo.poblacion ?? null, provincia: cuerpo.provincia ?? null, cp: cuerpo.cp ?? null, pais: cuerpo.pais ?? "España", email: cuerpo.email ?? null, telefono: cuerpo.telefono ?? null, activo: true }) }, "return=representation"); return json({ ok: true, tercero: Array.isArray(t) ? t[0] : t }); }
         finally { await restaurar(); }
       }
       case "cliente": { const { data } = await sb.from("facturacion_clientes").select("*").eq("user_id", userId).eq("proyecto_id", String(cuerpo.proyecto_id)).maybeSingle(); return json({ ok: true, cliente: data }); }
       case "cliente_enlazar": {
         // {proyecto_id, tercero_id, contrato_id?, contrato ('horas'|'mensual'|'fijo'|'sin_facturar'), cuota_mensual?, horas_incluidas?, importe_fijo?, tarifa_hora?, refacturar_ia?}
         const e = await conectarEvoluteia(sb, userId, cfg);
-        const t = (await evoRest(e, `terceros?select=id,codigo,razon_social,nif,email,telefono,direccion,poblacion&id=eq.${cuerpo.tercero_id}`))?.[0]; if (!t) return json({ ok: false, error: "Cliente no encontrado en EvoluteIA" }, 404);
+        const t = (await evoRest(e, `terceros?select=id,tenant_id,codigo,razon_social,nif,email,telefono,direccion,poblacion&id=eq.${cuerpo.tercero_id}`))?.[0]; if (!t) return json({ ok: false, error: "Cliente no encontrado en EvoluteIA" }, 404);
+        if (!e.empresas.some((x) => x.tenant_id === t.tenant_id)) return json({ ok: false, error: "Ese cliente pertenece a una empresa de EvoluteIA que no está en el catálogo de emisoras" }, 400);
         let cuota = cuerpo.cuota_mensual ?? null;
         if (cuerpo.contrato_id) { const c = (await evoRest(e, `contratos?select=cuota,periodicidad&id=eq.${cuerpo.contrato_id}`))?.[0]; if (c) cuota = c.cuota; }
-        const cambios: Record<string, unknown> = { user_id: userId, proyecto_id: String(cuerpo.proyecto_id), tercero_id: t.id, tercero_codigo: t.codigo, nombre_fiscal: t.razon_social, nif: t.nif, email: t.email, telefono: t.telefono, direccion: [t.direccion, t.poblacion].filter(Boolean).join(", "), contrato_id: cuerpo.contrato_id ?? null, sincronizado_el: ahora(), actualizado_el: ahora() };
+        const cambios: Record<string, unknown> = { user_id: userId, proyecto_id: String(cuerpo.proyecto_id), tercero_id: t.id, evoluteia_tenant_id: t.tenant_id, tercero_codigo: t.codigo, nombre_fiscal: t.razon_social, nif: t.nif, email: t.email, telefono: t.telefono, direccion: [t.direccion, t.poblacion].filter(Boolean).join(", "), contrato_id: cuerpo.contrato_id ?? null, sincronizado_el: ahora(), actualizado_el: ahora() };
         for (const k of ["contrato", "horas_incluidas", "importe_fijo", "tarifa_hora", "refacturar_ia", "dia_facturacion", "notas"]) if (k in cuerpo) cambios[k] = cuerpo[k];
         if (cuota !== null) cambios.cuota_mensual = cuota;
         const { data, error } = await sb.from("facturacion_clientes").upsert(cambios).select("*").single(); if (error) throw error;
         await sincronizarFacturas(sb, userId, e).catch(() => {});
         return json({ ok: true, cliente: data });
       }
+      case "cliente_cambiar_empresa": {
+        // {proyecto_id, tenant_id}: el proyecto pasa a facturarse desde otra empresa; se busca el mismo cliente (por NIF o razón social) en esa empresa
+        const e = await conectarEvoluteia(sb, userId, cfg); const emp = empresaPara(e, String(cuerpo.tenant_id)); const cli = await clienteDe(sb, userId, String(cuerpo.proyecto_id));
+        const cambios: Record<string, unknown> = { user_id: userId, proyecto_id: String(cuerpo.proyecto_id), evoluteia_tenant_id: emp.tenant_id, contrato_id: null, actualizado_el: ahora() };
+        let aviso: string | null = null;
+        if (cli.tercero_id) {
+          const filtro = cli.nif ? `nif=eq.${encodeURIComponent(cli.nif)}` : `razon_social=eq.${encodeURIComponent(cli.nombre_fiscal ?? "")}`;
+          const t = (await evoRest(e, `terceros?select=id,codigo,razon_social,nif,email,telefono,direccion,poblacion&tenant_id=eq.${emp.tenant_id}&${filtro}&limit=1`))?.[0];
+          if (t) Object.assign(cambios, { tercero_id: t.id, tercero_codigo: t.codigo, nombre_fiscal: t.razon_social, nif: t.nif, email: t.email, telefono: t.telefono, direccion: [t.direccion, t.poblacion].filter(Boolean).join(", "), sincronizado_el: ahora() });
+          else { Object.assign(cambios, { tercero_id: null, tercero_codigo: null }); aviso = `El cliente ${cli.nombre_fiscal ?? cli.nif ?? ""} no existe en ${emp.nombre}: créalo o enlázalo de nuevo`; }
+        }
+        const { data, error } = await sb.from("facturacion_clientes").upsert(cambios).select("*").single(); if (error) throw error;
+        await sincronizarFacturas(sb, userId, e).catch(() => {});
+        return json({ ok: true, cliente: data, empresa: emp.nombre, aviso });
+      }
       case "cliente_desenlazar": { await sb.from("facturacion_clientes").update({ tercero_id: null, contrato_id: null, tercero_codigo: null, actualizado_el: ahora() }).eq("user_id", userId).eq("proyecto_id", String(cuerpo.proyecto_id)); return json({ ok: true }); }
       case "sugerir_enlaces": {
         // Empareja proyectos con terceros por nombre (sin guardar)
-        const e = await conectarEvoluteia(sb, userId, cfg);
-        const t = await evoRest(e, `terceros?select=id,codigo,razon_social,nombre_comercial,nif&tenant_id=eq.${cfg.evoluteia_tenant_id}&es_cliente=eq.true&activo=eq.true&limit=500`);
+        const e = await conectarEvoluteia(sb, userId, cfg); const tenant = empresaPara(e, cuerpo.tenant_id ?? null).tenant_id;
+        const t = await evoRest(e, `terceros?select=id,tenant_id,codigo,razon_social,nombre_comercial,nif&tenant_id=eq.${tenant}&es_cliente=eq.true&activo=eq.true&limit=500`);
         const { data: ps } = await sb.from("proyectos").select("id, nombre, slug, descripcion").eq("user_id", userId);
         const norm = (s: string) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ");
         const sug = (ps ?? []).map((p) => { const np = norm(p.nombre); const cand = (t ?? []).map((x: any) => { const nt = norm(`${x.razon_social} ${x.nombre_comercial ?? ""}`); const pal = np.split(" ").filter((w) => w.length > 3); const primera = norm(x.razon_social).split(" ").find((w) => w.length > 3) ?? ""; const puntos = pal.reduce((a, w) => a + (nt.includes(w) ? 2 : 0), 0) + (primera && norm(`${p.nombre} ${p.descripcion ?? ""}`).includes(primera) ? 1 : 0); return { tercero: x, puntos }; }).filter((c) => c.puntos > 0).sort((a, b) => b.puntos - a.puntos).slice(0, 3); return { proyecto_id: p.id, proyecto: p.nombre, candidatos: cand.map((c) => ({ ...c.tercero, puntos: c.puntos })) }; });
-        return json({ ok: true, sugerencias: sug });
+        return json({ ok: true, tenant_id: tenant, sugerencias: sug });
       }
       // ----- Horas (igual que antes) -----
       case "horas": {
@@ -346,20 +406,20 @@ Deno.serve(async (req) => {
         return json({ ok: true, ...(await prepararFactura(sb, userId, e, String(cuerpo.proyecto_id), desde, hasta, { incluir_horas: cuerpo.incluir_horas, incluir_ia: cuerpo.incluir_ia, lineas_extra: cuerpo.lineas_extra, notas: cuerpo.notas })) });
       }
       case "emitir": {
-        const e = await conectarEvoluteia(sb, userId, cfg); const id = String(cuerpo.documento_id);
-        const restaurar = await asegurarTenantActivo(e); let numero: string;
-        try { const n = await evoRpc(e, "emitir_documento", { p_doc: id, p_forma_pago: cuerpo.forma_pago_id ?? cfg.evoluteia_forma_pago_id ?? null }); numero = typeof n === "string" ? n : String(n?.numero ?? n ?? ""); } finally { await restaurar(); }
+        const e = await conectarEvoluteia(sb, userId, cfg); const id = String(cuerpo.documento_id); const tenant = await tenantDeDocumento(e, id); const emp = empresaPara(e, tenant);
+        const restaurar = await asegurarTenantActivo(e, tenant); let numero: string;
+        try { const n = await evoRpc(e, "emitir_documento", { p_doc: id, p_forma_pago: cuerpo.forma_pago_id ?? emp.forma_pago_id ?? null }); numero = typeof n === "string" ? n : String(n?.numero ?? n ?? ""); } finally { await restaurar(); }
         await sb.from("horas_registro").update({ evoluteia_numero: numero, actualizado_el: ahora() }).eq("evoluteia_documento_id", id);
         const f = await refrescarFactura(sb, userId, e, id, null);
         await sb.from("tareas").insert({ user_id: userId, proyecto_id: f?.datos_extra?.nexdeveloper?.proyecto_id ?? null, titulo: `Enviar la factura ${numero} (${eur(f?.total ?? 0)})`, descripcion: `Emitida en EvoluteIA el ${fechaEs(hoy())}${f?.verifactu ? " · registrada en Verifactu" : ""}. Envíala al cliente desde EvoluteIA (PDF y correo).`, estado: "pendiente", prioridad: "media", requiere_atencion: true, motivo_atencion: "Factura emitida", instrucciones: `Ábrela en EvoluteIA: ${cfg.evoluteia_url}/documentos/${id}` }).then(() => {}, () => {});
-        return json({ ok: true, numero, verifactu: !!f?.verifactu, url: `${cfg.evoluteia_url}/documentos/${id}` });
+        return json({ ok: true, numero, empresa: emp.nombre, verifactu: !!f?.verifactu, url: `${cfg.evoluteia_url}/documentos/${id}` });
       }
       case "descartar_borrador": {
         // Borra el borrador en EvoluteIA (solo si sigue en borrador) y libera las horas
         const e = await conectarEvoluteia(sb, userId, cfg); const id = String(cuerpo.documento_id);
-        const d = (await evoRest(e, `documentos?select=estado&id=eq.${id}`))?.[0]; if (!d) return json({ ok: false, error: "No encontrada" }, 404);
+        const d = (await evoRest(e, `documentos?select=estado,tenant_id&id=eq.${id}`))?.[0]; if (!d) return json({ ok: false, error: "No encontrada" }, 404);
         if (d.estado !== "borrador") return json({ ok: false, error: "Solo se puede descartar un borrador; una factura emitida se rectifica en EvoluteIA" }, 400);
-        const restaurar = await asegurarTenantActivo(e);
+        const restaurar = await asegurarTenantActivo(e, String(d.tenant_id));
         try { await evoRest(e, `documento_lineas?documento_id=eq.${id}`, { method: "DELETE" }, "return=minimal"); await evoRest(e, `documentos?id=eq.${id}`, { method: "DELETE" }, "return=minimal"); } finally { await restaurar(); }
         await sb.from("horas_registro").update({ evoluteia_documento_id: null, actualizado_el: ahora() }).eq("evoluteia_documento_id", id);
         await sb.from("facturas_evoluteia").delete().eq("documento_id", id);
