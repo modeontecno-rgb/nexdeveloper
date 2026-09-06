@@ -347,12 +347,16 @@ export function useEmpresasEvoluteia() {
     queryKey: clavesFacturacion.empresas,
     queryFn: async () => {
       const r = await llamar<{
+        catalogo?: EmpresaEmisora[];
+        permitidas?: Record<string, string>;
         empresas?: OpcionEvoluteia[];
         sedes?: OpcionEvoluteia[];
         formas_pago?: OpcionEvoluteia[];
         impuestos?: OpcionEvoluteia[];
       }>({ accion: "empresas" });
       return {
+        catalogo: r.catalogo ?? [],
+        permitidas: r.permitidas ?? {},
         empresas: r.empresas ?? [],
         sedes: r.sedes ?? [],
         formas_pago: r.formas_pago ?? [],
@@ -362,23 +366,50 @@ export function useEmpresasEvoluteia() {
   });
 }
 
-export function useTercerosEvoluteia(q: string, activo = true) {
+/** Marca una empresa como la de por defecto, la activa o cambia sus identificadores. */
+export function useConfigurarEmpresa() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      tenant_id: string;
+      por_defecto?: true;
+      activa?: boolean;
+      sede_id?: string | null;
+      forma_pago_id?: string | null;
+      impuesto_id?: string | null;
+    }) => llamar<{ empresas?: EmpresaEmisora[] }>({ accion: "empresa_configurar", ...input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: clavesFacturacion.empresas });
+      void qc.invalidateQueries({ queryKey: ["facturacion"] });
+    },
+  });
+}
+
+export function useTercerosEvoluteia(q: string, activo = true, tenantId?: string | null) {
   return useQuery({
-    queryKey: clavesFacturacion.terceros(q),
+    queryKey: clavesFacturacion.terceros(`${tenantId ?? "defecto"}|${q}`),
     enabled: activo,
     queryFn: async () => {
-      const r = await llamar<{ terceros?: TerceroEvoluteia[] }>({ accion: "terceros", ...(q ? { q } : {}) });
+      const r = await llamar<{ terceros?: TerceroEvoluteia[] }>({
+        accion: "terceros",
+        ...(q ? { q } : {}),
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      });
       return r.terceros ?? [];
     },
   });
 }
 
-export function useContratosEvoluteia(terceroId: string | null) {
+export function useContratosEvoluteia(terceroId: string | null, tenantId?: string | null) {
   return useQuery({
-    queryKey: clavesFacturacion.contratos(terceroId ?? "ninguno"),
+    queryKey: clavesFacturacion.contratos(`${tenantId ?? "defecto"}|${terceroId ?? "ninguno"}`),
     enabled: Boolean(terceroId),
     queryFn: async () => {
-      const r = await llamar<{ contratos?: ContratoEvoluteia[] }>({ accion: "contratos", tercero_id: terceroId });
+      const r = await llamar<{ contratos?: ContratoEvoluteia[] }>({
+        accion: "contratos",
+        tercero_id: terceroId,
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      });
       return r.contratos ?? [];
     },
   });
@@ -397,15 +428,19 @@ export function useCrearTercero() {
       cp?: string;
       email?: string;
       telefono?: string;
-    }) => llamar<{ tercero?: TerceroEvoluteia }>({ accion: "tercero_crear", ...input }),
+      tenant_id?: string;
+    }) => llamar<{ tercero?: TerceroEvoluteia; tenant_id?: string }>({ accion: "tercero_crear", ...input }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["facturacion", "evoluteia", "terceros"] }),
   });
 }
 
 export function useSugerirEnlaces() {
   return useMutation({
-    mutationFn: async () => {
-      const r = await llamar<{ sugerencias?: SugerenciaEnlace[] }>({ accion: "sugerir_enlaces" });
+    mutationFn: async (tenantId?: string | null) => {
+      const r = await llamar<{ sugerencias?: SugerenciaEnlace[] }>({
+        accion: "sugerir_enlaces",
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      });
       return r.sugerencias ?? [];
     },
   });
@@ -413,13 +448,18 @@ export function useSugerirEnlaces() {
 
 /* -------------------------------- Clientes -------------------------------- */
 
+/** Cliente enlazado, con la empresa emisora desde la que se factura. */
+export type ClienteFacturacion = FacturacionClienteRow & {
+  evoluteia_tenant_id?: string | null;
+};
+
 export function useClientesFacturacion() {
   return useQuery({
     queryKey: clavesFacturacion.clientes,
     queryFn: async () => {
       const { data, error } = await supabase.from("facturacion_clientes").select("*");
       if (error) throw new Error(error.message);
-      return (data ?? []) as FacturacionClienteRow[];
+      return (data ?? []) as ClienteFacturacion[];
     },
   });
 }
@@ -438,7 +478,24 @@ export function useEnlazarCliente() {
       tarifa_hora?: number | null;
       refacturar_ia?: boolean;
       notas?: string;
+      tenant_id?: string;
     }) => llamar({ accion: "cliente_enlazar", ...input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: clavesFacturacion.clientes });
+      void qc.invalidateQueries({ queryKey: ["facturacion"] });
+    },
+  });
+}
+
+/** Pasa un proyecto a facturarse desde la otra empresa emisora. */
+export function useCambiarEmpresaCliente() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { proyecto_id: string; tenant_id: string }) =>
+      llamar<{ cliente?: ClienteFacturacion | null; empresa?: string | null; aviso?: string | null }>({
+        accion: "cliente_cambiar_empresa",
+        ...input,
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: clavesFacturacion.clientes });
       void qc.invalidateQueries({ queryKey: ["facturacion"] });
@@ -456,6 +513,7 @@ export function useDesenlazarCliente() {
     },
   });
 }
+
 
 /* ---------------------------------- Horas --------------------------------- */
 
