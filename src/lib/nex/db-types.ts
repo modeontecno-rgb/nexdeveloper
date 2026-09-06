@@ -1185,6 +1185,7 @@ export type Database = {
       v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
       v_dominios_resumen: { Row: DominiosResumenRow; Relationships: [] }
       v_bandeja_fuentes: { Row: BandejaFuenteRow; Relationships: [] }
+      v_vigilancia_resumen: { Row: VigilanciaResumenRow; Relationships: [] }
 
 
     }
