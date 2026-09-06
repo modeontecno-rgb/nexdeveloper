@@ -1240,8 +1240,7 @@ export type Database = {
       origen_ejecucion_calidad: OrigenEjecucionCalidad
       estado_ejecucion_calidad: EstadoEjecucionCalidad
       resultado_control: ResultadoControl
-      palabras_clave: string[] | null
-  semaforo_calidad: SemaforoCalidad
+      semaforo_calidad: SemaforoCalidad
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio
