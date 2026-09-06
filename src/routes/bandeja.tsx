@@ -597,7 +597,7 @@ function DialogoTexto({ abierto, onCerrar }: { abierto: boolean; onCerrar: () =>
           disabled={texto.trim() === "" || ingestar.isPending}
           onClick={async () => {
             try {
-              await ingestar.mutateAsync({ asunto: asunto.trim() || undefined, texto: texto.trim() });
+              await ingestar.mutateAsync({ ...(asunto.trim() ? { asunto: asunto.trim() } : {}), texto: texto.trim() });
               toast.success("Añadido a la bandeja.");
               onCerrar();
             } catch (err) {
