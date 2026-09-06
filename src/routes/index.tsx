@@ -11,6 +11,7 @@ import { useDominios } from "@/lib/nex/queries/dominios";
 import { useEntradasBandeja } from "@/lib/nex/queries/bandeja";
 import { useVigilanciaHallazgos } from "@/lib/nex/queries/vigilancia";
 import { TarjetaResumenHoy } from "@/routes/resumenes";
+import { TarjetaGastoIa } from "@/routes/gasto-ia";
 import {
   useAjustes,
   useAlertas,
@@ -199,6 +200,8 @@ function Inicio() {
           <TarjetaResumenHoy />
 
           <TarjetaBandeja entradas={entradasBandeja} />
+
+          <TarjetaGastoIa />
 
           <TarjetaVigilancia />
 

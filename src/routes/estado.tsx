@@ -154,7 +154,21 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("resumenes"),
         verificarTabla("resumenes_config"),
         verificarFuncion("resumenes"),
+        verificarTabla("gasto_ia_diario"),
+        verificarTabla("gastos_ia_manuales"),
+        verificarTabla("presupuestos_ia"),
+        verificarTabla("gasto_ia_config"),
+        verificarFuncion("gasto-ia"),
       ]);
+      const pingGasto = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("gasto-ia", { body: {} });
+          const r = data as { anthropic_admin?: boolean; openai_admin?: boolean } | null;
+          return { anthropic: Boolean(r?.anthropic_admin), openai: Boolean(r?.openai_admin) };
+        } catch {
+          return { anthropic: false, openai: false };
+        }
+      })();
       const pingVigilar = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("vigilar", { body: {} });
@@ -223,6 +237,12 @@ function useVerificacionesBackend(habilitado: boolean) {
         funcionResumenes,
         pingBandeja,
         pingCompilar,
+        gastoDiario,
+        gastosManuales,
+        presupuestosIa,
+        gastoConfig,
+        funcionGasto,
+        pingGasto,
       };
     },
   });

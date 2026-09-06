@@ -1,3 +1,4 @@
+import { ChipGastoIa } from "@/routes/gasto-ia";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
@@ -132,6 +133,7 @@ function DetalleProyecto() {
               ))}
             <ChipVigilancia proyectoId={proyectoId} />
             <ChipDominios proyectoId={proyectoId} />
+            <ChipGastoIa proyectoId={proyectoId} />
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
             <EstadoProyectoBadge estado={proyecto.estado} />
             <PrioridadBadge prioridad={proyecto.prioridad} />
