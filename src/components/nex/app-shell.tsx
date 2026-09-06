@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   Sparkle,
   Sparkles,
+  Stamp,
   Sun,
   X,
   BadgeCheck,
