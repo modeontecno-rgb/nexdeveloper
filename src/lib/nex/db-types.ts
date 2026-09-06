@@ -666,6 +666,7 @@ export type CopiaDestinoRow = {
   ultima_prueba: string | null
   resultado_prueba: string | null
   notas: string | null
+  usar_para_documentos?: boolean
   tiene_secreto?: boolean
 }
 
