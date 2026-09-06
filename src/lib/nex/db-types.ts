@@ -642,6 +642,79 @@ export type ConsumoIaRow = {
   created_at: string
 }
 
+// ---- Copias de seguridad (0.9.0) ----
+export type TipoDestinoCopia = "s3" | "webdav"
+export type TipoOrigenCopia = "base_datos" | "repositorio"
+export type OrigenCopia = "manual" | "diaria" | "semanal"
+export type EstadoCopia = "pendiente" | "en_curso" | "ok" | "error"
+
+export type CopiaDestinoRow = {
+  id: string
+  user_id: string
+  nombre: string
+  tipo: TipoDestinoCopia
+  url_servidor: string | null
+  bucket: string | null
+  region: string | null
+  ruta_prefijo: string | null
+  usuario: string | null
+  activo: boolean
+  es_predeterminado: boolean
+  ultima_prueba: string | null
+  resultado_prueba: string | null
+  notas: string | null
+  tiene_secreto?: boolean
+}
+
+export type CopiaConfigRow = {
+  id: string
+  user_id: string
+  destino_id: string | null
+  auto_activa: boolean
+  diaria: boolean
+  hora_diaria: string
+  semanal: boolean
+  dia_semanal: number
+  retener_diarias: number
+  retener_semanales: number
+  bases_datos_todas: boolean
+  bases_datos_seleccion: string[]
+  repositorios_todos: boolean
+  repositorios_seleccion: string[]
+  aviso_dias: number
+  ultima_auto: string | null
+}
+
+export type CopiaOrigenRow = {
+  id: string
+  user_id: string
+  tipo: TipoOrigenCopia
+  objetivo: string
+  nombre: string
+  detalle: Json
+  proyecto_id: string | null
+}
+
+export type CopiaRow = {
+  id: string
+  user_id: string
+  lote_id: string
+  tipo: TipoOrigenCopia
+  origen: OrigenCopia
+  objetivo: string
+  nombre: string
+  estado: EstadoCopia
+  ruta_remota: string | null
+  bytes: number | null
+  num_tablas: number | null
+  num_filas: number | null
+  error: string | null
+  iniciada_el: string | null
+  terminada_el: string | null
+  creado_el: string
+}
+
+
 type SinUsuario<T> = Omit<T, "user_id">
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
   Row: Row
