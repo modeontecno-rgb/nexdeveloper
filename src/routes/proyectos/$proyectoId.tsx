@@ -33,6 +33,8 @@ import {
   useTareas,
   useTareasAtencion,
 } from "@/lib/nex/queries/datos";
+import { useUltimasCompilaciones } from "@/lib/nex/queries/compilaciones";
+import { ETIQUETA_PLATAFORMA } from "@/routes/compilaciones";
 import { useAsignarExperto } from "@/lib/nex/queries/expertos";
 import { useEnviarMensaje } from "@/lib/nex/queries/mutaciones";
 
@@ -58,6 +60,7 @@ function DetalleProyecto() {
   const { data: resumenes = [] } = useResumenProyectos();
   const { data: actividad = [] } = useActividad(proyectoId);
   const { data: tareasAtencion = [] } = useTareasAtencion(proyectoId);
+  const { data: ultimasCompilaciones = [] } = useUltimasCompilaciones();
   const { data: ajustes } = useAjustes();
   const moneda = ajustes?.moneda ?? "EUR";
 
@@ -111,6 +114,19 @@ function DetalleProyecto() {
         {...(proyecto.descripcion ? { descripcion: proyecto.descripcion } : {})}
         acciones={
           <div className="flex items-center gap-2">
+            {ultimasCompilaciones
+              .filter((c) => c.proyecto_id === proyectoId)
+              .map((c) => (
+                <Link
+                  key={c.plataforma}
+                  to="/compilaciones"
+                  search={{ proyecto: proyectoId }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+                  title={`Última compilación de ${ETIQUETA_PLATAFORMA[c.plataforma]}`}
+                >
+                  {ETIQUETA_PLATAFORMA[c.plataforma]} v{c.version} · {c.estado === "ok" ? "correcta" : c.estado}
+                </Link>
+              ))}
             <SemaforoBadge semaforo={proyecto.semaforo_calidad ?? "sin_datos"} />
             <EstadoProyectoBadge estado={proyecto.estado} />
             <PrioridadBadge prioridad={proyecto.prioridad} />

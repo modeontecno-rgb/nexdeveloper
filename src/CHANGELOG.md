@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## 0.10.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Compilaciones»: genera la aplicación de cada proyecto para Android, iPhone y iPad, escritorio o web sin salir de aquí.
+- Botón «Detectar» que revisa el repositorio y te dice con qué se puede compilar, la versión actual y si la firma está lista.
+- Plantillas aconsejadas primero, con los minutos que suele tardar cada una y lo que necesita para firmar.
+- Cada compilación sube el número de versión; si repites una ya hecha, la aplicación propone la siguiente.
+- Bloque «En curso» con el tiempo transcurrido en vivo, enlace al taller de GitHub y botón para cancelar.
+- Historial filtrable con estado, duración, tamaño del archivo, descarga directa y detalle del error.
+- Los datos de firma (almacén de claves de Android, certificado y perfil de Apple) se guardan cifrados en tu repositorio de GitHub; NexDeveloper nunca los almacena.
+- Aviso en cuanto una compilación termina correctamente, con botón para descargarla.
+- En la ficha de cada proyecto, la última compilación de cada plataforma con enlace directo.
+
 ## 0.9.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Copias»: guarda tus bases de datos y tus repositorios en tu propio almacén.
