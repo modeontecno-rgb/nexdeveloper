@@ -1767,6 +1767,12 @@ export type Database = {
       copias_config: Tabla<CopiaConfigRow, Partial<SinUsuario<CopiaConfigRow>>>
       copias_origenes: Tabla<CopiaOrigenRow>
       copias: Tabla<CopiaRow>
+      restauraciones: Tabla<RestauracionRow>
+      restauracion_config: Tabla<
+        RestauracionConfigRow,
+        Partial<SinUsuario<RestauracionConfigRow>>,
+        Partial<SinUsuario<RestauracionConfigRow>>
+      >
       plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
       compilaciones: Tabla<CompilacionRow>
       firmas_compilacion: Tabla<FirmaCompilacionRow>
