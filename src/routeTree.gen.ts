@@ -17,6 +17,7 @@ import { Route as CalidadRouteImport } from './routes/calidad'
 import { Route as ColaRouteImport } from './routes/cola'
 import { Route as CompilacionesRouteImport } from './routes/compilaciones'
 import { Route as CopiasRouteImport } from './routes/copias'
+import { Route as DominiosRouteImport } from './routes/dominios'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
@@ -66,6 +67,11 @@ const CompilacionesRoute = CompilacionesRouteImport.update({
 const CopiasRoute = CopiasRouteImport.update({
   id: '/copias',
   path: '/copias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DominiosRoute = DominiosRouteImport.update({
+  id: '/dominios',
+  path: '/dominios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstadoRoute = EstadoRouteImport.update({
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/copias': typeof CopiasRoute
+  '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/copias': typeof CopiasRoute
+  '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/copias': typeof CopiasRoute
+  '/dominios': typeof DominiosRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/integraciones': typeof IntegracionesRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/cola'
     | '/compilaciones'
     | '/copias'
+    | '/dominios'
     | '/estado'
     | '/expertos'
     | '/integraciones'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/cola'
     | '/compilaciones'
     | '/copias'
+    | '/dominios'
     | '/estado'
     | '/expertos'
     | '/integraciones'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/cola'
     | '/compilaciones'
     | '/copias'
+    | '/dominios'
     | '/estado'
     | '/expertos'
     | '/integraciones'
@@ -253,6 +265,7 @@ export interface RootRouteChildren {
   ColaRoute: typeof ColaRoute
   CompilacionesRoute: typeof CompilacionesRoute
   CopiasRoute: typeof CopiasRoute
+  DominiosRoute: typeof DominiosRoute
   EstadoRoute: typeof EstadoRoute
   ExpertosRoute: typeof ExpertosRoute
   IntegracionesRoute: typeof IntegracionesRoute
@@ -320,6 +333,13 @@ declare module '@tanstack/react-router' {
       path: '/copias'
       fullPath: '/copias'
       preLoaderRoute: typeof CopiasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dominios': {
+      id: '/dominios'
+      path: '/dominios'
+      fullPath: '/dominios'
+      preLoaderRoute: typeof DominiosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/estado': {
@@ -415,6 +435,7 @@ const rootRouteChildren: RootRouteChildren = {
   ColaRoute: ColaRoute,
   CompilacionesRoute: CompilacionesRoute,
   CopiasRoute: CopiasRoute,
+  DominiosRoute: DominiosRoute,
   EstadoRoute: EstadoRoute,
   ExpertosRoute: ExpertosRoute,
   IntegracionesRoute: IntegracionesRoute,

@@ -42,6 +42,8 @@ const NAVEGACION = [
   { to: "/compilaciones", etiqueta: "Compilaciones", icono: Package },
   { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
   { to: "/copias", etiqueta: "Copias", icono: DatabaseBackup },
+  { to: "/dominios", etiqueta: "Dominios", icono: Globe },
+
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },
   { to: "/ajustes", etiqueta: "Ajustes", icono: Settings },
