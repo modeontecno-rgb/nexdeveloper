@@ -1259,6 +1259,17 @@ export type Database = {
       competidores: Tabla<CompetidorRow, Partial<SinUsuario<CompetidorRow>> & { nombre: string }>
       resumenes: Tabla<ResumenRow>
       resumenes_config: Tabla<ResumenesConfigRow, Partial<SinUsuario<ResumenesConfigRow>>>
+      gasto_ia_diario: Tabla<GastoIaDiarioRow>
+      gastos_ia_manuales: Tabla<
+        GastoIaManualRow,
+        Partial<SinUsuario<GastoIaManualRow>> & { fecha: string; proveedor: ProveedorGastoIa; concepto: string }
+      >
+      presupuestos_ia: Tabla<
+        PresupuestoIaRow,
+        Partial<SinUsuario<PresupuestoIaRow>> & { ambito: AmbitoPresupuestoIa; limite_mensual: number }
+      >
+      gasto_ia_config: Tabla<GastoIaConfigRow, Partial<SinUsuario<GastoIaConfigRow>>>
+
 
 
     }
