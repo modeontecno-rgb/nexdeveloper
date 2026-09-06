@@ -194,7 +194,7 @@ export function AsistenteRestauracion({ copia, onCerrar }: { copia: CopiaRestaur
         copiaId: copia.id,
         ...(destino.trim() ? { destino: destino.trim() } : {}),
         modo,
-        ...(esBd ? {} : { rama: rama.trim() || undefined }),
+        ...(!esBd && rama.trim() ? { rama: rama.trim() } : {}),
       })
       .catch(() => null);
     if (r) onCerrar();
