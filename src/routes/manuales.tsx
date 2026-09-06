@@ -483,9 +483,20 @@ function PanelConfiguracion() {
   const [capturas, setCapturas] = React.useState(true);
   const [servicio, setServicio] = React.useState("");
   const [maximo, setMaximo] = React.useState(12);
+  const [revisar, setRevisar] = React.useState(true);
+  const [tratamiento, setTratamiento] = React.useState<TratamientoManual>("usted");
+  const [nivel, setNivel] = React.useState<NivelRevisionManual>("normal");
+  const [conPerfil, setConPerfil] = React.useState(true);
+  const [glosario, setGlosario] = React.useState("");
+  const perfilEstilo = Boolean(estado.data?.perfil_estilo);
 
   React.useEffect(() => {
     if (!cfg) return;
+    setRevisar(cfg.revisar_redaccion ?? true);
+    setTratamiento(cfg.tratamiento ?? "usted");
+    setNivel(cfg.nivel_revision ?? "normal");
+    setConPerfil(cfg.usar_perfil_estilo ?? true);
+    setGlosario((cfg.glosario ?? []).join("\n"));
     setRegenerar(cfg.regenerar_al_cambiar_version);
     setEstilo(cfg.estilo);
     setCapturas(cfg.incluir_capturas);
@@ -525,6 +536,55 @@ function PanelConfiguracion() {
           />
         </Campo>
       </div>
+      <div className="space-y-3 rounded-xl border border-border bg-surface p-3">
+        <h3 className="text-sm font-semibold">Revisor de redacción</h3>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" checked={revisar} onChange={(e) => setRevisar(e.target.checked)} />
+          Revisar la redacción de cada manual antes de publicarlo
+        </label>
+
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">Tratamiento al lector</p>
+          <SegmentoTratamiento valor={tratamiento} onCambio={setTratamiento} />
+        </div>
+
+        <Campo etiqueta="Nivel de revisión" pista={AYUDA_NIVEL[nivel]}>
+          <select className={claseCampo} value={nivel} onChange={(e) => setNivel(e.target.value as NivelRevisionManual)}>
+            <option value="ligera">Ligera (solo errores)</option>
+            <option value="normal">Normal (errores y claridad)</option>
+            <option value="exhaustiva">Exhaustiva (también frases largas y tono)</option>
+          </select>
+        </Campo>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={conPerfil} onChange={(e) => setConPerfil(e.target.checked)} />
+            Aplicar mi perfil de estilo (PERSONAL → Editor de estilo)
+          </label>
+          {!perfilEstilo ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Todavía no hay perfil de estilo. Créalo en{" "}
+              <Link to="/personal" className="text-primary hover:underline">
+                PERSONAL
+              </Link>
+              .
+            </p>
+          ) : null}
+        </div>
+
+        <Campo
+          etiqueta="Glosario de nombres a respetar"
+          pista="NexDeveloper, Proyectian, EvoluteIA y el nombre del proyecto se respetan siempre; añade aquí los de tu cliente."
+        >
+          <textarea
+            className={`${claseCampo} min-h-24`}
+            value={glosario}
+            onChange={(e) => setGlosario(e.target.value)}
+            placeholder="Un nombre por línea o separados por comas"
+          />
+        </Campo>
+      </div>
+
       <Boton
         onClick={() =>
           guardar.mutate({
@@ -533,6 +593,14 @@ function PanelConfiguracion() {
             incluir_capturas: capturas,
             servicio_capturas: servicio.trim() || null,
             max_capitulos: maximo,
+            revisar_redaccion: revisar,
+            tratamiento,
+            nivel_revision: nivel,
+            usar_perfil_estilo: conPerfil,
+            glosario: glosario
+              .split(/[\n,]/)
+              .map((t) => t.trim())
+              .filter(Boolean),
           })
         }
         disabled={guardar.isPending}
@@ -551,6 +619,7 @@ function TarjetaManual({ manual, nombreProyecto }: { manual: ManualRow; nombrePr
   const borrar = useBorrarManual();
   const generar = useGenerarManual();
   const reintentar = useReintentarManual();
+  const revisar = useRevisarManual();
   const { data: proyectos = [] } = useProyectos();
   const proyecto = proyectos.find((p) => p.id === manual.proyecto_id) ?? null;
 
@@ -576,6 +645,10 @@ function TarjetaManual({ manual, nombreProyecto }: { manual: ManualRow; nombrePr
         >
           {ETIQUETA_ESTADO_MANUAL[manual.estado]}
         </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <InsigniaRevision manual={manual} />
       </div>
 
       <p className="text-xs text-muted-foreground">
@@ -638,7 +711,21 @@ function TarjetaManual({ manual, nombreProyecto }: { manual: ManualRow; nombrePr
           <Trash2 className="size-4" />
           Borrar
         </Boton>
+        {manual.estado === "listo" || manual.estado === "error" ? (
+          <Boton variante="suave" onClick={() => revisar.mutate(manual.id)} disabled={revisar.isPending}>
+            {revisar.isPending ? <Loader2 className="size-4 animate-spin" /> : <SpellCheck className="size-4" />}
+            Revisar redacción
+          </Boton>
+        ) : null}
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Repaso final recomendado: abre el PDF o el Markdown en{" "}
+        <a href="https://app.grammarly.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+          Grammarly
+        </a>{" "}
+        antes de entregarlo al cliente.
+      </p>
     </article>
   );
 }
@@ -666,7 +753,10 @@ export function BloqueManualProyecto({ proyectoId }: { proyectoId: string }) {
         >
           <FileCode2 className="size-3.5 shrink-0 text-muted-foreground" />
           <span className="truncate">{ultimo.titulo}</span>
-          <span className="ml-auto text-xs text-muted-foreground">{ETIQUETA_ESTADO_MANUAL[ultimo.estado]}</span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {ETIQUETA_ESTADO_MANUAL[ultimo.estado]}
+            {ultimo.revision ? <span className="ml-1 text-success">✓ revisado</span> : null}
+          </span>
         </Link>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">Este proyecto todavía no tiene manuales.</p>
