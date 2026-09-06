@@ -1380,8 +1380,89 @@ export type VozConfigRow = {
   servicio_capturas: string | null
 }
 
+export type ModoMesa = "economico" | "equilibrado" | "maxima_calidad"
+export type EstadoMesa = "preparada" | "deliberando" | "concluida" | "error"
+export type RolMesa = "planificar" | "opinar" | "revisar"
+export type RolIntervencion = RolMesa | "sintesis"
+
+export type ParticipanteMesa = {
+  rol: RolMesa
+  experto_slug: string
+  experto_nombre: string
+  proveedor: string
+  modelo: string
+  motivo?: string | null
+}
+
+export type PasoPlanMesa = {
+  orden: number
+  titulo: string
+  descripcion?: string | null
+  responsable?: string | null
+  horas?: number | null
+  requiere_atencion?: boolean | null
+}
+
+export type RecomendacionMesa = {
+  equipo?: { planificar?: string | null; ejecutar?: string | null; revisar?: string | null } | null
+  plan?: PasoPlanMesa[] | null
+  riesgos?: string[] | null
+  coste_estimado?: number | null
+  horas_estimadas?: number | null
+  calidad_prevista?: number | null
+  riesgo?: string | null
+  requiere_aprobacion?: boolean | null
+  motivo?: string | null
+}
+
+export type MesaRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  orden_id: string | null
+  tarea_id: string | null
+  titulo: string | null
+  pregunta: string
+  contexto: string | null
+  modo: ModoMesa
+  estado: EstadoMesa
+  participantes: ParticipanteMesa[] | null
+  recomendacion: RecomendacionMesa | null
+  sintesis: string | null
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  coste: number | null
+  error: string | null
+  creado_el: string
+  concluida_el: string | null
+}
+
+export type MesaIntervencionRow = {
+  id: string
+  user_id: string
+  mesa_id: string
+  orden: number
+  rol: RolIntervencion
+  experto_nombre: string | null
+  proveedor: string | null
+  modelo: string | null
+  texto: string | null
+  tokens: number | null
+  coste: number | null
+  creado_el: string
+}
+
+export type MesaValoracionRow = {
+  id: string
+  user_id: string
+  mesa_id: string
+  valoracion: number
+  comentario: string | null
+  creado_el: string
+}
 
 export type Database = {
+
 
 
   __InternalSupabase: { PostgrestVersion: "14.5" }
