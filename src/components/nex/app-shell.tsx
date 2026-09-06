@@ -106,6 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: entradasBandeja = [] } = useEntradasBandeja();
   const pendientesBandeja = pendientes(entradasBandeja);
   const avisosSinLeer = useAvisosSinLeer();
+  const propuestasPendientes = usePropuestasPendientes();
 
   React.useEffect(() => {
     setAbierto(false);
