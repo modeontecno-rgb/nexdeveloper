@@ -1,4 +1,5 @@
 import { ChipGastoIa } from "@/routes/gasto-ia";
+import { BloqueVersionDocumentos } from "@/routes/documentacion";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
@@ -237,6 +238,8 @@ function DetalleProyecto() {
         </div>
 
         <aside className="space-y-4">
+          <BloqueVersionDocumentos proyectoId={proyectoId} versionActual={proyecto.version_actual} />
+
           <div className="panel p-4">
             <h2 className="font-display text-sm font-semibold">Vistas previas</h2>
             <ul className="mt-3 space-y-2">
