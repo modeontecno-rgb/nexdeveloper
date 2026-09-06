@@ -116,6 +116,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         cierresVersion,
         documentosNex,
         funcionDocumentar,
+        tablaHabilidades,
+        tablaHabilidadesUsos,
+        tablaHabilidadesConfig,
+        funcionHabilidades,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
