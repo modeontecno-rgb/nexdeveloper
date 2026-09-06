@@ -273,12 +273,6 @@ export type ChatRow = {
   modelo_id: string | null
   experto_id: string | null
   resultado: ResultadoIa | null
-  proyectian_pendiente_id: string | null
-  cancelada_el: string | null
-  pausada_hasta: string | null
-  motivo_estado: string | null
-  sincronizado_el: string | null
-  origen: OrigenTarea | null
 }
 
 export type MensajeRow = {
@@ -375,6 +369,12 @@ export type TareaRow = {
   modelo_id: string | null
   experto_id: string | null
   resultado: ResultadoIa | null
+  proyectian_pendiente_id: string | null
+  cancelada_el: string | null
+  pausada_hasta: string | null
+  motivo_estado: string | null
+  sincronizado_el: string | null
+  origen: OrigenTarea | null
 }
 
 
