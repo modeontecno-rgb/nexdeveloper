@@ -151,6 +151,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaUsuariosClientes,
         tablaUsuariosAcciones,
         funcionUsuariosClientes,
+        tablaPortalesCliente,
+        tablaPortalPeticiones,
+        funcionPortalCliente,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -235,6 +238,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("usuarios_clientes"),
         verificarTabla("usuarios_acciones"),
         verificarFuncion("usuarios-clientes"),
+        verificarTabla("portales_cliente"),
+        verificarTabla("portal_peticiones"),
+        verificarFuncion("portal-cliente"),
       ]);
       const pingUsuarios = await (async () => {
         try {
@@ -417,6 +423,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaUsuariosAcciones,
         funcionUsuariosClientes,
         pingUsuarios,
+        tablaPortalesCliente,
+        tablaPortalPeticiones,
+        funcionPortalCliente,
       };
 
     },
@@ -649,6 +658,33 @@ function EstadoSistema() {
           : verificaciones.data?.pingUsuarios?.tokenCuenta
             ? "Conectado / OK"
             : "Responde, pero falta el acceso a las cuentas de los clientes",
+    },
+    {
+      nombre: "Portales de clientes",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPortalesCliente ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPortalesCliente
+          ? "Conectado / OK"
+          : "No responde o falta (migración 028)",
+    },
+    {
+      nombre: "Peticiones de clientes",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPortalPeticiones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPortalPeticiones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 028)",
+    },
+    {
+      nombre: "Servicio del modo cliente",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionPortalCliente ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionPortalCliente
+          ? "Conectado / OK"
+          : "No responde o falta (migración 028)",
     },
     {
       nombre: "Aplicación instalable",

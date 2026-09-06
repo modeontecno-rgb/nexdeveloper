@@ -30,6 +30,7 @@ import {
   Sparkle,
   Sparkles,
   Stamp,
+  Store,
   Sun,
   X,
   BadgeCheck,
@@ -60,6 +61,7 @@ const NAVEGACION = [
 
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },
   { to: "/usuarios-clientes", etiqueta: "Usuarios de clientes", icono: Users },
+  { to: "/modo-cliente", etiqueta: "Modo cliente", icono: Store },
   { to: "/nueva-orden", etiqueta: "Nueva orden", icono: Sparkle },
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },
   { to: "/ejecucion", etiqueta: "Ejecución", icono: Zap },

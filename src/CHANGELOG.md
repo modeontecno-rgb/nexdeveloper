@@ -1,5 +1,19 @@
 # Historial de cambios
 
+## 0.28.0 — 6 de septiembre de 2026 — Modo cliente
+
+- Nueva pantalla «Modo cliente»: crea para cada proyecto un enlace secreto que puedes enviar a tu cliente; entra sin contraseña y solo ve lo suyo.
+- El cliente ve la versión que tiene en uso, las novedades de cada versión explicadas en su idioma, el estado del servicio con su semáforo y sus documentos y manuales listos para ver o descargar.
+- Desde ese mismo portal puede enviarte peticiones, incidencias o preguntas, y ve el estado y tu respuesta a cada una.
+- El portal lleva tu marca: nombre, color, logotipo, mensaje de bienvenida, correo de contacto y pie «Powered by».
+- Eliges qué secciones se enseñan y puedes poner una fecha de caducidad al enlace.
+- Por cada portal ves las visitas, el último acceso, el código QR para imprimir o compartir, y puedes copiarlo, abrirlo, desactivarlo, regenerarlo (el anterior deja de funcionar) o borrarlo.
+- Bandeja con todas las peticiones de todos tus clientes: cambias el estado, escribes la respuesta que ellos ven y puedes convertir una petición en una orden para la IA.
+- En la ficha del proyecto tienes la tarjeta «Portal del cliente» con el enlace, y en el Panel el aviso de peticiones nuevas.
+- Si un enlace caduca o se sustituye, el cliente ve una página amable con tus datos de contacto.
+- Nuevos semáforos del modo cliente en «Estado del sistema».
+
+
 ## 0.27.0 — 6 de septiembre de 2026 — Usuarios y accesos de los clientes
 
 - Nueva pantalla «Usuarios de clientes»: desde aquí ves quién tiene acceso a cada una de las aplicaciones de tus clientes, todo junto.

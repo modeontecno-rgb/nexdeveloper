@@ -8,6 +8,7 @@ import { ChipSalud } from "@/routes/salud";
 import { BotonPreguntarAsistente } from "@/routes/asistente";
 import { BloqueManualProyecto } from "@/routes/manuales";
 import { ChipAuditoriaProyecto } from "@/routes/auditoria";
+import { TarjetaPortalProyecto } from "@/routes/modo-cliente";
 import { BloqueUsuariosProyecto, ChipUsuariosProyecto } from "@/routes/usuarios-clientes";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -159,6 +160,8 @@ function DetalleProyecto() {
           </div>
         }
       />
+
+      <TarjetaPortalProyecto proyecto={proyecto} />
 
       <BloqueMensajes proyectoId={proyectoId} />
 
