@@ -247,6 +247,26 @@ function PantallaCopias() {
         </div>
       ) : null}
 
+      <div className="mb-5 inline-flex rounded-lg border border-border bg-surface p-1">
+        {PESTANAS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            aria-pressed={pestana === p.id}
+            onClick={() => setPestana(p.id)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              pestana === p.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {p.etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {pestana === "restaurar" ? <PanelRestaurar copiaInicial={busqueda.copia} /> : null}
+      {pestana === "pruebas" ? <PanelPruebas /> : null}
+
+      <div className={pestana === "copias" ? "" : "hidden"}>
       {/* a) Destino */}
       <section className="panel mb-5 p-5">
         <h2 className="font-display text-base font-semibold">Destino</h2>
