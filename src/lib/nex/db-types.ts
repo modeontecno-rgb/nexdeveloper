@@ -1583,6 +1583,18 @@ export type Database = {
       >
       locuciones: Tabla<LocucionRow>
       voz_config: Tabla<VozConfigRow, Partial<SinUsuario<VozConfigRow>>>
+      mesas: Tabla<
+        MesaRow,
+        Partial<SinUsuario<MesaRow>> & { pregunta: string },
+        Partial<SinUsuario<MesaRow>>
+      >
+      mesa_intervenciones: Tabla<MesaIntervencionRow>
+      mesa_valoraciones: Tabla<
+        MesaValoracionRow,
+        Partial<SinUsuario<MesaValoracionRow>> & { mesa_id: string; valoracion: number },
+        Partial<SinUsuario<MesaValoracionRow>>
+      >
+
 
 
 
