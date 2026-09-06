@@ -34,7 +34,7 @@ export function Dialogo({
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className={`panel w-full ${ancho} min-h-full rounded-none border-0 bg-background p-4 shadow-xl sm:min-h-0 sm:rounded-xl sm:border sm:p-5`}
+        className={`w-full ${ancho} min-h-full bg-background p-4 shadow-xl sm:min-h-0 sm:rounded-xl sm:border sm:border-border sm:p-5`}
       >
 
         <div className="flex items-start justify-between gap-3">
