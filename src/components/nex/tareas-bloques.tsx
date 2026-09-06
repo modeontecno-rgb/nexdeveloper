@@ -5,6 +5,8 @@ import { Boton } from "@/components/nex/campos";
 import type { TareaAtencionRow } from "@/lib/nex/db-types";
 import { desde } from "@/lib/nex/labels";
 import { useMarcarAtendida } from "@/lib/nex/queries/atencion";
+import { BotonConvocarMesa } from "@/routes/mesa";
+
 
 const PESO = { critica: 0, alta: 1, media: 2, baja: 3 } as const;
 
