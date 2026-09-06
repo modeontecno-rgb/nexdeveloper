@@ -931,6 +931,9 @@ export type Database = {
       plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
       compilaciones: Tabla<CompilacionRow>
       firmas_compilacion: Tabla<FirmaCompilacionRow>
+      dominios: Tabla<DominioRow>
+      dominios_historial: Tabla<DominioHistorialRow>
+
 
     }
     Views: {
