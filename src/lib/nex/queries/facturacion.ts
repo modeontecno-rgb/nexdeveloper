@@ -605,14 +605,26 @@ export function usePararCronometro() {
 
 /* --------------------------------- Facturas ------------------------------- */
 
+/** Factura de EvoluteIA con la empresa emisora desde la que se hizo. */
+export type FacturaListada = FacturaEvoluteiaRow & {
+  tenant_id?: string | null;
+  empresa?: string | null;
+};
+
 export function useFacturas(
-  filtro: { proyecto_id?: string; estado?: string; limite?: number; sincronizar?: boolean } = {},
+  filtro: {
+    proyecto_id?: string;
+    estado?: string;
+    tenant_id?: string;
+    limite?: number;
+    sincronizar?: boolean;
+  } = {},
 ) {
   return useQuery({
     queryKey: [...clavesFacturacion.facturas, filtro],
     queryFn: async () => {
-      const r = await llamar<{ facturas?: FacturaEvoluteiaRow[] }>({ accion: "facturas", ...filtro });
-      return (r.facturas ?? []) as FacturaEvoluteiaRow[];
+      const r = await llamar<{ facturas?: FacturaListada[] }>({ accion: "facturas", ...filtro });
+      return (r.facturas ?? []) as FacturaListada[];
     },
   });
 }
@@ -642,6 +654,7 @@ export type ResultadoPreparar = {
   coste_ia?: number;
   lineas?: LineaFacturaEvoluteia[];
   de_contrato?: boolean;
+  empresa?: string | null;
   url?: string;
 };
 
@@ -657,10 +670,14 @@ export function useEmitirFactura() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { documento_id: string; forma_pago_id?: string }) =>
-      llamar<{ numero?: string; verifactu?: boolean; url?: string }>({ accion: "emitir", ...input }),
+      llamar<{ numero?: string; verifactu?: boolean; empresa?: string | null; url?: string }>({
+        accion: "emitir",
+        ...input,
+      }),
     onSuccess: () => invalidarFacturacion(qc),
   });
 }
+
 
 export function useDescartarBorrador() {
   const qc = useQueryClient();
