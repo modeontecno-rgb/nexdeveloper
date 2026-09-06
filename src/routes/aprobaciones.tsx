@@ -110,13 +110,15 @@ function Aprobaciones() {
               className={`${claseCampo} mt-3`}
             />
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
               <Boton
+                className="w-full py-3.5 text-base sm:w-auto sm:py-2 sm:text-sm"
                 onClick={() => void aprobar(o)}
               >
                 Aprobar y enviar
               </Boton>
               <Boton
+                className="w-full py-3.5 text-base sm:w-auto sm:py-2 sm:text-sm"
                 variante="peligro"
                 onClick={() =>
                   resolver.mutate({ orden: o, decision: "rechazada", comentario: comentarios[o.id] ?? "" })

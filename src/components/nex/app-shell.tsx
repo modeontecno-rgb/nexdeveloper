@@ -3,6 +3,7 @@ import {
   Activity,
   BookMarked,
   BookOpen,
+  Bell,
   Boxes,
   Clapperboard,
   Coins,
@@ -41,6 +42,7 @@ import { PieMarca } from "@/components/nex/pie-marca";
 import { useAuth } from "@/lib/nex/auth";
 import { usePerfil } from "@/lib/nex/queries/datos";
 import { pendientes, useEntradasBandeja } from "@/lib/nex/queries/bandeja";
+import { useAvisosSinLeer } from "@/lib/nex/queries/avisos";
 import { cn } from "@/lib/utils";
 
 const NAVEGACION = [
@@ -71,6 +73,7 @@ const NAVEGACION = [
   { to: "/dominios", etiqueta: "Dominios", icono: Globe },
   { to: "/salud", etiqueta: "Salud", icono: HeartPulse },
 
+  { to: "/avisos", etiqueta: "Avisos", icono: Bell },
   { to: "/integraciones", etiqueta: "Integraciones", icono: Plug },
   { to: "/estado", etiqueta: "Estado del sistema", icono: Activity },
   { to: "/ajustes", etiqueta: "Ajustes", icono: Settings },
@@ -83,6 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: perfil } = usePerfil();
   const { data: entradasBandeja = [] } = useEntradasBandeja();
   const pendientesBandeja = pendientes(entradasBandeja);
+  const avisosSinLeer = useAvisosSinLeer();
 
   React.useEffect(() => {
     setAbierto(false);
@@ -92,6 +96,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen lg:grid lg:grid-cols-[16rem_1fr]">
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-sidebar-border bg-sidebar/95 px-4 py-3 backdrop-blur lg:hidden">
         <Marca />
+        <div className="flex items-center gap-2">
+        <Link
+          to="/avisos"
+          aria-label={`Avisos${avisosSinLeer > 0 ? `: ${avisosSinLeer} sin leer` : ""}`}
+          className="relative rounded-md border border-border p-2 text-muted-foreground hover:text-foreground"
+        >
+          <Bell className="size-4" />
+          {avisosSinLeer > 0 ? (
+            <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+              {avisosSinLeer > 9 ? "9+" : avisosSinLeer}
+            </span>
+          ) : null}
+        </Link>
         <button
           type="button"
           aria-label={abierto ? "Cerrar menú" : "Abrir menú"}
@@ -100,6 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           {abierto ? <X className="size-4" /> : <Menu className="size-4" />}
         </button>
+        </div>
       </header>
 
       <aside
@@ -132,6 +150,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {pendientesBandeja}
                   </span>
                 ) : null}
+                {to === "/avisos" && avisosSinLeer > 0 ? (
+                  <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+                    {avisosSinLeer}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -158,8 +181,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">{children}</main>
+      <main className="min-w-0 px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:py-10 lg:pb-10">
+        {children}
+      </main>
+
+      <BarraInferior ruta={ruta} avisosSinLeer={avisosSinLeer} />
     </div>
+  );
+}
+
+const ACCESOS_RAPIDOS = [
+  { to: "/", etiqueta: "Panel", icono: LayoutDashboard },
+  { to: "/cola", etiqueta: "Tareas", icono: ListTodo },
+  { to: "/ejecucion", etiqueta: "Ejecución", icono: Zap },
+  { to: "/avisos", etiqueta: "Avisos", icono: Bell },
+] as const;
+
+function BarraInferior({ ruta, avisosSinLeer }: { ruta: string; avisosSinLeer: number }) {
+  return (
+    <nav
+      aria-label="Accesos rápidos"
+      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+    >
+      {ACCESOS_RAPIDOS.map(({ to, etiqueta, icono: Icono }) => {
+        const activo = to === "/" ? ruta === "/" : ruta.startsWith(to);
+        return (
+          <Link
+            key={to}
+            to={to}
+            className={cn(
+              "relative flex flex-col items-center gap-1 py-2.5 text-[11px]",
+              activo ? "text-sidebar-primary" : "text-muted-foreground",
+            )}
+          >
+            <Icono className="size-5" />
+            {etiqueta}
+            {to === "/avisos" && avisosSinLeer > 0 ? (
+              <span className="absolute right-[22%] top-1.5 size-2 rounded-full bg-primary" />
+            ) : null}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 

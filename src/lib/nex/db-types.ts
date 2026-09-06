@@ -778,7 +778,57 @@ export type RestauracionConfigRow = {
   proyecto_prueba_id: string | null
 }
 
+// ---- Avisos push (0.23.0) ----
 
+export type TipoAviso =
+  | "tarea_atencion"
+  | "aprobacion"
+  | "compilacion"
+  | "dominio"
+  | "presupuesto"
+  | "salud"
+  | "copias"
+  | "ejecucion"
+  | "prueba"
+  | "otro"
+
+export type AvisoRow = {
+  id: string
+  user_id: string
+  tipo: TipoAviso
+  titulo: string
+  cuerpo: string | null
+  url: string | null
+  proyecto_id: string | null
+  referencia: string | null
+  leido: boolean
+  enviado: boolean
+  enviado_el: string | null
+  enviados: number
+  resultado: string | null
+  creado_el: string
+}
+
+export type AvisoSuscripcionRow = {
+  id: string
+  user_id: string
+  endpoint: string
+  dispositivo: string | null
+  agente: string | null
+  activa: boolean
+  ultimo_envio: string | null
+  ultimo_error: string | null
+  creado_el: string
+}
+
+export type AvisosConfigRow = {
+  id: string
+  user_id: string
+  activo: boolean
+  tipos: Record<string, boolean> | null
+  silencio_desde: string | null
+  silencio_hasta: string | null
+}
 
 
 // ---- Compilaciones (0.10.0) ----
@@ -1773,6 +1823,10 @@ export type Database = {
         Partial<SinUsuario<RestauracionConfigRow>>,
         Partial<SinUsuario<RestauracionConfigRow>>
       >
+      avisos: Tabla<AvisoRow, Partial<SinUsuario<AvisoRow>>, Partial<AvisoRow>>
+      avisos_suscripciones: Tabla<AvisoSuscripcionRow, Partial<SinUsuario<AvisoSuscripcionRow>>, Partial<AvisoSuscripcionRow>>
+      avisos_config: Tabla<AvisosConfigRow, Partial<SinUsuario<AvisosConfigRow>>, Partial<SinUsuario<AvisosConfigRow>>>
+
       plantillas_compilacion: Tabla<PlantillaCompilacionRow, Partial<PlantillaCompilacionRow>, Partial<PlantillaCompilacionRow>>
       compilaciones: Tabla<CompilacionRow>
       firmas_compilacion: Tabla<FirmaCompilacionRow>

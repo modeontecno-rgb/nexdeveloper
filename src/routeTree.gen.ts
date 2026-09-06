@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentesRouteImport } from './routes/agentes'
 import { Route as AjustesRouteImport } from './routes/ajustes'
 import { Route as AprobacionesRouteImport } from './routes/aprobaciones'
+import { Route as AvisosRouteImport } from './routes/avisos'
 import { Route as BandejaRouteImport } from './routes/bandeja'
 import { Route as CalidadRouteImport } from './routes/calidad'
 import { Route as ColaRouteImport } from './routes/cola'
@@ -57,6 +58,11 @@ const AjustesRoute = AjustesRouteImport.update({
 const AprobacionesRoute = AprobacionesRouteImport.update({
   id: '/aprobaciones',
   path: '/aprobaciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AvisosRoute = AvisosRouteImport.update({
+  id: '/avisos',
+  path: '/avisos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BandejaRoute = BandejaRouteImport.update({
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/agentes': typeof AgentesRoute
   '/ajustes': typeof AjustesRoute
   '/aprobaciones': typeof AprobacionesRoute
+  '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
   '/cola': typeof ColaRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/agentes': typeof AgentesRoute
   '/ajustes': typeof AjustesRoute
   '/aprobaciones': typeof AprobacionesRoute
+  '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
   '/cola': typeof ColaRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/agentes': typeof AgentesRoute
   '/ajustes': typeof AjustesRoute
   '/aprobaciones': typeof AprobacionesRoute
+  '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
   '/cola': typeof ColaRoute
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/agentes'
     | '/ajustes'
     | '/aprobaciones'
+    | '/avisos'
     | '/bandeja'
     | '/calidad'
     | '/cola'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/agentes'
     | '/ajustes'
     | '/aprobaciones'
+    | '/avisos'
     | '/bandeja'
     | '/calidad'
     | '/cola'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/agentes'
     | '/ajustes'
     | '/aprobaciones'
+    | '/avisos'
     | '/bandeja'
     | '/calidad'
     | '/cola'
@@ -381,6 +393,7 @@ export interface RootRouteChildren {
   AgentesRoute: typeof AgentesRoute
   AjustesRoute: typeof AjustesRoute
   AprobacionesRoute: typeof AprobacionesRoute
+  AvisosRoute: typeof AvisosRoute
   BandejaRoute: typeof BandejaRoute
   CalidadRoute: typeof CalidadRoute
   ColaRoute: typeof ColaRoute
@@ -435,6 +448,13 @@ declare module '@tanstack/react-router' {
       path: '/aprobaciones'
       fullPath: '/aprobaciones'
       preLoaderRoute: typeof AprobacionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/avisos': {
+      id: '/avisos'
+      path: '/avisos'
+      fullPath: '/avisos'
+      preLoaderRoute: typeof AvisosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bandeja': {
@@ -631,6 +651,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentesRoute: AgentesRoute,
   AjustesRoute: AjustesRoute,
   AprobacionesRoute: AprobacionesRoute,
+  AvisosRoute: AvisosRoute,
   BandejaRoute: BandejaRoute,
   CalidadRoute: CalidadRoute,
   ColaRoute: ColaRoute,
