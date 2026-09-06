@@ -12,6 +12,7 @@ import {
   Plug,
   Users,
   GitBranch,
+  Globe,
   Settings,
   ShieldCheck,
   Sparkle,
