@@ -50,7 +50,9 @@ const NAVEGACION = [
   { to: "/proyectos", etiqueta: "Proyectos", icono: Boxes },
   { to: "/nueva-orden", etiqueta: "Nueva orden", icono: Sparkle },
   { to: "/cola", etiqueta: "Cola", icono: ListTodo },
+  { to: "/ejecucion", etiqueta: "Ejecución", icono: Zap },
   { to: "/aprobaciones", etiqueta: "Aprobaciones", icono: ShieldCheck },
+
   { to: "/agentes", etiqueta: "Agentes", icono: Cpu },
   { to: "/referencia", etiqueta: "Referencia de uso", icono: BookOpen },
   { to: "/expertos", etiqueta: "Expertos", icono: Users },
