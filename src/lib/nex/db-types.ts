@@ -225,6 +225,10 @@ export type ProyectoRow = {
   palabras_clave: string[] | null
   version_actual: string | null
   proyectian_slug: string | null
+  version_commit_sha: string | null
+  version_commit_el: string | null
+  version_comprobada_el: string | null
+  version_origen: string | null
   lovable_project_id: string | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
@@ -269,6 +273,12 @@ export type ChatRow = {
   modelo_id: string | null
   experto_id: string | null
   resultado: ResultadoIa | null
+  proyectian_pendiente_id: string | null
+  cancelada_el: string | null
+  pausada_hasta: string | null
+  motivo_estado: string | null
+  sincronizado_el: string | null
+  origen: OrigenTarea | null
 }
 
 export type MensajeRow = {
@@ -318,6 +328,21 @@ export type OrdenRow = {
   creado_el: string
 }
 
+
+export type OrigenTarea = "nexdeveloper" | "proyectian"
+
+export type TipoSyncProyectian = "versiones" | "salud" | "pantallas" | "reuniones" | "pendientes"
+
+export type ProyectianSyncRow = {
+  id: string
+  user_id: string
+  proyecto_id: string | null
+  tipo: TipoSyncProyectian
+  ok: boolean
+  resumen: string | null
+  detalle: Json | null
+  creado_el: string
+}
 
 export type TareaRow = {
   id: string
@@ -2443,6 +2468,7 @@ export type Database = {
       chats: Tabla<ChatRow, Partial<SinUsuario<ChatRow>> & { titulo: string }>
       mensajes: Tabla<MensajeRow, Partial<SinUsuario<MensajeRow>> & { chat_id: string; texto: string }>
       ordenes: Tabla<OrdenRow, Partial<SinUsuario<OrdenRow>> & { texto: string }>
+      proyectian_sync: Tabla<ProyectianSyncRow>
       tareas: Tabla<TareaRow, Partial<SinUsuario<TareaRow>> & { proyecto_id: string; titulo: string }>
       estimaciones: Tabla<EstimacionRow>
       actividad: Tabla<ActividadRow, Partial<SinUsuario<ActividadRow>> & { tipo: TipoActividad; texto: string }>
