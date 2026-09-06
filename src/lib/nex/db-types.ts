@@ -1071,16 +1071,6 @@ export type ResumenRow = {
   creado_el: string
 }
 
-type SinUsuario<T> = Omit<T, "user_id">
-
-
-
-type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
-  Row: Row
-  Insert: Ins
-  Update: Upd
-  Relationships: []
-}
 
 
 export type Database = {
