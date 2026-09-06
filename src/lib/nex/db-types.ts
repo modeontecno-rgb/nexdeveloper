@@ -1495,6 +1495,14 @@ export type Database = {
       >
       habilidades_usos: Tabla<HabilidadUsoRow>
       habilidades_config: Tabla<HabilidadesConfigRow, Partial<SinUsuario<HabilidadesConfigRow>>>
+      guiones_demo: Tabla<
+        GuionDemoRow,
+        Partial<SinUsuario<GuionDemoRow>> & { proyecto_id: string; titulo: string },
+        Partial<SinUsuario<GuionDemoRow>>
+      >
+      locuciones: Tabla<LocucionRow>
+      voz_config: Tabla<VozConfigRow, Partial<SinUsuario<VozConfigRow>>>
+
 
 
 
