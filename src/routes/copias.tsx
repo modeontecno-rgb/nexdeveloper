@@ -25,7 +25,21 @@ import {
   useRefrescarOrigenes,
 } from "@/lib/nex/queries/copias";
 
+type Pestana = "copias" | "restaurar" | "pruebas";
+
+const PESTANAS: { id: Pestana; etiqueta: string }[] = [
+  { id: "copias", etiqueta: "Copias" },
+  { id: "restaurar", etiqueta: "Restaurar" },
+  { id: "pruebas", etiqueta: "Pruebas" },
+];
+
 export const Route = createFileRoute("/copias")({
+  validateSearch: (busqueda: Record<string, unknown>): { tab?: Pestana; copia?: string } => ({
+    ...(busqueda["tab"] === "restaurar" || busqueda["tab"] === "pruebas" || busqueda["tab"] === "copias"
+      ? { tab: busqueda["tab"] as Pestana }
+      : {}),
+    ...(typeof busqueda["copia"] === "string" ? { copia: busqueda["copia"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Copias de seguridad · NexDeveloper" },
