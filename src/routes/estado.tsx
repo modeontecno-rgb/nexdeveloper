@@ -165,6 +165,15 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaInfraSincronizacion,
         tablaInfraConfig,
         funcionInfraestructura,
+        tablaPeticiones,
+        tablaPlaud,
+        funcionPideme,
+        tablaPersonalConversaciones,
+        tablaPersonalMensajes,
+        tablaPersonalDocumentos,
+        tablaPersonalConfig,
+        tablaEstiloReescrituras,
+        funcionPersonal,
       ] = await Promise.all([
 
         verificarTabla("acciones"),
@@ -263,6 +272,15 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("infra_sincronizacion"),
         verificarTabla("infra_config"),
         verificarFuncion("infraestructura"),
+        verificarTabla("peticiones_directas"),
+        verificarTabla("plaud_grabaciones"),
+        verificarFuncion("pideme"),
+        verificarTabla("personal_conversaciones"),
+        verificarTabla("personal_mensajes"),
+        verificarTabla("personal_documentos"),
+        verificarTabla("personal_config"),
+        verificarTabla("estilo_reescrituras"),
+        verificarFuncion("personal"),
       ]);
       const pingUsuarios = await (async () => {
         try {
