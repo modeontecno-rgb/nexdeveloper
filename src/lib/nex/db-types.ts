@@ -2124,6 +2124,16 @@ export type Database = {
         Partial<SinUsuario<UsuarioClienteRow>>
       >
       usuarios_acciones: Tabla<UsuarioAccionRow, Partial<SinUsuario<UsuarioAccionRow>> & { accion: string }>
+      portales_cliente: Tabla<
+        PortalClienteRow,
+        Partial<SinUsuario<PortalClienteRow>> & { proyecto_id: string; token: string },
+        Partial<SinUsuario<PortalClienteRow>>
+      >
+      portal_peticiones: Tabla<
+        PortalPeticionRow,
+        Partial<SinUsuario<PortalPeticionRow>> & { portal_id: string; proyecto_id: string; texto: string },
+        Partial<SinUsuario<PortalPeticionRow>>
+      >
       habilidades: Tabla<
         HabilidadRow,
         Partial<SinUsuario<HabilidadRow>> & { nombre: string; slug: string },
