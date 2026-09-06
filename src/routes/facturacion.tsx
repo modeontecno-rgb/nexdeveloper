@@ -1028,7 +1028,7 @@ function DialogoVerFactura({ documentoId, onCerrar }: { documentoId: string | nu
     <Dialogo
       abierto={Boolean(documentoId)}
       titulo={factura?.numero ? `Factura ${factura.numero}` : "Borrador de factura"}
-      descripcion={factura?.terceros?.razon_social ?? undefined}
+      {...(factura?.terceros?.razon_social ? { descripcion: factura.terceros.razon_social } : {})}
       onCerrar={onCerrar}
       ancho="max-w-3xl"
     >
