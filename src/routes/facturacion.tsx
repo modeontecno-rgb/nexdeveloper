@@ -1580,7 +1580,13 @@ function TarjetaCliente({ proyecto, cliente }: { proyecto: ProyectoRow; cliente:
           <Boton variante="suave" onClick={() => setAbierto(true)}>
             <Link2 className="size-3.5" /> {enlazado ? "Cambiar enlace" : "Enlazar con EvoluteIA"}
           </Boton>
+          {enlazado && otraEmpresa ? (
+            <Boton variante="suave" onClick={() => setCambiar(true)}>
+              <Building2 className="size-3.5" /> Cambiar empresa
+            </Boton>
+          ) : null}
           {enlazado ? (
+
             <Boton
               variante="peligro"
               disabled={desenlazar.isPending}
