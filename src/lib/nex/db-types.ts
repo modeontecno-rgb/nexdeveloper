@@ -785,7 +785,114 @@ export type CompilacionUltimaRow = {
   creado_el: string
 }
 
+// ---- Vigilancia (0.11.0) ----
+export type TipoVigilancia = "novedades" | "competencia"
+export type OrigenVigilancia = "manual" | "programado"
+export type EstadoLoteVigilancia = "en_curso" | "ok" | "error"
+export type TipoHallazgoVigilancia = "novedad" | "competencia"
+export type CategoriaHallazgoVigilancia =
+  | "version"
+  | "seguridad"
+  | "funcionalidad"
+  | "precio"
+  | "fin_de_soporte"
+  | "ia"
+  | "otro"
+  | "nuevo_competidor"
+  | "noticia"
+export type RelevanciaVigilancia = "alta" | "media" | "baja"
+export type EstadoHallazgoVigilancia = "nuevo" | "visto" | "descartado" | "convertido"
+
+export type VigilanciaConfigRow = {
+  proyecto_id: string
+  user_id: string
+  activa: boolean
+  novedades_activas: boolean
+  competencia_activa: boolean
+  tecnologias: string[]
+  temas_extra: string[]
+  sector: string | null
+  competidores_conocidos: string[]
+  idioma: string | null
+  ultima_novedades: string | null
+  ultima_competencia: string | null
+}
+
+export type VigilanciaLoteRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  tipo: TipoVigilancia
+  origen: OrigenVigilancia
+  estado: EstadoLoteVigilancia
+  proveedor: string | null
+  modelo: string | null
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  coste: number | null
+  busquedas: number | null
+  resumen: string | null
+  error: string | null
+  hallazgos: number | null
+  iniciado_el: string | null
+  terminado_el: string | null
+}
+
+export type VigilanciaHallazgoRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  lote_id: string | null
+  tipo: TipoHallazgoVigilancia
+  categoria: CategoriaHallazgoVigilancia
+  titulo: string
+  resumen: string | null
+  por_que_afecta: string | null
+  accion_sugerida: string | null
+  fuente_url: string | null
+  fuente_nombre: string | null
+  fecha_fuente: string | null
+  relevancia: RelevanciaVigilancia
+  competidor_id: string | null
+  estado: EstadoHallazgoVigilancia
+  tarea_id: string | null
+  creado_el: string
+}
+
+export type PlanCompetidor = { nombre?: string; precio?: string | number; periodo?: string; notas?: string }
+
+export type CompetidorRow = {
+  id: string
+  user_id: string
+  proyecto_id: string
+  nombre: string
+  url: string | null
+  pais: string | null
+  descripcion: string | null
+  precio_desde: string | null
+  planes: PlanCompetidor[] | null
+  puntos_fuertes: string[]
+  puntos_debiles: string[]
+  origen: "radar" | "manual"
+  seguir: boolean
+  ultima_revision: string | null
+  ultimo_cambio: string | null
+  notas: string | null
+}
+
+export type VigilanciaResumenRow = {
+  proyecto_id: string
+  nombre: string
+  activa: boolean
+  ultima_novedades: string | null
+  ultima_competencia: string | null
+  nuevos: number
+  nuevos_alta: number
+  competidores: number
+}
+
 type SinUsuario<T> = Omit<T, "user_id">
+
 
 type Tabla<Row, Ins = Partial<SinUsuario<Row>>, Upd = Partial<SinUsuario<Row>>> = {
   Row: Row
