@@ -830,6 +830,55 @@ export type AvisosConfigRow = {
   silencio_hasta: string | null
 }
 
+// ---- Asistente de cartera (0.24.0) ----
+export type RolMensajeAsistente = "usuario" | "asistente"
+
+export type HerramientaAsistente = {
+  nombre: string
+  entrada?: unknown
+  salida_resumen?: string | null
+}
+
+export type AccionAsistente = {
+  tipo: "tarea" | "orden" | "aviso"
+  id?: string | null
+  titulo?: string | null
+  url?: string | null
+}
+
+export type AsistenteConversacionRow = {
+  id: string
+  user_id: string
+  titulo: string | null
+  proyecto_id: string | null
+  fijada: boolean
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  coste: number | null
+  creado_el: string
+  actualizado_el: string
+}
+
+export type AsistenteMensajeRow = {
+  id: string
+  user_id: string
+  conversacion_id: string
+  rol: RolMensajeAsistente
+  texto: string
+  herramientas: HerramientaAsistente[] | null
+  acciones: AccionAsistente[] | null
+  proveedor: string | null
+  modelo: string | null
+  tokens_entrada: number | null
+  tokens_salida: number | null
+  coste: number | null
+  duracion_ms: number | null
+  error: string | null
+  creado_el: string
+}
+
+
+
 
 // ---- Compilaciones (0.10.0) ----
 export type HerramientaCompilacion = "capacitor" | "flutter" | "tauri" | "web"
