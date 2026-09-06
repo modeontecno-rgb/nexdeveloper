@@ -5,9 +5,10 @@ import * as React from "react";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando, EstadoProyectoBadge, PrioridadBadge, Progreso } from "@/components/nex/badges";
 import { Selector } from "@/components/nex/campos";
-import type { DominioRow, EstadoProyecto, Prioridad } from "@/lib/nex/db-types";
+import type { BandejaEntradaRow, DominioRow, EstadoProyecto, Prioridad } from "@/lib/nex/db-types";
 import { ETIQUETA_ESTADO_PROYECTO, ETIQUETA_PRIORIDAD, desde, formatoDinero } from "@/lib/nex/labels";
 import { useDominios } from "@/lib/nex/queries/dominios";
+import { useEntradasBandeja } from "@/lib/nex/queries/bandeja";
 import {
   useAjustes,
   useAlertas,
@@ -41,6 +42,7 @@ function Inicio() {
   const { data: carga = [] } = useCargaAgentes();
   const { data: ajustes } = useAjustes();
   const { data: dominios = [] } = useDominios();
+  const { data: entradasBandeja = [] } = useEntradasBandeja();
   const moneda = ajustes?.moneda ?? "EUR";
 
   const [estado, setEstado] = React.useState<EstadoProyecto | "todos">("todos");
@@ -192,6 +194,8 @@ function Inicio() {
             </ul>
           </div>
 
+          <TarjetaBandeja entradas={entradasBandeja} />
+
           <TarjetaDominios dominios={dominios} />
 
           <div className="panel p-4">
@@ -221,6 +225,32 @@ function Inicio() {
         </aside>
       </section>
     </>
+  );
+}
+
+function TarjetaBandeja({ entradas }: { entradas: BandejaEntradaRow[] }) {
+  const nuevas = entradas.filter((e) => e.estado === "nueva").slice(0, 5);
+  return (
+    <div className="panel p-4">
+      <h2 className="font-display text-sm font-semibold">Bandeja</h2>
+      {nuevas.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">Nada nuevo por revisar.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {nuevas.map((e) => (
+            <li key={e.id} className="text-sm">
+              <p className="truncate text-foreground">{e.asunto ?? (e.texto ?? "").slice(0, 60)}</p>
+              <p className="text-xs text-muted-foreground">
+                {e.remitente_nombre ?? e.remitente ?? "Sin remitente"} · {desde(e.fecha ?? e.creado_el)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to="/bandeja" className="mt-3 inline-flex text-xs text-primary hover:underline">
+        Ver la bandeja
+      </Link>
+    </div>
   );
 }
 

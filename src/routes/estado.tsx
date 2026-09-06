@@ -97,6 +97,9 @@ function useVerificacionesBackend(habilitado: boolean) {
         dominios,
         dominiosHistorial,
         funcionDominios,
+        bandejaEntradas,
+        bandejaFuentes,
+        funcionBandeja,
       ] = await Promise.all([
         verificarTabla("acciones"),
         verificarTabla("plantillas_accion"),
@@ -126,7 +129,19 @@ function useVerificacionesBackend(habilitado: boolean) {
         verificarTabla("dominios"),
         verificarTabla("dominios_historial"),
         verificarFuncion("dominios-comprobar"),
+        verificarTabla("bandeja_entradas"),
+        verificarTabla("bandeja_fuentes"),
+        verificarFuncion("bandeja"),
       ]);
+      const pingBandeja = await (async () => {
+        try {
+          const { data } = await supabase.functions.invoke("bandeja", { body: {} });
+          const r = data as { google_oauth?: boolean; clasificador_ia?: string | null } | null;
+          return { googleOauth: Boolean(r?.google_oauth), clasificador: r?.clasificador_ia ?? null };
+        } catch {
+          return { googleOauth: false, clasificador: null as string | null };
+        }
+      })();
       const pingCompilar = await (async () => {
         try {
           const { data } = await supabase.functions.invoke("compilar-app", { body: {} });
@@ -164,6 +179,10 @@ function useVerificacionesBackend(habilitado: boolean) {
         dominios,
         dominiosHistorial,
         funcionDominios,
+        bandejaEntradas,
+        bandejaFuentes,
+        funcionBandeja,
+        pingBandeja,
         pingCompilar,
       };
     },
@@ -249,6 +268,43 @@ function EstadoSistema() {
         : verificaciones.data?.funcionDominios
           ? "Conectado / OK"
           : "No encontrada",
+    },
+    {
+      nombre: "Tabla de la bandeja",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.bandejaEntradas ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.bandejaEntradas
+          ? "Conectado / OK"
+          : "No responde o falta (migración 013)",
+    },
+    {
+      nombre: "Fuentes de la bandeja",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.bandejaFuentes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.bandejaFuentes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 013)",
+    },
+    {
+      nombre: "Edge Function bandeja",
+      nivel: verificaciones.isPending
+        ? "aviso"
+        : !verificaciones.data?.funcionBandeja
+          ? "error"
+          : verificaciones.data?.pingBandeja.clasificador === null || !verificaciones.data?.pingBandeja.googleOauth
+            ? "aviso"
+            : "ok",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : !verificaciones.data?.funcionBandeja
+          ? "No encontrada"
+          : verificaciones.data?.pingBandeja.clasificador === null
+            ? "Sin clasificador de IA: se usa palabras clave"
+            : !verificaciones.data?.pingBandeja.googleOauth
+              ? "Gmail sin credenciales OAuth"
+              : "Conectado / OK",
     },
     {
       nombre: "Tabla de acciones",
