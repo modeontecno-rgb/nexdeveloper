@@ -238,7 +238,10 @@ function DialogoNuevoGuion({ onCerrar, onCreado }: { onCerrar: () => void; onCre
   const [notas, setNotas] = React.useState("");
 
   const lanzar = async () => {
-    if (!proyectoId) return toast.error("Elige un proyecto.");
+    if (!proyectoId) {
+      toast.error("Elige un proyecto.");
+      return;
+    }
     const r = await generar.mutateAsync({
       proyectoId,
       publico,
@@ -492,7 +495,7 @@ function EditorGuion({
   );
 }
 
-function Captura({ url, alt, className }: { url?: string | null; alt: string; className?: string }) {
+function Captura({ url, alt, className }: { url?: string | null | undefined; alt: string; className?: string | undefined }) {
   const [fallo, setFallo] = React.useState(false);
   React.useEffect(() => setFallo(false), [url]);
   if (!url || fallo) {
@@ -770,7 +773,10 @@ function DialogoTextoLibre({ onCerrar }: { onCerrar: () => void }) {
   const [url, setUrl] = React.useState<string | null>(null);
 
   const lanzar = async () => {
-    if (!texto.trim()) return toast.error("Escribe el texto que quieres locutar.");
+    if (!texto.trim()) {
+      toast.error("Escribe el texto que quieres locutar.");
+      return;
+    }
     const r = await locutar.mutateAsync({
       texto: texto.trim().slice(0, MAX_CARACTERES_LOCUCION),
       ...(titulo.trim() ? { titulo: titulo.trim() } : {}),
