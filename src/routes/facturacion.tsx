@@ -1902,6 +1902,8 @@ function DialogoEnlazar({
                   importe_fijo: numero(importeFijo),
                   tarifa_hora: numero(tarifa),
                   refacturar_ia: refacturarIa,
+                  ...(tenantElegido ? { tenant_id: tenantElegido } : {}),
+
                 });
                 toast.success("Proyecto enlazado con EvoluteIA.");
                 onCerrar();
