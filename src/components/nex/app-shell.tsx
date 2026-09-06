@@ -10,6 +10,8 @@ import {
   Inbox,
   LayoutDashboard,
   ListTodo,
+  MessagesSquare,
+
   LogOut,
   Menu,
   Moon,
