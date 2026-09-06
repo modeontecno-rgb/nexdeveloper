@@ -6,6 +6,7 @@ import { BotonConvocarMesa } from "@/routes/mesa";
 import { ChipRestaurarProyecto } from "@/components/nex/restaurar";
 import { ChipSalud } from "@/routes/salud";
 import { BotonPreguntarAsistente } from "@/routes/asistente";
+import { BloqueManualProyecto } from "@/routes/manuales";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
@@ -252,6 +253,8 @@ function DetalleProyecto() {
 
         <aside className="space-y-4">
           <BloqueVersionDocumentos proyectoId={proyectoId} versionActual={proyecto.version_actual} />
+
+          <BloqueManualProyecto proyectoId={proyectoId} />
 
           <BloqueDemo proyectoId={proyectoId} />
 
