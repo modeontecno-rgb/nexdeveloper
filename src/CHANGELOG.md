@@ -1,5 +1,21 @@
 # Historial de cambios
 
+## 0.21.0 — 6 de septiembre de 2026
+
+- Nueva pantalla «Salud»: cada mañana a las 07:00 se revisan todos los proyectos y verás un semáforo por proyecto; solo tienes que mirar lo que esté en rojo.
+- Resumen arriba con cuatro cifras grandes (correctos, para revisar, en rojo y sin datos), la hora de la revisión y si fue automática o a mano.
+- Botón «Comprobar todo ahora» con el avance en vivo («x de N comprobados») y botón «Comprobar solo este» en cada proyecto.
+- «Probar conexiones» comprueba de un vistazo si la cuenta de servidores y Sentry responden.
+- Configuración desde la propia pantalla: activar la revisión diaria, avisar solo en rojo, incluir avisos de rendimiento, límites de tamaño de la base de datos y de errores, y la organización de Sentry.
+- Tarjeta por proyecto con el estado del servidor (activo o pausado), avisos de seguridad, tablas sin proteger, errores de las últimas 24 horas, tamaño en MB, usuarios y los motivos del semáforo. Filtros por color y orden con lo urgente primero.
+- Detalle de cada proyecto: servicios uno a uno, lista de avisos con enlace «Cómo arreglarlo», tablas sin protección, tamaño con barra de límite, errores por origen e incidencias de Sentry (o campo para indicar su proyecto en Sentry).
+- Desde el detalle puedes crear la tarea de arreglo en un clic o llevar el caso a la mesa de expertos con los motivos ya escritos.
+- Historial de revisiones anteriores y gráfico de cómo ha ido la cartera en los últimos días.
+- Integrado en el resto de la aplicación: tarjeta «Salud de la cartera» en el panel principal, punto de color en la lista de proyectos y chip de salud en cada ficha.
+- Estado del sistema: nuevos semáforos para las tablas de salud y para la revisión automática.
+
+
+
 ## 0.19.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Mesa de expertos»: reúne a varios expertos para decidir un trabajo; uno lo planifica, otro lo ejecuta y otro lo revisa.
