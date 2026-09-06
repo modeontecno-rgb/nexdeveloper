@@ -434,7 +434,7 @@ function PantallaDominios() {
       <Dialogo
         abierto={borrando !== null}
         titulo="Borrar dominio"
-        descripcion={borrando ? `Se quitará ${borrando.dominio} de la vigilancia.` : undefined}
+        descripcion={borrando ? `Se quitará ${borrando.dominio} de la vigilancia.` : ""}
         ancho="max-w-md"
         onCerrar={() => setBorrando(null)}
       >
