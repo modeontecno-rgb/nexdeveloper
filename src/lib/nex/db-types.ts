@@ -1284,6 +1284,10 @@ export type Database = {
       v_dominios_resumen: { Row: DominiosResumenRow; Relationships: [] }
       v_bandeja_fuentes: { Row: BandejaFuenteRow; Relationships: [] }
       v_vigilancia_resumen: { Row: VigilanciaResumenRow; Relationships: [] }
+      v_gasto_ia_mes: { Row: GastoIaMesRow; Relationships: [] }
+      v_gasto_ia_proyecto_mes: { Row: GastoIaProyectoMesRow; Relationships: [] }
+      v_gasto_ia_estado: { Row: GastoIaEstadoRow; Relationships: [] }
+
 
 
     }
