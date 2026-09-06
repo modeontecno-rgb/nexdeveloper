@@ -53,6 +53,8 @@ const NAVEGACION = [
   { to: "/referencia", etiqueta: "Referencia de uso", icono: BookOpen },
   { to: "/expertos", etiqueta: "Expertos", icono: Users },
   { to: "/habilidades", etiqueta: "Habilidades", icono: Wand2 },
+  { to: "/mesa", etiqueta: "Mesa de expertos", icono: MessagesSquare },
+
   { to: "/repositorios", etiqueta: "Repositorios", icono: GitBranch },
   { to: "/compilaciones", etiqueta: "Compilaciones", icono: Package },
   { to: "/calidad", etiqueta: "Calidad", icono: BadgeCheck },
