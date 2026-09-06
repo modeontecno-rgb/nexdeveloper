@@ -84,6 +84,74 @@ export function SemaforoRequisito({ ok, texto }: { ok: boolean; texto: string })
   );
 }
 
+const AYUDA_NIVEL: Record<NivelRevisionManual, string> = {
+  ligera: "Solo corrige errores de ortografía y gramática.",
+  normal: "Corrige errores y mejora la claridad de las frases.",
+  exhaustiva: "Además parte las frases largas y ajusta el tono a tu estilo.",
+};
+
+/** Segmento de dos botones para elegir el tratamiento al lector. */
+export function SegmentoTratamiento({ valor, onCambio }: { valor: TratamientoManual; onCambio: (v: TratamientoManual) => void }) {
+  return (
+    <div className="inline-flex flex-wrap rounded-lg border border-border bg-surface p-0.5">
+      {(["usted", "tu"] as TratamientoManual[]).map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onCambio(v)}
+          className={cn(
+            "min-h-11 rounded-md px-4 text-sm font-medium transition",
+            valor === v ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {v === "usted" ? "Usted" : "Tú"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Insignia con el resultado de la revisión de redacción de un manual. */
+export function InsigniaRevision({ manual }: { manual: ManualRow }) {
+  const [abierto, setAbierto] = React.useState(false);
+  const revision = manual.revision;
+  if (manual.estado !== "listo") return null;
+  if (!revision) {
+    return (
+      <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">Sin revisar</span>
+    );
+  }
+  return (
+    <span className="relative inline-block" onMouseEnter={() => setAbierto(true)} onMouseLeave={() => setAbierto(false)}>
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        className="rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-xs text-success"
+      >
+        Redacción revisada · {revision.correcciones} correcciones
+      </button>
+      {typeof revision.no_aplicados === "number" && revision.no_aplicados > 0 ? (
+        <span className="ml-1.5 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs text-warning">
+          {revision.no_aplicados} capítulos sin cambios
+        </span>
+      ) : null}
+      {abierto ? (
+        <span className="absolute right-0 z-20 mt-1.5 block w-72 max-w-[80vw] space-y-1.5 rounded-lg border border-border bg-surface p-3 text-xs shadow-lg">
+          {(revision.ejemplos ?? []).slice(0, 3).map((ej, i) => (
+            <span key={i} className="block text-muted-foreground">
+              {ej}
+            </span>
+          ))}
+          <span className="block text-muted-foreground">
+            Nivel {revision.nivel ?? "normal"} · tratamiento {revision.tratamiento === "tu" ? "de tú" : "de usted"}
+            {revision.con_perfil_estilo ? " · con perfil de estilo" : ""}
+          </span>
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /** Línea de pasos del manual en curso, alimentada por Realtime. */
 export function LineaPasos({ manual }: { manual: ManualRow }) {
   const indice = Math.max(0, PASOS_MANUAL.indexOf(manual.estado));
@@ -271,6 +339,8 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
   const [version, setVersion] = React.useState("");
   const [conCapturas, setConCapturas] = React.useState(true);
   const [estilo, setEstilo] = React.useState<"claro" | "tecnico">("claro");
+  const [revisar, setRevisar] = React.useState(true);
+  const [tratamiento, setTratamiento] = React.useState<TratamientoManual>("usted");
   const guardarConfig = useGuardarConfigManuales();
 
   const proyecto = proyectos.find((p) => p.id === proyectoId) ?? null;
@@ -288,6 +358,8 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
     if (cfg) {
       setConCapturas(cfg.incluir_capturas);
       setEstilo(cfg.estilo);
+      setRevisar(cfg.revisar_redaccion ?? true);
+      setTratamiento(cfg.tratamiento ?? "usted");
     }
   }, [estado.data?.config]);
 
@@ -298,7 +370,12 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
   const lanzar = async () => {
     if (!proyectoId) return;
     try {
-      await guardarConfig.mutateAsync({ incluir_capturas: conCapturas, estilo });
+      await guardarConfig.mutateAsync({
+        incluir_capturas: conCapturas,
+        estilo,
+        revisar_redaccion: revisar,
+        tratamiento,
+      });
     } catch {
       /* la configuración no es imprescindible para generar */
     }
@@ -372,6 +449,14 @@ function PanelNuevoManual({ onHecho, proyectoInicial }: { onHecho: () => void; p
             <option value="tecnico">Técnico y preciso</option>
           </select>
         </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" checked={revisar} onChange={(e) => setRevisar(e.target.checked)} />
+          Revisar la redacción
+        </label>
+        <SegmentoTratamiento valor={tratamiento} onCambio={setTratamiento} />
       </div>
 
       <div className="flex flex-wrap gap-2">
