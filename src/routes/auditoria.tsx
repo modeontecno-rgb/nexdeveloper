@@ -69,7 +69,7 @@ export const Route = createFileRoute("/auditoria")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: AuditoriaPantalla;
+  component: AuditoriaPantalla,
 });
 
 /* ------------------------------ Utilidades ------------------------------- */
