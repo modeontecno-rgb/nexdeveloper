@@ -2,6 +2,8 @@ import { ChipGastoIa } from "@/routes/gasto-ia";
 import { BloqueVersionDocumentos } from "@/routes/documentacion";
 import { BloqueDemo } from "@/routes/voz";
 import { SelectorHabilidad } from "@/routes/habilidades";
+import { BotonConvocarMesa } from "@/routes/mesa";
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
 import * as React from "react";
