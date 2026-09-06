@@ -3,12 +3,12 @@ import * as React from "react";
 
 import type {
   ContratoCliente,
-  EstadoFactura,
-  FacturaRow,
+  EstadoFacturaEvoluteia,
+  FacturaEvoluteiaRow,
   FacturacionClienteRow,
   FacturacionConfigRow,
   HoraRegistroRow,
-  LineaFactura,
+  LineaFacturaEvoluteia,
   OrigenHoras,
 } from "../db-types";
 import { supabase } from "../supabase";
@@ -18,11 +18,21 @@ export const clavesFacturacion = {
   resumen: (mes: string) => ["facturacion", "resumen", mes] as const,
   config: ["facturacion_config"] as const,
   clientes: ["facturacion_clientes"] as const,
-  cliente: (proyectoId: string) => ["facturacion_clientes", proyectoId] as const,
   horas: ["horas_registro"] as const,
-  facturas: ["facturas"] as const,
+  facturas: ["facturas_evoluteia"] as const,
   cronometro: ["facturacion", "cronometro"] as const,
+  empresas: ["facturacion", "evoluteia", "empresas"] as const,
+  terceros: (q: string) => ["facturacion", "evoluteia", "terceros", q] as const,
+  contratos: (terceroId: string) => ["facturacion", "evoluteia", "contratos", terceroId] as const,
+  sugerencias: ["facturacion", "evoluteia", "sugerencias"] as const,
 };
+
+/** Aviso permanente: esta integración es exclusiva del fabricante. */
+export const AVISO_SOLO_FABRICANTE =
+  "Esta forma de trabajar (NexDeveloper ↔ EvoluteIA) es exclusiva del fabricante: MODEONTECNO S.L. / Soluciones EvoluteIA. " +
+  "Ningún cliente que compre EvoluteIA la tiene, salvo que se le venda también NexDeveloper o se enlace expresamente con algo suyo. " +
+  "En EvoluteIA existe el módulo «NexDeveloper (solo fabricante)» en estado privado: si ese módulo no está activo en el espacio de trabajo, " +
+  "la facturación no opera.";
 
 export const ETIQUETA_CONTRATO: Record<ContratoCliente, string> = {
   horas: "Por horas",
@@ -54,25 +64,40 @@ export const TONO_ORIGEN_HORAS: Record<OrigenHoras, string> = {
   ejecucion: "border-warning/40 bg-warning/10 text-warning",
 };
 
-export const ETIQUETA_ESTADO_FACTURA: Record<EstadoFactura, string> = {
+export const ETIQUETA_ESTADO_FACTURA: Record<string, string> = {
   borrador: "Borrador",
-  emitida: "Emitida",
-  enviada: "Enviada",
-  pagada: "Pagada",
-  vencida: "Vencida",
-  anulada: "Anulada",
+  emitido: "Emitida",
+  enviado: "Enviada",
+  cobrado: "Cobrada",
+  vencido: "Vencida",
+  anulado: "Anulada",
 };
 
-export const TONO_ESTADO_FACTURA: Record<EstadoFactura, string> = {
+export const TONO_ESTADO_FACTURA: Record<string, string> = {
   borrador: "border-border bg-muted text-muted-foreground",
-  emitida: "border-primary/40 bg-primary/10 text-primary",
-  enviada: "border-warning/40 bg-warning/10 text-warning",
-  pagada: "border-success/40 bg-success/10 text-success",
-  vencida: "border-destructive/40 bg-destructive/10 text-destructive",
-  anulada: "border-border bg-muted text-muted-foreground line-through",
+  emitido: "border-primary/40 bg-primary/10 text-primary",
+  enviado: "border-warning/40 bg-warning/10 text-warning",
+  cobrado: "border-success/40 bg-success/10 text-success",
+  vencido: "border-destructive/40 bg-destructive/10 text-destructive",
+  anulado: "border-border bg-muted text-muted-foreground line-through",
 };
 
-export const ESTADOS_FACTURA = Object.keys(ETIQUETA_ESTADO_FACTURA) as EstadoFactura[];
+export const ESTADOS_FACTURA: EstadoFacturaEvoluteia[] = [
+  "borrador",
+  "emitido",
+  "enviado",
+  "cobrado",
+  "vencido",
+  "anulado",
+];
+
+export function etiquetaEstadoFactura(estado: string) {
+  return ETIQUETA_ESTADO_FACTURA[estado] ?? estado;
+}
+
+export function tonoEstadoFactura(estado: string) {
+  return TONO_ESTADO_FACTURA[estado] ?? "border-border bg-muted text-muted-foreground";
+}
 
 /* ------------------------------ Llamada base ------------------------------ */
 
@@ -110,36 +135,90 @@ export type TotalesFacturacion = {
   pendiente_facturar: number;
   pendiente_cobro: number;
   vencidas: number;
+  sin_enlazar: number;
 };
 
 export type ResumenProyectoFacturacion = {
   proyecto_id: string;
   nombre: string;
+  slug?: string | null;
   color: string | null;
+  enlazado: boolean;
+  cliente: string | null;
   contrato: ContratoCliente;
   horas: number;
-  horas_facturables: number;
   horas_sin_facturar: number;
   facturado: number;
   cobrado: number;
   coste_ia: number;
   margen: number;
   pendiente_facturar: number;
+  pendiente_cobro: number;
   borradores: number;
+  vencidas: number;
 };
 
 export type ResumenFacturacion = {
   mes: string;
+  desde?: string;
+  hasta?: string;
   totales: TotalesFacturacion;
   proyectos: ResumenProyectoFacturacion[];
+};
+
+export type ConexionEvoluteia = {
+  estado: "conectada" | "error" | "desconectada";
+  cuenta?: string | null;
+  ultimo_error?: string | null;
+  ultima_comprobacion?: string | null;
 };
 
 export type EstadoFacturacion = {
   ok?: boolean;
   config?: FacturacionConfigRow | null;
-  almacen?: boolean;
+  evoluteia?: ConexionEvoluteia | null;
   proyectian?: boolean;
   resumen?: ResumenFacturacion | null;
+};
+
+export type PruebaEvoluteia = {
+  ok?: boolean;
+  usuario?: string | null;
+  empresa?: { razon_social?: string; nif?: string; verifactu_activo?: boolean; verifactu_modo?: string } | null;
+  serie?: { codigo?: string; siguiente_num?: number; ejercicio?: number } | null;
+  facturas_sincronizadas?: number;
+  error?: string;
+};
+
+export type OpcionEvoluteia = { id: string; nombre?: string; razon_social?: string; codigo?: string; [k: string]: unknown };
+
+export type TerceroEvoluteia = {
+  id: string;
+  codigo?: string | null;
+  razon_social: string;
+  nombre_comercial?: string | null;
+  nif?: string | null;
+  email?: string | null;
+  telefono?: string | null;
+  poblacion?: string | null;
+};
+
+export type ContratoEvoluteia = {
+  id: string;
+  numero?: string | null;
+  titulo?: string | null;
+  cuota?: number | null;
+  periodicidad?: string | null;
+  estado?: string | null;
+  tercero_id?: string | null;
+  fecha_inicio?: string | null;
+  fecha_fin?: string | null;
+};
+
+export type SugerenciaEnlace = {
+  proyecto_id: string;
+  proyecto: string;
+  candidatos: { id: string; codigo?: string | null; razon_social: string; nif?: string | null; puntos: number }[];
 };
 
 export type CronometroEnMarcha = {
@@ -149,6 +228,16 @@ export type CronometroEnMarcha = {
   descripcion?: string | null;
   inicio?: string;
 } | null;
+
+export type DetalleFactura = {
+  factura?: (FacturaEvoluteiaRow & {
+    terceros?: { razon_social?: string; nif?: string } | null;
+    documento_lineas?: LineaFacturaEvoluteia[] | null;
+  }) | null;
+  vencimientos?: { id?: string; fecha?: string; importe?: number; cobrado?: boolean; pendiente?: number }[];
+  verifactu?: { registros?: Record<string, unknown>[]; envios?: Record<string, unknown>[] } | null;
+  url?: string | null;
+};
 
 /* -------------------------------- Consultas ------------------------------- */
 
@@ -163,8 +252,9 @@ export function useResumenFacturacion(mes: string) {
   return useQuery({
     queryKey: clavesFacturacion.resumen(mes),
     queryFn: async () => {
-      const r = await llamar<{ resumen?: ResumenFacturacion }>({ accion: "resumen", mes });
-      return (r.resumen ?? null) as ResumenFacturacion | null;
+      const r = await llamar<{ resumen?: ResumenFacturacion } & ResumenFacturacion>({ accion: "resumen", mes });
+      const resumen = (r.resumen ?? r) as ResumenFacturacion | null;
+      return resumen && resumen.totales ? resumen : null;
     },
   });
 }
@@ -192,6 +282,87 @@ export function useGuardarFacturacionConfig() {
   });
 }
 
+/* ------------------------------- EvoluteIA -------------------------------- */
+
+export function useProbarEvoluteia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => llamar<PruebaEvoluteia>({ accion: "probar_evoluteia" }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["facturacion"] }),
+  });
+}
+
+export function useEmpresasEvoluteia() {
+  return useQuery({
+    queryKey: clavesFacturacion.empresas,
+    queryFn: async () => {
+      const r = await llamar<{
+        empresas?: OpcionEvoluteia[];
+        sedes?: OpcionEvoluteia[];
+        formas_pago?: OpcionEvoluteia[];
+        impuestos?: OpcionEvoluteia[];
+      }>({ accion: "empresas" });
+      return {
+        empresas: r.empresas ?? [],
+        sedes: r.sedes ?? [],
+        formas_pago: r.formas_pago ?? [],
+        impuestos: r.impuestos ?? [],
+      };
+    },
+  });
+}
+
+export function useTercerosEvoluteia(q: string, activo = true) {
+  return useQuery({
+    queryKey: clavesFacturacion.terceros(q),
+    enabled: activo,
+    queryFn: async () => {
+      const r = await llamar<{ terceros?: TerceroEvoluteia[] }>({ accion: "terceros", ...(q ? { q } : {}) });
+      return r.terceros ?? [];
+    },
+  });
+}
+
+export function useContratosEvoluteia(terceroId: string | null) {
+  return useQuery({
+    queryKey: clavesFacturacion.contratos(terceroId ?? "ninguno"),
+    enabled: Boolean(terceroId),
+    queryFn: async () => {
+      const r = await llamar<{ contratos?: ContratoEvoluteia[] }>({ accion: "contratos", tercero_id: terceroId });
+      return r.contratos ?? [];
+    },
+  });
+}
+
+export function useCrearTercero() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      razon_social: string;
+      nif?: string;
+      nombre_comercial?: string;
+      direccion?: string;
+      poblacion?: string;
+      provincia?: string;
+      cp?: string;
+      email?: string;
+      telefono?: string;
+    }) => llamar<{ tercero?: TerceroEvoluteia }>({ accion: "tercero_crear", ...input }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["facturacion", "evoluteia", "terceros"] }),
+  });
+}
+
+export function useSugerirEnlaces() {
+  return useMutation({
+    mutationFn: async () => {
+      const r = await llamar<{ sugerencias?: SugerenciaEnlace[] }>({ accion: "sugerir_enlaces" });
+      return r.sugerencias ?? [];
+    },
+  });
+}
+
+/* -------------------------------- Clientes -------------------------------- */
+
 export function useClientesFacturacion() {
   return useQuery({
     queryKey: clavesFacturacion.clientes,
@@ -203,17 +374,40 @@ export function useClientesFacturacion() {
   });
 }
 
-export function useGuardarCliente() {
+export function useEnlazarCliente() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { proyecto_id: string } & Partial<Omit<FacturacionClienteRow, "id" | "user_id">>) =>
-      llamar({ accion: "cliente_guardar", ...input }),
+    mutationFn: (input: {
+      proyecto_id: string;
+      tercero_id: string;
+      contrato_id?: string;
+      contrato: ContratoCliente;
+      cuota_mensual?: number | null;
+      horas_incluidas?: number | null;
+      importe_fijo?: number | null;
+      tarifa_hora?: number | null;
+      refacturar_ia?: boolean;
+      notas?: string;
+    }) => llamar({ accion: "cliente_enlazar", ...input }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: clavesFacturacion.clientes });
       void qc.invalidateQueries({ queryKey: ["facturacion"] });
     },
   });
 }
+
+export function useDesenlazarCliente() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (proyectoId: string) => llamar({ accion: "cliente_desenlazar", proyecto_id: proyectoId }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: clavesFacturacion.clientes });
+      void qc.invalidateQueries({ queryKey: ["facturacion"] });
+    },
+  });
+}
+
+/* ---------------------------------- Horas --------------------------------- */
 
 export type FiltroHoras = {
   proyecto_id?: string;
@@ -303,58 +497,50 @@ export function usePararCronometro() {
 
 /* --------------------------------- Facturas ------------------------------- */
 
-export function useFacturas(filtro: { proyecto_id?: string; estado?: EstadoFactura; limite?: number } = {}) {
+export function useFacturas(
+  filtro: { proyecto_id?: string; estado?: string; limite?: number; sincronizar?: boolean } = {},
+) {
   return useQuery({
     queryKey: [...clavesFacturacion.facturas, filtro],
     queryFn: async () => {
-      const r = await llamar<{ facturas?: FacturaRow[] }>({ accion: "facturas", ...filtro });
-      return (r.facturas ?? []) as FacturaRow[];
+      const r = await llamar<{ facturas?: FacturaEvoluteiaRow[] }>({ accion: "facturas", ...filtro });
+      return (r.facturas ?? []) as FacturaEvoluteiaRow[];
     },
   });
 }
 
-export function useFactura(id: string | null) {
+export function useFactura(documentoId: string | null) {
   return useQuery({
-    queryKey: [...clavesFacturacion.facturas, "una", id ?? "ninguna"],
-    enabled: Boolean(id),
-    queryFn: async () => {
-      const r = await llamar<{ factura?: FacturaRow }>({ accion: "factura", id });
-      return (r.factura ?? null) as FacturaRow | null;
-    },
+    queryKey: [...clavesFacturacion.facturas, "una", documentoId ?? "ninguna"],
+    enabled: Boolean(documentoId),
+    queryFn: () => llamar<DetalleFactura>({ accion: "factura", documento_id: documentoId }),
   });
 }
 
-export type EntradaGenerar = {
+export type EntradaPreparar = {
   proyecto_id: string;
   desde?: string;
   hasta?: string;
   incluir_horas?: boolean;
   incluir_ia?: boolean;
-  lineas_extra?: { concepto: string; detalle?: string; cantidad: number; unidad?: string; precio: number }[];
+  lineas_extra?: { concepto: string; cantidad: number; precio: number }[];
   notas?: string;
 };
 
-export function useGenerarFactura() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: EntradaGenerar) => llamar<{ factura?: FacturaRow }>({ accion: "generar", ...input }),
-    onSuccess: () => invalidarFacturacion(qc),
-  });
-}
+export type ResultadoPreparar = {
+  documento_id?: string;
+  numero_previsto?: string;
+  horas?: number;
+  coste_ia?: number;
+  lineas?: LineaFacturaEvoluteia[];
+  de_contrato?: boolean;
+  url?: string;
+};
 
-export function useActualizarBorrador() {
+export function usePrepararFactura() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      id: string;
-      lineas?: LineaFactura[];
-      cliente?: Record<string, unknown>;
-      notas?: string;
-      periodo_desde?: string;
-      periodo_hasta?: string;
-      iva_pct?: number;
-      irpf_pct?: number;
-    }) => llamar<{ factura?: FacturaRow }>({ accion: "actualizar_borrador", ...input }),
+    mutationFn: (input: EntradaPreparar) => llamar<ResultadoPreparar>({ accion: "preparar", ...input }),
     onSuccess: () => invalidarFacturacion(qc),
   });
 }
@@ -362,34 +548,25 @@ export function useActualizarBorrador() {
 export function useEmitirFactura() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => llamar<{ factura?: FacturaRow }>({ accion: "emitir", id }),
+    mutationFn: (input: { documento_id: string; forma_pago_id?: string }) =>
+      llamar<{ numero?: string; verifactu?: boolean; url?: string }>({ accion: "emitir", ...input }),
     onSuccess: () => invalidarFacturacion(qc),
   });
 }
 
-export function useMarcarFactura() {
+export function useDescartarBorrador() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; estado: "enviada" | "pagada" | "anulada"; fecha?: string }) =>
-      llamar({ accion: "marcar", ...input }),
+    mutationFn: (documentoId: string) => llamar({ accion: "descartar_borrador", documento_id: documentoId }),
     onSuccess: () => invalidarFacturacion(qc),
   });
 }
 
-export function useBorrarFactura() {
+export function useSincronizarFacturas() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => llamar({ accion: "borrar", id }),
+    mutationFn: () => llamar({ accion: "sincronizar" }),
     onSuccess: () => invalidarFacturacion(qc),
-  });
-}
-
-export function useEnlaceFactura() {
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const r = await llamar<{ url?: string }>({ accion: "enlace", id });
-      return (r.url ?? null) as string | null;
-    },
   });
 }
 
@@ -410,7 +587,7 @@ export function useRealtimeFacturacion() {
       void qc.invalidateQueries({ queryKey: clavesFacturacion.cronometro });
       void qc.invalidateQueries({ queryKey: ["facturacion"] });
     });
-    canal.on("postgres_changes", { event: "*", schema: "public", table: "facturas" }, () => {
+    canal.on("postgres_changes", { event: "*", schema: "public", table: "facturas_evoluteia" }, () => {
       void qc.invalidateQueries({ queryKey: clavesFacturacion.facturas });
       void qc.invalidateQueries({ queryKey: ["facturacion"] });
     });
@@ -460,20 +637,12 @@ export function transcurrido(inicioIso: string | null | undefined, ahora = Date.
   return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
 }
 
-/** Abre el HTML de la factura en una pestaña nueva y lanza la impresión (PDF). */
-export function imprimirFactura(html: string) {
-  const ventana = window.open("", "_blank");
-  if (!ventana) return false;
-  ventana.document.open();
-  ventana.document.write(html);
-  ventana.document.close();
-  ventana.setTimeout(() => ventana.print(), 500);
-  return true;
-}
-
-export function estaVencida(factura: FacturaRow) {
-  if (factura.estado === "pagada" || factura.estado === "anulada" || factura.estado === "borrador") return false;
-  if (factura.estado === "vencida") return true;
-  if (!factura.vence_el) return false;
-  return new Date(factura.vence_el).getTime() < Date.now();
+/** Primer y último día del mes anterior, para preparar los borradores. */
+export function periodoMesAnterior() {
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { desde: iso(inicio), hasta: iso(fin) };
 }
