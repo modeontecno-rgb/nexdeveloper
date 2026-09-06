@@ -93,6 +93,8 @@ function Insignia({ estado }: { estado: EstadoCopia }) {
 }
 
 function PantallaCopias() {
+  const busqueda = Route.useSearch();
+  const [pestana, setPestana] = React.useState<Pestana>(busqueda.tab ?? "copias");
   const { data: destinos = [] } = useDestinosCopias();
   const { data: config } = useConfigCopias();
   const { data: origenes = [] } = useOrigenesCopias();
