@@ -7,6 +7,7 @@ import { Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import type { CopiaOrigenRow, CopiaRow, EstadoCopia, TipoOrigenCopia } from "@/lib/nex/db-types";
 import { formatoFechaHora } from "@/lib/nex/labels";
+import { PanelPruebas, PanelRestaurar } from "@/components/nex/restaurar";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
   diasDesdeUltimaCorrecta,
@@ -25,7 +26,21 @@ import {
   useRefrescarOrigenes,
 } from "@/lib/nex/queries/copias";
 
+type Pestana = "copias" | "restaurar" | "pruebas";
+
+const PESTANAS: { id: Pestana; etiqueta: string }[] = [
+  { id: "copias", etiqueta: "Copias" },
+  { id: "restaurar", etiqueta: "Restaurar" },
+  { id: "pruebas", etiqueta: "Pruebas" },
+];
+
 export const Route = createFileRoute("/copias")({
+  validateSearch: (busqueda: Record<string, unknown>): { tab?: Pestana; copia?: string } => ({
+    ...(busqueda["tab"] === "restaurar" || busqueda["tab"] === "pruebas" || busqueda["tab"] === "copias"
+      ? { tab: busqueda["tab"] as Pestana }
+      : {}),
+    ...(typeof busqueda["copia"] === "string" ? { copia: busqueda["copia"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Copias de seguridad · NexDeveloper" },
@@ -79,6 +94,8 @@ function Insignia({ estado }: { estado: EstadoCopia }) {
 }
 
 function PantallaCopias() {
+  const busqueda = Route.useSearch();
+  const [pestana, setPestana] = React.useState<Pestana>(busqueda.tab ?? "copias");
   const { data: destinos = [] } = useDestinosCopias();
   const { data: config } = useConfigCopias();
   const { data: origenes = [] } = useOrigenesCopias();
@@ -247,6 +264,26 @@ function PantallaCopias() {
         </div>
       ) : null}
 
+      <div className="mb-5 inline-flex rounded-lg border border-border bg-surface p-1">
+        {PESTANAS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            aria-pressed={pestana === p.id}
+            onClick={() => setPestana(p.id)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              pestana === p.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {p.etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {pestana === "restaurar" ? <PanelRestaurar copiaInicial={busqueda.copia} /> : null}
+      {pestana === "pruebas" ? <PanelPruebas /> : null}
+
+      <div className={pestana === "copias" ? "" : "hidden"}>
       {/* a) Destino */}
       <section className="panel mb-5 p-5">
         <h2 className="font-display text-base font-semibold">Destino</h2>
@@ -556,6 +593,7 @@ function PantallaCopias() {
           </table>
         </div>
       </section>
+      </div>
     </>
   );
 

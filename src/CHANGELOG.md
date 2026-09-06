@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 0.22.0 — Restaurar copias con un clic
+
+- La pantalla «Copias» tiene ahora tres pestañas: Copias, Restaurar y Pruebas.
+- En «Restaurar» ves las copias correctas de todos los proyectos (o de uno solo), con fecha, tamaño y número de tablas y filas; puedes descargarlas o restaurarlas.
+- Asistente de tres pasos antes de tocar nada: primero qué contiene la copia y cómo está el destino, después dónde y cómo restaurar, y al final escribir RESTAURAR para confirmar.
+- Puedes restaurar la base de datos en el proyecto original o en uno de pruebas, solo los datos o también la estructura; los repositorios se restauran siempre como una rama nueva en GitHub.
+- Antes de sobrescribir nada se guarda una copia previa automática.
+- Avance en directo: estado, paso actual, barras de tablas, filas y archivos, avisos y botón para cancelar; al terminar ves el resumen o el error.
+- Pestaña «Pruebas»: prueba mensual automática (día 1 a las 05:00) que comprueba que las copias sirven de verdad, botón «Probar ahora», elección del proyecto de prueba y del Supabase de pruebas, e historial completo.
+- Botón «Restaurar última copia» en la ficha de cada proyecto y nuevos semáforos en «Estado del sistema».
+
+
+
 ## 0.21.0 — 6 de septiembre de 2026
 
 - Nueva pantalla «Salud»: cada mañana a las 07:00 se revisan todos los proyectos y verás un semáforo por proyecto; solo tienes que mirar lo que esté en rojo.
