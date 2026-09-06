@@ -222,6 +222,7 @@ export type ProyectoRow = {
   color: string | null
   es_favorito: boolean
   orden: number
+  palabras_clave: string[] | null
   semaforo_calidad: SemaforoCalidad
   ultima_ejecucion_calidad_id: string | null
   resumen_automatico: string | null
@@ -983,6 +984,8 @@ export type Database = {
       firmas_compilacion: Tabla<FirmaCompilacionRow>
       dominios: Tabla<DominioRow>
       dominios_historial: Tabla<DominioHistorialRow>
+      bandeja_fuentes: Tabla<BandejaFuenteRow, Partial<BandejaFuenteRow>, Partial<BandejaFuenteRow>>
+      bandeja_entradas: Tabla<BandejaEntradaRow>
 
 
     }
@@ -995,6 +998,7 @@ export type Database = {
       v_copias_destinos: { Row: CopiaDestinoRow; Relationships: [] }
       v_compilaciones_ultimas: { Row: CompilacionUltimaRow; Relationships: [] }
       v_dominios_resumen: { Row: DominiosResumenRow; Relationships: [] }
+      v_bandeja_fuentes: { Row: BandejaFuenteRow; Relationships: [] }
 
 
     }
@@ -1049,7 +1053,8 @@ export type Database = {
       origen_ejecucion_calidad: OrigenEjecucionCalidad
       estado_ejecucion_calidad: EstadoEjecucionCalidad
       resultado_control: ResultadoControl
-      semaforo_calidad: SemaforoCalidad
+      palabras_clave: string[] | null
+  semaforo_calidad: SemaforoCalidad
       estado_repositorio: EstadoRepositorio
       origen_codigo_repositorio: OrigenCodigoRepositorio
       estado_subida_repositorio: EstadoSubidaRepositorio
