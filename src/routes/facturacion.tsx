@@ -894,13 +894,17 @@ function PanelNuevasHoras({ abierto, onCerrar }: { abierto: boolean; onCerrar: (
 
 function BloqueFacturas() {
   const { data: proyectos = [] } = useProyectos();
+  const { catalogo } = useEmpresasEmisoras();
   const [filtroEstado, setFiltroEstado] = React.useState("todos");
   const [filtroProyecto, setFiltroProyecto] = React.useState("todos");
+  const [filtroEmpresa, setFiltroEmpresa] = React.useState("todas");
   const filtro = {
     ...(filtroEstado !== "todos" ? { estado: filtroEstado } : {}),
     ...(filtroProyecto !== "todos" ? { proyecto_id: filtroProyecto } : {}),
+    ...(filtroEmpresa !== "todas" ? { tenant_id: filtroEmpresa } : {}),
     limite: 200,
   };
+
   const { data: facturas = [], isPending } = useFacturas(filtro);
 
   const [verId, setVerId] = React.useState<string | null>(null);
