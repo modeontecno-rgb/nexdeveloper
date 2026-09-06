@@ -477,6 +477,15 @@ function useVerificacionesBackend(habilitado: boolean) {
         tablaInfraSincronizacion,
         tablaInfraConfig,
         funcionInfraestructura,
+        tablaPeticiones,
+        tablaPlaud,
+        funcionPideme,
+        tablaPersonalConversaciones,
+        tablaPersonalMensajes,
+        tablaPersonalDocumentos,
+        tablaPersonalConfig,
+        tablaEstiloReescrituras,
+        funcionPersonal,
       };
 
     },
@@ -835,6 +844,87 @@ function EstadoSistema() {
         : verificaciones.data?.funcionInfraestructura
           ? "Conectado / OK"
           : "No responde o falta (migración 030)",
+    },
+    {
+      nombre: "Peticiones directas",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPeticiones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPeticiones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031)",
+    },
+    {
+      nombre: "Grabaciones de Plaud",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPlaud ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPlaud
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031)",
+    },
+    {
+      nombre: "Servicio «Pídeme qué quieres»",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionPideme ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionPideme
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031)",
+    },
+    {
+      nombre: "Conversaciones personales",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPersonalConversaciones ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPersonalConversaciones
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031b)",
+    },
+    {
+      nombre: "Mensajes personales",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPersonalMensajes ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPersonalMensajes
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031b)",
+    },
+    {
+      nombre: "Documentos personales",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPersonalDocumentos ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPersonalDocumentos
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031b)",
+    },
+    {
+      nombre: "Configuración personal",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaPersonalConfig ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaPersonalConfig
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031b)",
+    },
+    {
+      nombre: "Reescrituras de estilo",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.tablaEstiloReescrituras ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.tablaEstiloReescrituras
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031b)",
+    },
+    {
+      nombre: "Servicio personal",
+      nivel: verificaciones.isPending ? "aviso" : verificaciones.data?.funcionPersonal ? "ok" : "error",
+      detalle: verificaciones.isPending
+        ? "Comprobando..."
+        : verificaciones.data?.funcionPersonal
+          ? "Conectado / OK"
+          : "No responde o falta (migración 031b)",
     },
     {
       nombre: "Aplicación instalable",
