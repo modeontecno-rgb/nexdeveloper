@@ -417,9 +417,19 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
   }
 
   const equipo = leerParticipantes(mesa);
-  const recomendacion = mesa.recomendacion ?? null;
-  const plan: PasoPlanMesa[] = Array.isArray(recomendacion?.plan) ? recomendacion!.plan! : [];
-  const riesgos = Array.isArray(recomendacion?.riesgos) ? recomendacion!.riesgos! : [];
+  const recomendacion = recomendacionDeMesa(mesa);
+  const plan: PasoPlanMesa[] = Array.isArray(recomendacion?.plan) ? recomendacion.plan : [];
+  const riesgos = Array.isArray(recomendacion?.riesgos) ? recomendacion.riesgos : [];
+  const faltaPlanGuardado =
+    plan.length > 0 && !(Array.isArray(mesa.recomendacion?.plan) && mesa.recomendacion.plan.length > 0);
+
+  const crearTareasDelPlan = async () => {
+    if (faltaPlanGuardado && recomendacion) {
+      await actualizar.mutateAsync({ id: mesa.id, cambios: { recomendacion } });
+    }
+    crearTareas.mutate(mesa.id);
+  };
+
 
   const cambiarParticipante = (indice: number, cambios: Partial<ParticipanteMesa>) => {
     const nuevos = equipo.map((p, i) => (i === indice ? { ...p, ...cambios } : p));
