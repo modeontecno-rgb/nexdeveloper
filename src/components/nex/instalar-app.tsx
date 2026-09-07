@@ -1,13 +1,7 @@
 import * as React from "react";
 import { Download, Share } from "lucide-react";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/nex/dialogo";
+import { Dialogo } from "@/components/nex/dialogo";
 import { cn } from "@/lib/utils";
 
 /**

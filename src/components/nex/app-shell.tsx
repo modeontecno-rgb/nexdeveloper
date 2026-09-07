@@ -16,6 +16,7 @@ import {
 import * as React from "react";
 
 import { CronometroBarra } from "@/components/nex/cronometro";
+import { BotonInstalar } from "@/components/nex/instalar-app";
 import { PaletaAsistente } from "@/components/nex/paleta-asistente";
 import { PastillaVersion } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
