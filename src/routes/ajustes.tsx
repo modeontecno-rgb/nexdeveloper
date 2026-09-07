@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Cpu, Database, Smartphone, Trash2 } from "lucide-react";
+import { Check, Cpu, Database, Smartphone, Trash2, TriangleAlert } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
