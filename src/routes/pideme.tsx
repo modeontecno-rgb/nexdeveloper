@@ -165,6 +165,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
     setTexto((t) => (t ? `${t} ${dicho}` : dicho));
   });
   const borradorAbierto = borradores.find((b) => b.id === borradorId) ?? null;
+  const lienzoOnda = useOndaMicrofono(escuchando);
 
   React.useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
@@ -281,6 +282,17 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
         </div>
       </form>
 
+      {escuchando ? (
+        <div className="mt-3">
+          <p className="flex items-center gap-2 text-sm text-destructive">
+            <span className="size-2 animate-pulse rounded-full bg-destructive" aria-hidden /> Te escucho…
+          </p>
+          <canvas ref={lienzoOnda} height={72} className="mt-2 h-[72px] w-full rounded-lg border border-border bg-surface" />
+        </div>
+      ) : usoVoz ? (
+        <p className="mt-3 text-sm text-muted-foreground">Escuchado</p>
+      ) : null}
+
       {pedir.isPending ? (
         <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -314,11 +326,114 @@ function TarjetaResultado({ peticionId }: { peticionId: string }) {
   const { data: peticiones = [] } = usePeticiones();
   const peticion = peticiones.find((p) => p.id === peticionId);
   if (!peticion) return null;
+
+  const url = urlPeticion(peticion);
+  const clasificacion = peticion.clasificacion ?? {};
+  const donde =
+    peticion.estado === "propuesta"
+      ? "Propuesta pendiente de aprobar"
+      : peticion.destino === "personal"
+        ? "PERSONAL"
+        : `Chat en ${clasificacion.proyecto_nombre ?? "el proyecto"}`;
+
   return (
-    <div className="mt-4">
+    <div className="mt-4 space-y-3">
+      <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
+        <p className="text-xs text-muted-foreground">Ha ido a</p>
+        <p className="font-display text-base font-semibold">{donde}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {url ? (
+            <Link to={url} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+              Ir a verlo
+            </Link>
+          ) : null}
+          {peticion.estado === "propuesta" ? (
+            <Link
+              to="/pideme"
+              search={{ tab: "propuestas" }}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium"
+            >
+              Ver propuesta
+            </Link>
+          ) : null}
+        </div>
+      </div>
       <TarjetaPeticion peticion={peticion} abiertaPorDefecto />
     </div>
   );
+}
+
+/** Dibuja la onda del micrófono en directo mientras se dicta. */
+export function useOndaMicrofono(activo: boolean) {
+  const lienzo = React.useRef<HTMLCanvasElement | null>(null);
+
+  React.useEffect(() => {
+    if (!activo || typeof window === "undefined") return;
+    let parado = false;
+    let pista: MediaStream | null = null;
+    let ctxAudio: AudioContext | null = null;
+    let animacion = 0;
+
+    const arrancar = async () => {
+      try {
+        pista = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        return;
+      }
+      if (parado) {
+        pista.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      const Ctor = (window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as
+        | typeof AudioContext
+        | undefined;
+      if (!Ctor) return;
+      ctxAudio = new Ctor();
+      const fuente = ctxAudio.createMediaStreamSource(pista);
+      const analizador = ctxAudio.createAnalyser();
+      analizador.fftSize = 2048;
+      fuente.connect(analizador);
+      const datos = new Uint8Array(analizador.frequencyBinCount);
+
+      const pintar = () => {
+        animacion = window.requestAnimationFrame(pintar);
+        const canvas = lienzo.current;
+        const ctx2d = canvas?.getContext("2d");
+        if (!canvas || !ctx2d) return;
+        const ancho = (canvas.width = canvas.clientWidth || 300);
+        const alto = (canvas.height = 72);
+        analizador.getByteTimeDomainData(datos);
+        ctx2d.clearRect(0, 0, ancho, alto);
+        ctx2d.lineWidth = 2;
+        ctx2d.strokeStyle = getComputedStyle(canvas).color || "#6366f1";
+        ctx2d.beginPath();
+        const paso = ancho / datos.length;
+        for (let i = 0; i < datos.length; i += 1) {
+          const v = (datos[i]! - 128) / 128;
+          const y = alto / 2 + v * (alto / 2 - 4);
+          if (i === 0) ctx2d.moveTo(0, y);
+          else ctx2d.lineTo(i * paso, y);
+        }
+        ctx2d.stroke();
+      };
+      pintar();
+    };
+
+    void arrancar();
+
+    return () => {
+      parado = true;
+      if (animacion) window.cancelAnimationFrame(animacion);
+      pista?.getTracks().forEach((t) => t.stop());
+      void ctxAudio?.close();
+      const canvas = lienzo.current;
+      const ctx2d = canvas?.getContext("2d");
+      if (canvas && ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    };
+  }, [activo]);
+
+  return lienzo;
 }
 
 /* ------------------------------- Peticiones ------------------------------- */
@@ -1083,11 +1198,13 @@ export function useDictado(alTexto: (t: string) => void) {
     if (escuchando) {
       reconocimiento.stop();
       setEscuchando(false);
+      sonidoTic();
       return;
     }
     try {
       reconocimiento.start();
       setEscuchando(true);
+      sonidoTic();
     } catch {
       setEscuchando(false);
     }
