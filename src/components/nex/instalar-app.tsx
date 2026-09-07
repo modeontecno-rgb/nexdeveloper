@@ -82,14 +82,13 @@ export function BotonInstalar({ compacto = false }: { compacto?: boolean }) {
         {!compacto && "Instalar aplicación"}
       </button>
 
-      <Dialog open={ayudaIOS} onOpenChange={setAyudaIOS}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Instalar en este iPhone o iPad</DialogTitle>
-            <DialogDescription>
-              Safari no muestra el aviso automático, pero se instala en dos toques:
-            </DialogDescription>
-          </DialogHeader>
+      <Dialogo
+        abierto={ayudaIOS}
+        titulo="Instalar en este iPhone o iPad"
+        descripcion="Safari no muestra el aviso automático, pero se instala en dos toques:"
+        onCerrar={() => setAyudaIOS(false)}
+        ancho="max-w-md"
+      >
           <ol className="list-decimal space-y-2 pl-5 text-sm text-foreground">
             <li className="flex items-start gap-2">
               <Share className="mt-0.5 size-4 shrink-0" />
