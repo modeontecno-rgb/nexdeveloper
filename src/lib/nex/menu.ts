@@ -191,6 +191,13 @@ export const GRUPOS_MENU: GrupoMenu[] = [
         descripcion: "Manuales de uso generados automáticamente.",
       },
       {
+        to: "/revisores",
+        etiqueta: "Revisores",
+        icono: UsersRound,
+        alias: ["revisión", "insignias", "correcciones", "lectores", "redacción"],
+        descripcion: "Quién revisa los manuales, cuántos llevan y su historial de insignias.",
+      },
+      {
         to: "/voz",
         etiqueta: "Voz y demos",
         icono: Clapperboard,
