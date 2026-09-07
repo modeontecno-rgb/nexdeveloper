@@ -40,6 +40,7 @@ import {
   User,
   Users,
   UsersRound,
+  PenLine,
   Wand2,
   Zap,
   type LucideIcon,
@@ -216,6 +217,13 @@ export const GRUPOS_MENU: GrupoMenu[] = [
         icono: User,
         alias: ["consultas", "fusión de ias", "estilo", "privado", "javier", "mis documentos"],
         descripcion: "Tu espacio privado, separado de los proyectos.",
+      },
+      {
+        to: "/personal/estilo",
+        etiqueta: "Editor de estilo",
+        icono: PenLine,
+        alias: ["estilo", "glosario", "mi voz", "redacción", "perfil de estilo"],
+        descripcion: "Tu perfil de estilo y el glosario que usan los manuales.",
       },
       {
         to: "/mesa",
