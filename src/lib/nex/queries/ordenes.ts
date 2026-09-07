@@ -41,9 +41,10 @@ function necesitaAprobacion(orden: NuevaOrden, ajustes: AjustesRow | null) {
   return false;
 }
 
-async function crearTareaDesdeOrden(orden: OrdenRow) {
+async function crearTareaDesdeOrden(orden: OrdenRow, userId?: string) {
   if (!orden.proyecto_id) return;
   await supabase.from("tareas").insert({
+    ...(userId ? { user_id: userId } : {}),
     proyecto_id: orden.proyecto_id,
     orden_id: orden.id,
     titulo: orden.texto.slice(0, 120),
@@ -62,6 +63,11 @@ export function useCrearOrden() {
 
   return useMutation({
     mutationFn: async ({ entrada, ajustes }: { entrada: NuevaOrden; ajustes: AjustesRow | null }) => {
+      const { data: identidad, error: errorIdentidad } = await supabase.auth.getUser();
+      const userId = identidad.user?.id;
+      if (errorIdentidad || !userId) {
+        throw new Error("Tu sesión ha caducado. Vuelve a entrar para crear la orden.");
+      }
       const sugerencia = await sugerirProyecto(entrada.texto);
       const umbralConfianza = ajustes?.umbral_confianza_reorganizacion ?? 0.85;
       const automatica = ajustes?.reorganizacion_automatica ?? true;
@@ -86,6 +92,7 @@ export function useCrearOrden() {
       const fila = await supabase
         .from("ordenes")
         .insert({
+          user_id: userId,
           proyecto_id: proyectoFinal,
           chat_id: entrada.chatId ?? null,
           texto: entrada.texto,
@@ -112,6 +119,7 @@ export function useCrearOrden() {
       const orden = fila.data as OrdenRow;
 
       await supabase.from("estimaciones").insert({
+        user_id: userId,
         proyecto_id: orden.proyecto_id,
         orden_id: orden.id,
         agente_id: orden.agente_id,
@@ -128,6 +136,7 @@ export function useCrearOrden() {
           "reorganizacion",
           `Orden reasignada automáticamente a «${sugerencia.nombre}» con ${Math.round(sugerencia.confianza * 100)}% de confianza`,
           { referencia_tabla: "ordenes", referencia_id: orden.id },
+          userId,
         );
       }
 
@@ -137,6 +146,7 @@ export function useCrearOrden() {
           `Una orden podría pertenecer a «${sugerencia.nombre}» (${Math.round(sugerencia.confianza * 100)}% de confianza). Confirma el proyecto.`,
           "aviso",
           true,
+          userId,
         );
       }
 
@@ -144,13 +154,13 @@ export function useCrearOrden() {
         await registrarActividad(orden.proyecto_id, "aprobacion", `Orden pendiente de aprobación: ${orden.texto.slice(0, 60)}`, {
           referencia_tabla: "ordenes",
           referencia_id: orden.id,
-        });
+        }, userId);
       } else {
-        await crearTareaDesdeOrden(orden);
+        await crearTareaDesdeOrden(orden, userId);
         await registrarActividad(orden.proyecto_id, "orden", `Orden enviada a la cola: ${orden.texto.slice(0, 60)}`, {
           referencia_tabla: "ordenes",
           referencia_id: orden.id,
-        });
+        }, userId);
       }
 
       return orden;

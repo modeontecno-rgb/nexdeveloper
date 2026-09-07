@@ -17,6 +17,7 @@ import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
+import { useConTrabajo } from "@/components/nex/indicador-trabajo";
 import type {
   MesaRow,
   ModoMesa,
@@ -400,6 +401,7 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
   const crearTareas = useCrearTareasMesa();
   const crearOrden = useCrearOrden();
   const valorar = useValorarMesa();
+  const conTrabajo = useConTrabajo();
   const [confirmar, setConfirmar] = React.useState(false);
   const [estrellas, setEstrellas] = React.useState(0);
   const [comentario, setComentario] = React.useState("");
@@ -427,10 +429,20 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
     plan.length > 0 && normalizarPlan(mesa.recomendacion?.plan).length === 0;
 
   const crearTareasDelPlan = async () => {
-    if (faltaPlanGuardado && recomendacion) {
-      await actualizar.mutateAsync({ id: mesa.id, cambios: { recomendacion } });
-    }
-    crearTareas.mutate(mesa.id);
+    await conTrabajo(
+      "Creando las tareas del plan",
+      async (trabajo) => {
+        if (faltaPlanGuardado && recomendacion) {
+          trabajo.avanzar("Guardando el plan", 25);
+          await actualizar.mutateAsync({ id: mesa.id, cambios: { recomendacion } });
+        }
+        trabajo.avanzar("Creando las tareas", 65);
+        const resultado = await crearTareas.mutateAsync(mesa.id);
+        const cuantas = Array.isArray(resultado.tareas) ? resultado.tareas.length : Number(resultado.tareas ?? 0);
+        return cuantas ? `${cuantas} tareas creadas.` : "Plan enviado al proyecto.";
+      },
+      { pasos: ["Guardando el plan", "Creando las tareas"] },
+    );
   };
 
 
@@ -457,25 +469,33 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
   };
 
   const enviarComoOrden = async () => {
-    const texto = mesa.sintesis?.trim() || mesa.pregunta;
-    const chat = chats.find((c) => c.proyecto_id === mesa.proyecto_id && c.es_principal);
-    await crearOrden.mutateAsync({
-      entrada: {
-        proyectoId: mesa.proyecto_id,
-        chatId: chat?.id ?? null,
-        texto,
-        modo: mesa.modo,
-        prioridad: "media",
-        agenteId: null,
-        equipo: [],
-        costeEstimado: Number(recomendacion?.coste_estimado ?? 0),
-        horasEstimadas: Number(recomendacion?.horas_estimadas ?? 0),
-        riesgo: (recomendacion?.riesgo as "Bajo" | "Medio" | "Alto") ?? "Medio",
-        calidadPrevista: Number(recomendacion?.calidad_prevista ?? 80),
+    await conTrabajo(
+      "Enviando la conclusión como orden",
+      async (trabajo) => {
+        trabajo.avanzar("Preparando la orden", 25);
+        const texto = mesa.sintesis?.trim() || mesa.pregunta;
+        const chat = chats.find((c) => c.proyecto_id === mesa.proyecto_id && c.es_principal);
+        trabajo.avanzar("Guardando la orden", 60);
+        await crearOrden.mutateAsync({
+          entrada: {
+            proyectoId: mesa.proyecto_id,
+            chatId: chat?.id ?? null,
+            texto,
+            modo: mesa.modo,
+            prioridad: "media",
+            agenteId: null,
+            equipo: [],
+            costeEstimado: Number(recomendacion?.coste_estimado ?? 0),
+            horasEstimadas: Number(recomendacion?.horas_estimadas ?? 0),
+            riesgo: (recomendacion?.riesgo as "Bajo" | "Medio" | "Alto") ?? "Medio",
+            calidadPrevista: Number(recomendacion?.calidad_prevista ?? 80),
+          },
+          ajustes: ajustes ?? null,
+        });
+        return "Orden creada con la conclusión de la mesa.";
       },
-      ajustes: ajustes ?? null,
-    });
-    toast.success("Orden creada con la conclusión de la mesa.");
+      { pasos: ["Preparando la orden", "Guardando la orden"] },
+    );
   };
 
   return (
