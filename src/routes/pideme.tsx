@@ -7,6 +7,8 @@ import {
   Mic,
   MicOff,
   Send,
+  Inbox,
+  ListChecks,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -14,7 +16,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
-import { useTrabajo } from "@/components/nex/indicador-trabajo";
+import { useConTrabajo, useTrabajo } from "@/components/nex/indicador-trabajo";
 import { sonidoTic } from "@/lib/nex/sonidos";
 import { RevisarBorrador } from "@/components/nex/revisar-borrador";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
@@ -110,30 +112,42 @@ function PidemePantalla() {
 
       <BloquePideme />
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {(
-          [
-            ["peticiones", "Peticiones"],
-            ["borradores", `Pendientes de revisar${borradores.length ? ` (${borradores.length})` : ""}`],
-            ["propuestas", `Propuestas pendientes${pendientes.length ? ` (${pendientes.length})` : ""}`],
-            ["plaud", "Plaud"],
-          ] as const
-        ).map(([clave, texto]) => (
-          <button
-            key={clave}
-            type="button"
-            aria-pressed={pestana === clave}
-            onClick={() => setPestana(clave)}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-sm transition",
-              pestana === clave
-                ? "bg-primary text-primary-foreground"
-                : "border border-border text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {texto}
-          </button>
-        ))}
+      <div className="mt-6 -mx-1 overflow-x-auto px-1 pb-1">
+        <div className="inline-flex min-w-full gap-1 rounded-xl border border-border bg-surface p-1 sm:min-w-0">
+          {(
+            [
+              ["peticiones", "Peticiones", peticiones.length],
+              ["borradores", "Pendientes de revisar", borradores.length],
+              ["propuestas", "Propuestas pendientes", pendientes.length],
+              ["plaud", "Plaud", 0],
+            ] as const
+          ).map(([clave, texto, cuenta]) => (
+            <button
+              key={clave}
+              type="button"
+              aria-pressed={pestana === clave}
+              onClick={() => setPestana(clave)}
+              className={cn(
+                "inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition",
+                pestana === clave
+                  ? "bg-primary font-medium text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              {texto}
+              {cuenta ? (
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[11px] leading-none",
+                    pestana === clave ? "bg-primary-foreground/20" : "bg-muted text-foreground",
+                  )}
+                >
+                  {cuenta}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mt-4">
@@ -438,6 +452,19 @@ export function useOndaMicrofono(activo: boolean) {
 
 /* ------------------------------- Peticiones ------------------------------- */
 
+/** Bloque para cuando no hay nada que enseñar. */
+function EstadoVacio({ icono, titulo, texto }: { icono: React.ReactNode; titulo: string; texto: string }) {
+  return (
+    <div className="panel flex flex-col items-center gap-2 p-8 text-center">
+      <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        {icono}
+      </span>
+      <p className="font-display text-sm font-semibold text-foreground">{titulo}</p>
+      <p className="max-w-md text-sm text-muted-foreground">{texto}</p>
+    </div>
+  );
+}
+
 function PanelPeticiones({ peticiones, soloPropuestas }: { peticiones: PeticionDirectaRow[]; soloPropuestas?: boolean }) {
   const [destino, setDestino] = React.useState<string>("todos");
   const [estado, setEstado] = React.useState<string>("todos");
@@ -448,7 +475,12 @@ function PanelPeticiones({ peticiones, soloPropuestas }: { peticiones: PeticionD
 
   return (
     <div className="space-y-3">
-      {soloPropuestas ? null : (
+      {soloPropuestas ? (
+        <p className="panel p-4 text-sm text-muted-foreground">
+          Estas peticiones han generado una propuesta y esperan que decidas: apruébala para que la IA la ejecute, o
+          recházala.
+        </p>
+      ) : (
         <div className="panel flex flex-wrap items-center gap-3 p-4">
           <Selector
             etiqueta="Destino"
@@ -473,9 +505,17 @@ function PanelPeticiones({ peticiones, soloPropuestas }: { peticiones: PeticionD
       )}
 
       {lista.length === 0 ? (
-        <p className="panel p-6 text-sm text-muted-foreground">
-          {soloPropuestas ? "No hay propuestas esperando tu decisión." : "Todavía no me has pedido nada."}
-        </p>
+        <EstadoVacio
+          icono={soloPropuestas ? <ListChecks className="size-6" /> : <Inbox className="size-6" />}
+          titulo={soloPropuestas ? "No hay propuestas esperando tu decisión" : "Todavía no me has pedido nada"}
+          texto={
+            soloPropuestas
+              ? "Cuando un cambio necesite tu visto bueno, aparecerá aquí con su plan de trabajo, riesgos y coste."
+              : peticiones.length
+                ? "Ninguna petición coincide con los filtros elegidos."
+                : "Escribe o dicta lo que quieras arriba: yo decido si es de un proyecto o personal, y actúo."
+          }
+        />
       ) : (
         lista.map((p) => <TarjetaPeticion key={p.id} peticion={p} />)
       )}
@@ -521,7 +561,7 @@ export function TarjetaPeticion({
             {confianza ? <span className="text-xs text-muted-foreground">confianza {confianza}%</span> : null}
           </div>
           <h3 className="mt-2 font-display text-base font-semibold">{clasificacion.titulo ?? peticion.texto.slice(0, 80)}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{peticion.texto}</p>
+          <p className={cn("mt-1 text-sm text-muted-foreground", !abierta && "line-clamp-3")}>{peticion.texto}</p>
           <p className="mt-1 text-xs text-muted-foreground">{marcaTiempo(peticion.creado_el)} · {desde(peticion.creado_el)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -875,7 +915,11 @@ function PanelBorradores() {
     <div className="space-y-3">
       {resultado ? <TarjetaResultado peticionId={resultado} /> : null}
       {borradores.length === 0 ? (
-        <p className="panel p-6 text-sm text-muted-foreground">No hay nada pendiente de revisar.</p>
+        <EstadoVacio
+          icono={<ClipboardCheck className="size-6" />}
+          titulo="No hay nada pendiente de revisar"
+          texto="Aquí aparecen los dictados y las grabaciones de Plaud con los nombres ya corregidos, para que les des el visto bueno antes de lanzarlos."
+        />
       ) : (
         borradores.map((b) => {
           const correcciones = Array.isArray(b.correcciones) ? b.correcciones.length : 0;
@@ -1060,6 +1104,7 @@ export function TarjetaPlaudConexion() {
 }
 
 function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
+  const conTrabajo = useConTrabajo();
   const { data: grabaciones = [] } = useGrabacionesPlaud();
   const crearBorrador = useCrearBorrador();
   const procesar = usePlaudProcesar();
@@ -1114,7 +1159,21 @@ function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
                     <Boton
                       variante="suave"
                       className="px-2.5 py-1 text-xs"
-                      onClick={() => procesar.mutate({ grabacionId: g.id })}
+                      onClick={() =>
+                        void conTrabajo(
+                          "Procesando la grabación",
+                          async () => {
+                            const r = await procesar.mutateAsync({ grabacionId: g.id });
+                            const hecha = r.procesadas?.[0];
+                            return hecha?.proyecto
+                              ? `Enviada a ${hecha.proyecto}`
+                              : hecha?.destino === "personal"
+                                ? "Enviada a PERSONAL"
+                                : "Grabación procesada.";
+                          },
+                          { pasos: ["Leyendo la transcripción", "Entendiendo lo que pides", "Guardando el resultado"] },
+                        )
+                      }
                       disabled={procesar.isPending}
                     >
                       Procesar ahora

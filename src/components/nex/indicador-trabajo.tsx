@@ -284,7 +284,7 @@ export function useConTrabajo() {
       const manejador = iniciarTrabajo({ titulo, pasos: opciones?.pasos ?? [] });
       try {
         const resultado = await accion(manejador);
-        manejador.terminar(opciones?.mensajeOk);
+        manejador.terminar(typeof resultado === "string" ? resultado : opciones?.mensajeOk);
         return resultado;
       } catch (e) {
         manejador.fallar(e instanceof Error ? e.message : "No se ha podido completar la operación.");
