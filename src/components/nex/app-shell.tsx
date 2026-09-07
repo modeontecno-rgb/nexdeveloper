@@ -344,6 +344,7 @@ function MenuLateral({
           ))}
         </ul>
         <SelectorTema />
+        <BotonInstalar compacto={contraido} />
         <div className="rounded-lg border border-sidebar-border bg-surface p-3">
           <p className="truncate text-xs font-medium text-foreground">{perfil}</p>
           <button
@@ -803,6 +804,7 @@ function HojaMenu({
 
           <div className="mt-4 space-y-2">
             <SelectorTema />
+            <BotonInstalar />
             <div className="rounded-lg border border-sidebar-border bg-surface p-3">
               <p className="truncate text-xs font-medium text-foreground">{perfil}</p>
               <button

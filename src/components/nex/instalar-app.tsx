@@ -97,8 +97,7 @@ export function BotonInstalar({ compacto = false }: { compacto?: boolean }) {
             <li>Baja en la lista y elige <strong>«Añadir a pantalla de inicio»</strong>.</li>
             <li>Confirma con <strong>Añadir</strong>: aparecerá el icono de NexDeveloper junto a tus apps.</li>
           </ol>
-        </DialogContent>
-      </Dialog>
+      </Dialogo>
     </>
   );
 }
