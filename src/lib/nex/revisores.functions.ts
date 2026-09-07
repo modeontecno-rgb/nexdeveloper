@@ -64,8 +64,8 @@ export const obtenerPanelRevisores = createServerFn({ method: "GET" })
       if (lista.length < 100) break;
     }
 
-    const { data: manualesBrutos, error: errorManuales } = await (supabaseAdmin as never as {
-      .from("manuales")
+    const { data: manualesBrutos, error: errorManuales } = await supabaseAdmin
+      .from("manuales" as never)
       .select("id,user_id,titulo,proyecto_id,revision,revisado_el");
     if (errorManuales) throw new Error(errorManuales.message);
     const manuales = (manualesBrutos ?? []) as unknown as {
@@ -77,7 +77,7 @@ export const obtenerPanelRevisores = createServerFn({ method: "GET" })
       revisado_el: string | null;
     }[];
 
-    const { data: proyectosBrutos, error: errorProyectos } = await supabaseAdmin.from("proyectos").select("id,nombre");
+    const { data: proyectosBrutos, error: errorProyectos } = await supabaseAdmin.from("proyectos" as never).select("id,nombre");
     if (errorProyectos) throw new Error(errorProyectos.message);
     const proyectos = (proyectosBrutos ?? []) as unknown as { id: string; nombre: string }[];
     const nombreProyecto = new Map(proyectos.map((p) => [p.id, p.nombre]));
