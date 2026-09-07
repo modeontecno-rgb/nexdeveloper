@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ChevronDown,
+  ClipboardCheck,
   Download,
   Loader2,
   Mic,
@@ -13,6 +14,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
+import { RevisarBorrador } from "@/components/nex/revisar-borrador";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
 import type { DestinoPeticion, PeticionDirectaRow, PlaudGrabacionRow, TipoPeticion } from "@/lib/nex/db-types";
@@ -31,8 +33,12 @@ import {
   useEstadoPideme,
   useGrabacionPlaud,
   useGrabacionesPlaud,
+  useBorradores,
+  useCrearBorrador,
+  useLanzarBorrador,
   usePedir,
   usePeticiones,
+  useVincularBorrador,
   usePlaudConectar,
   usePlaudConfigurar,
   usePlaudDescartar,
@@ -46,7 +52,7 @@ import {
 } from "@/lib/nex/queries/pideme";
 import { cn } from "@/lib/utils";
 
-type Pestana = "peticiones" | "propuestas" | "plaud";
+type Pestana = "peticiones" | "borradores" | "propuestas" | "plaud";
 
 export const Route = createFileRoute("/pideme")({
   validateSearch: (busqueda: Record<string, unknown>): { tab?: Pestana; peticion?: string } => ({
@@ -82,6 +88,7 @@ function PidemePantalla() {
   useRealtimePideme(true);
 
   const pendientes = peticiones.filter((p) => p.estado === "propuesta");
+  const { data: borradores = [] } = useBorradores();
 
   return (
     <>
@@ -97,6 +104,7 @@ function PidemePantalla() {
         {(
           [
             ["peticiones", "Peticiones"],
+            ["borradores", `Pendientes de revisar${borradores.length ? ` (${borradores.length})` : ""}`],
             ["propuestas", `Propuestas pendientes${pendientes.length ? ` (${pendientes.length})` : ""}`],
             ["plaud", "Plaud"],
           ] as const
@@ -120,6 +128,7 @@ function PidemePantalla() {
 
       <div className="mt-4">
         {pestana === "peticiones" ? <PanelPeticiones peticiones={peticiones} /> : null}
+        {pestana === "borradores" ? <PanelBorradores /> : null}
         {pestana === "propuestas" ? <PanelPeticiones peticiones={pendientes} soloPropuestas /> : null}
         {pestana === "plaud" ? <PanelPlaud estadoCargando={estado.isPending} /> : null}
       </div>
@@ -135,8 +144,17 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
   const [texto, setTexto] = React.useState("");
   const [paso, setPaso] = React.useState(0);
   const [resultado, setResultado] = React.useState<{ peticionId: string } | null>(null);
+  const [borradorId, setBorradorId] = React.useState<string | null>(null);
+  const [usoVoz, setUsoVoz] = React.useState(false);
+  const crearBorrador = useCrearBorrador();
+  const { data: borradores = [] } = useBorradores();
+  const { lanzarBorrador, enCurso } = useLanzarBorradorCompleto();
   const areaRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const { escuchando, soportado, alternar } = useDictado((dicho) => setTexto((t) => (t ? `${t} ${dicho}` : dicho)));
+  const { escuchando, soportado, alternar } = useDictado((dicho) => {
+    setUsoVoz(true);
+    setTexto((t) => (t ? `${t} ${dicho}` : dicho));
+  });
+  const borradorAbierto = borradores.find((b) => b.id === borradorId) ?? null;
 
   React.useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
@@ -159,9 +177,29 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
     return () => window.clearTimeout(t);
   }, [pedir.isPending]);
 
+  const revisar = (origen: "texto" | "voz") => {
+    const limpio = texto.trim();
+    if (!limpio || crearBorrador.isPending) return;
+    crearBorrador.mutate(
+      { texto: limpio, origen },
+      {
+        onSuccess: (b) => {
+          setTexto("");
+          setUsoVoz(false);
+          setBorradorId(b.id);
+        },
+      },
+    );
+  };
+
   const enviar = (origen: "texto" | "voz") => {
     const limpio = texto.trim();
     if (!limpio || pedir.isPending) return;
+    // Lo dictado se revisa antes de lanzarse.
+    if (origen === "voz") {
+      revisar("voz");
+      return;
+    }
     pedir.mutate(
       { texto: limpio, origen },
       {
@@ -184,7 +222,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          enviar("texto");
+          enviar(usoVoz ? "voz" : "texto");
         }}
         className="mt-3"
       >
@@ -198,7 +236,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              enviar("texto");
+              enviar(usoVoz ? "voz" : "texto");
             }
           }}
         />
@@ -206,6 +244,15 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
           <Boton type="submit" disabled={!texto.trim() || pedir.isPending}>
             {pedir.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             Pídemelo
+          </Boton>
+          <Boton
+            type="button"
+            variante="suave"
+            onClick={() => revisar(usoVoz ? "voz" : "texto")}
+            disabled={!texto.trim() || crearBorrador.isPending}
+          >
+            {crearBorrador.isPending ? <Loader2 className="size-4 animate-spin" /> : <ClipboardCheck className="size-4" />}
+            Revisar antes de lanzar
           </Boton>
           {soportado ? (
             <Boton
@@ -229,6 +276,22 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
           <Loader2 className="size-4 animate-spin" />
           {paso < 2 ? "Entendiendo lo que pides…" : "Preparando la propuesta con los expertos…"}
         </p>
+      ) : null}
+
+      {borradorAbierto ? (
+        <div className="mt-4">
+          <RevisarBorrador
+            borrador={borradorAbierto}
+            lanzando={enCurso === borradorAbierto.id}
+            onCerrar={() => setBorradorId(null)}
+            onLanzar={(id) =>
+              void lanzarBorrador(id, (peticionId) => {
+                setBorradorId(null);
+                setResultado({ peticionId });
+              })
+            }
+          />
+        </div>
       ) : null}
 
       {resultado ? <TarjetaResultado peticionId={resultado.peticionId} /> : null}
@@ -585,6 +648,99 @@ function DialogoReclasificar({
   );
 }
 
+
+/* ------------------------------- Borradores ------------------------------- */
+
+/** Lanza un borrador por el mismo camino que una petición escrita. */
+export function useLanzarBorradorCompleto() {
+  const lanzar = useLanzarBorrador();
+  const pedir = usePedir();
+  const vincular = useVincularBorrador();
+  const [enCurso, setEnCurso] = React.useState<string | null>(null);
+
+  const lanzarBorrador = async (id: string, alTerminar?: (peticionId: string) => void) => {
+    setEnCurso(id);
+    try {
+      const borrador = await lanzar.mutateAsync(id);
+      const respuesta = await pedir.mutateAsync({ texto: borrador.texto_final, origen: "texto" });
+      const peticionId = respuesta.peticion?.id;
+      if (peticionId) {
+        await vincular.mutateAsync({ borradorId: id, peticionId });
+        alTerminar?.(peticionId);
+      }
+      toast.success("Tarea lanzada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se ha podido lanzar la tarea.");
+    } finally {
+      setEnCurso(null);
+    }
+  };
+
+  return { lanzarBorrador, enCurso };
+}
+
+function PanelBorradores() {
+  const { data: borradores = [] } = useBorradores();
+  const [abiertoId, setAbiertoId] = React.useState<string | null>(null);
+  const { lanzarBorrador, enCurso } = useLanzarBorradorCompleto();
+  const [resultado, setResultado] = React.useState<string | null>(null);
+
+  const abierto = borradores.find((b) => b.id === abiertoId) ?? null;
+
+  if (abierto) {
+    return (
+      <div className="space-y-4">
+        <RevisarBorrador
+          borrador={abierto}
+          lanzando={enCurso === abierto.id}
+          onCerrar={() => setAbiertoId(null)}
+          onLanzar={(id) =>
+            void lanzarBorrador(id, (peticionId) => {
+              setAbiertoId(null);
+              setResultado(peticionId);
+            })
+          }
+        />
+        {resultado ? <TarjetaResultado peticionId={resultado} /> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {resultado ? <TarjetaResultado peticionId={resultado} /> : null}
+      {borradores.length === 0 ? (
+        <p className="panel p-6 text-sm text-muted-foreground">No hay nada pendiente de revisar.</p>
+      ) : (
+        borradores.map((b) => {
+          const correcciones = Array.isArray(b.correcciones) ? b.correcciones.length : 0;
+          return (
+            <article key={b.id} className="panel flex flex-wrap items-start justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <p className="text-sm text-foreground">{b.texto.slice(0, 160)}{b.texto.length > 160 ? "…" : ""}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {b.grabacion_id ? "De Plaud" : b.origen === "voz" ? "Dictado" : "Escrito"} ·{" "}
+                  {marcaTiempo(b.creado_el)} ·{" "}
+                  {correcciones ? `${correcciones} ${correcciones === 1 ? "corrección" : "correcciones"}` : "sin correcciones"}
+                </p>
+              </div>
+              <Boton variante="suave" className="px-2.5 py-1.5 text-xs" onClick={() => setAbiertoId(b.id)}>
+                <ClipboardCheck className="size-3.5" /> Revisar
+              </Boton>
+            </article>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+/** Contador de borradores pendientes para el menú. */
+export function useBorradoresPendientesMenu() {
+  const { data = [] } = useBorradores();
+  return data.length;
+}
+
 /* ---------------------------------- Plaud -------------------------------- */
 
 /** Botón para traerse las grabaciones del Plaud. Se usa en varias pantallas. */
@@ -724,6 +880,7 @@ export function TarjetaPlaudConexion() {
 
 function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
   const { data: grabaciones = [] } = useGrabacionesPlaud();
+  const crearBorrador = useCrearBorrador();
   const procesar = usePlaudProcesar();
   const descartar = usePlaudDescartar();
   const [verId, setVerId] = React.useState<string | null>(null);
@@ -758,6 +915,20 @@ function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Boton variante="suave" className="px-2.5 py-1 text-xs" onClick={() => setVerId(g.id)}>
                       Ver transcripción
+                    </Boton>
+                    <Boton
+                      variante="suave"
+                      className="px-2.5 py-1 text-xs"
+                      disabled={crearBorrador.isPending || !g.transcripcion}
+                      onClick={() =>
+                        crearBorrador.mutate({
+                          texto: g.transcripcion ?? "",
+                          origen: "voz",
+                          grabacionId: g.id,
+                        }, { onSuccess: () => toast.success("Borrador creado: revísalo en «Pendientes de revisar».") })
+                      }
+                    >
+                      <ClipboardCheck className="size-3.5" /> Revisar antes de lanzar
                     </Boton>
                     <Boton
                       variante="suave"

@@ -24,7 +24,7 @@ import { useAuth } from "@/lib/nex/auth";
 import { usePerfil, useProyectos } from "@/lib/nex/queries/datos";
 import { pendientes, useEntradasBandeja } from "@/lib/nex/queries/bandeja";
 import { useAvisosSinLeer } from "@/lib/nex/queries/avisos";
-import { usePropuestasPendientes } from "@/routes/pideme";
+import { useBorradoresPendientesMenu, usePropuestasPendientes } from "@/routes/pideme";
 import {
   ANCLADOS_PIE,
   CLAVE_GRUPO_ABIERTO,
@@ -84,14 +84,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: entradasBandeja = [] } = useEntradasBandeja();
   const avisosSinLeer = useAvisosSinLeer();
   const propuestasPendientes = usePropuestasPendientes();
+  const borradoresPendientes = useBorradoresPendientesMenu();
 
   const contadores = React.useMemo<Contadores>(
     () => ({
       bandeja: pendientes(entradasBandeja),
       avisos: avisosSinLeer,
-      propuestas: propuestasPendientes,
+      propuestas: propuestasPendientes + borradoresPendientes,
     }),
-    [entradasBandeja, avisosSinLeer, propuestasPendientes],
+    [entradasBandeja, avisosSinLeer, propuestasPendientes, borradoresPendientes],
   );
 
   const [hoja, setHoja] = React.useState(false);

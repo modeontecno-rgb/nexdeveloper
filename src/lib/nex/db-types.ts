@@ -2304,6 +2304,8 @@ export type EstadoPeticion =
   | "propuesta"
   | "aprobada"
   | "descartada"
+  | "borrador"
+  | "lanzada"
   | "error"
 
 export type ClasificacionPeticion = {
@@ -2357,7 +2359,49 @@ export type PeticionDirectaRow = {
   propuesta: PropuestaPeticion | null
   error: string | null
   creado_el: string
+  texto_original?: string | null
+  grabacion_id?: string | null
+  correcciones?: CorreccionNombre[] | null
+  aclaraciones?: string | null
+  revisada?: boolean | null
+  lanzada_el?: string | null
 }
+
+/** Nombre corregido en un borrador de Pídeme. */
+export type CorreccionNombre = {
+  de?: string | null
+  a?: string | null
+  tipo?: "variante" | "aprendida" | "sugerencia" | string
+  termino?: string | null
+  confianza?: number | null
+}
+
+export type RolMensajePeticion = "usuario" | "asistente" | "sistema"
+
+export type PeticionMensajeRow = {
+  id: string
+  user_id: string
+  peticion_id: string
+  rol: RolMensajePeticion
+  texto: string
+  creado_el: string
+}
+
+export type OrigenDiccionario = "manual" | "proyecto" | "aprendido"
+
+export type DiccionarioNombreRow = {
+  id: string
+  user_id: string
+  termino: string
+  variantes: string[] | null
+  proyecto_id: string | null
+  origen: OrigenDiccionario
+  activo: boolean
+  usos: number | null
+  creado_el?: string
+}
+
+
 
 export type EstadoGrabacionPlaud = "importada" | "clasificada" | "procesada" | "descartada"
 
@@ -2685,6 +2729,12 @@ export type Database = {
       infra_sincronizacion: Tabla<InfraSincronizacionRow>
       infra_config: Tabla<InfraConfigRow, Partial<SinUsuario<InfraConfigRow>>, Partial<SinUsuario<InfraConfigRow>>>
       peticiones_directas: Tabla<PeticionDirectaRow>
+      peticiones_mensajes: Tabla<PeticionMensajeRow>
+      diccionario_nombres: Tabla<
+        DiccionarioNombreRow,
+        Partial<SinUsuario<DiccionarioNombreRow>> & { termino: string },
+        Partial<SinUsuario<DiccionarioNombreRow>>
+      >
       plaud_grabaciones: Tabla<PlaudGrabacionRow>
       personal_conversaciones: Tabla<PersonalConversacionRow>
       personal_mensajes: Tabla<PersonalMensajeRow>
@@ -2751,6 +2801,43 @@ export type Database = {
       revisar_orden: {
         Args: { p_orden_id: string }
         Returns: { aprobada: boolean; hallazgos: Hallazgo[]; revision_id: string }
+      }
+      nex_pideme_borrador: {
+        Args: {
+          p_texto: string
+          p_origen?: string | null
+          p_grabacion_id?: string | null
+          p_proyecto_id?: string | null
+        }
+        Returns: { id: string; texto: string; texto_original: string | null; correcciones: CorreccionNombre[] | null }
+      }
+      nex_pideme_guardar_borrador: {
+        Args: { p_id: string; p_texto: string; p_aclaraciones?: string | null; p_proyecto_id?: string | null }
+        Returns: boolean
+      }
+      nex_pideme_mensaje: {
+        Args: { p_id: string; p_texto: string; p_rol?: string }
+        Returns: string
+      }
+      nex_pideme_aprender: {
+        Args: { p_id: string; p_de: string; p_a: string }
+        Returns: string
+      }
+      nex_pideme_lanzar: {
+        Args: { p_id: string }
+        Returns: { id: string; texto_final: string; proyecto_id: string | null }
+      }
+      nex_pideme_vincular: {
+        Args: { p_borrador_id: string; p_peticion_id: string }
+        Returns: boolean
+      }
+      nex_pideme_descartar: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      nex_sembrar_diccionario: {
+        Args: { p_user_id: string }
+        Returns: number
       }
     }
     Enums: {

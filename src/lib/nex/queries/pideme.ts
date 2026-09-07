@@ -4,11 +4,14 @@ import { toast } from "sonner";
 
 import type {
   ClasificacionPeticion,
+  CorreccionNombre,
   DestinoPeticion,
   EstadoGrabacionPlaud,
   EstadoPeticion,
   PeticionDirectaRow,
+  PeticionMensajeRow,
   PlaudGrabacionRow,
+  RolMensajePeticion,
   TipoPeticion,
 } from "../db-types";
 import { supabase } from "../supabase";
@@ -41,6 +44,8 @@ export const ETIQUETA_ESTADO_PETICION: Record<EstadoPeticion, string> = {
   propuesta: "Propuesta pendiente",
   aprobada: "Aprobada",
   descartada: "Descartada",
+  borrador: "Pendiente de revisar",
+  lanzada: "Lanzada",
   error: "Con error",
 };
 
@@ -51,6 +56,8 @@ export const TONO_ESTADO_PETICION: Record<EstadoPeticion, string> = {
   propuesta: "border-warning/40 bg-warning/10 text-warning",
   aprobada: "border-primary/40 bg-primary/10 text-primary",
   descartada: "border-border bg-muted text-muted-foreground",
+  borrador: "border-warning/40 bg-warning/10 text-warning",
+  lanzada: "border-primary/40 bg-primary/10 text-primary",
   error: "border-destructive/40 bg-destructive/10 text-destructive",
 };
 
@@ -390,4 +397,197 @@ export function duracion(segundos: number | null | undefined) {
   const h = Math.floor(s / 3600);
   const m = Math.round((s % 3600) / 60);
   return h ? `${h} h ${String(m).padStart(2, "0")} min` : `${m} min`;
+}
+
+/* ------------------------- Borradores conversables ------------------------ */
+
+export const clavesBorradores = {
+  lista: ["pideme_borradores"] as const,
+  mensajes: (id: string) => ["pideme_mensajes", id] as const,
+};
+
+function primera<T>(dato: unknown): T | null {
+  if (Array.isArray(dato)) return (dato[0] ?? null) as T | null;
+  return (dato ?? null) as T | null;
+}
+
+export type BorradorCreado = {
+  id: string;
+  texto: string;
+  texto_original: string | null;
+  correcciones: CorreccionNombre[] | null;
+};
+
+/** Peticiones que esperan revisión antes de lanzarse. */
+export function useBorradores() {
+  return useQuery({
+    queryKey: clavesBorradores.lista,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("peticiones_directas")
+        .select("*")
+        .eq("estado", "borrador")
+        .order("creado_el", { ascending: false })
+        .limit(100);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as PeticionDirectaRow[];
+    },
+  });
+}
+
+export function useBorradoresPendientes() {
+  const { data = [] } = useBorradores();
+  return data.length;
+}
+
+function useInvalidarBorradores() {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: clavesBorradores.lista });
+    void queryClient.invalidateQueries({ queryKey: clavesPideme.peticiones });
+  };
+}
+
+/** Crea un borrador con los nombres ya corregidos. */
+export function useCrearBorrador() {
+  const invalidar = useInvalidarBorradores();
+  return useMutation({
+    mutationFn: async (v: {
+      texto: string;
+      origen?: string;
+      grabacionId?: string | null;
+      proyectoId?: string | null;
+    }) => {
+      const { data, error } = await supabase.rpc("nex_pideme_borrador", {
+        p_texto: v.texto,
+        p_origen: v.origen ?? "texto",
+        p_grabacion_id: v.grabacionId ?? null,
+        p_proyecto_id: v.proyectoId ?? null,
+      });
+      if (error) throw new Error(error.message);
+      const fila = primera<BorradorCreado>(data);
+      if (!fila?.id) throw new Error("No se ha podido crear el borrador.");
+      return fila;
+    },
+    onSuccess: () => invalidar(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useGuardarBorrador() {
+  const invalidar = useInvalidarBorradores();
+  return useMutation({
+    mutationFn: async (v: { id: string; texto: string; aclaraciones?: string | null; proyectoId?: string | null }) => {
+      const { error } = await supabase.rpc("nex_pideme_guardar_borrador", {
+        p_id: v.id,
+        p_texto: v.texto,
+        p_aclaraciones: v.aclaraciones ?? null,
+        p_proyecto_id: v.proyectoId ?? null,
+      });
+      if (error) throw new Error(error.message);
+      return true;
+    },
+    onSuccess: () => invalidar(),
+  });
+}
+
+export function useMensajesBorrador(peticionId: string | null) {
+  return useQuery({
+    queryKey: clavesBorradores.mensajes(peticionId ?? ""),
+    enabled: Boolean(peticionId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("peticiones_mensajes")
+        .select("*")
+        .eq("peticion_id", peticionId!)
+        .order("creado_el");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as PeticionMensajeRow[];
+    },
+  });
+}
+
+export function useAnadirMensaje(peticionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { texto: string; rol?: RolMensajePeticion }) => {
+      const { error } = await supabase.rpc("nex_pideme_mensaje", {
+        p_id: peticionId,
+        p_texto: v.texto,
+        p_rol: v.rol ?? "usuario",
+      });
+      if (error) throw new Error(error.message);
+      return true;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: clavesBorradores.mensajes(peticionId) });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** Aplica una corrección sugerida y la memoriza en el diccionario. */
+export function useAprenderCorreccion() {
+  const invalidar = useInvalidarBorradores();
+  return useMutation({
+    mutationFn: async (v: { id: string; de: string; a: string }) => {
+      const { data, error } = await supabase.rpc("nex_pideme_aprender", { p_id: v.id, p_de: v.de, p_a: v.a });
+      if (error) throw new Error(error.message);
+      const texto = typeof data === "string" ? data : ((primera<{ texto?: string }>(data)?.texto ?? "") as string);
+      return texto;
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Nombre corregido y memorizado.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export type BorradorLanzado = { id: string; texto_final: string; proyecto_id: string | null };
+
+export function useLanzarBorrador() {
+  const invalidar = useInvalidarBorradores();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.rpc("nex_pideme_lanzar", { p_id: id });
+      if (error) throw new Error(error.message);
+      const fila = primera<BorradorLanzado>(data);
+      if (!fila?.texto_final) throw new Error("El borrador no tiene texto que lanzar.");
+      return fila;
+    },
+    onSuccess: () => invalidar(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useVincularBorrador() {
+  const invalidar = useInvalidarBorradores();
+  return useMutation({
+    mutationFn: async (v: { borradorId: string; peticionId: string }) => {
+      const { error } = await supabase.rpc("nex_pideme_vincular", {
+        p_borrador_id: v.borradorId,
+        p_peticion_id: v.peticionId,
+      });
+      if (error) throw new Error(error.message);
+      return true;
+    },
+    onSuccess: () => invalidar(),
+  });
+}
+
+export function useDescartarBorrador() {
+  const invalidar = useInvalidarBorradores();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("nex_pideme_descartar", { p_id: id });
+      if (error) throw new Error(error.message);
+      return true;
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success("Borrador descartado.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 }
