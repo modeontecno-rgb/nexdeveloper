@@ -35,6 +35,7 @@ import {
   buscarPantallas,
   esRutaActiva,
   grupoDeRuta,
+  gruposVisibles,
   leerAccesosMovil,
   pantallaPorRuta,
   type PantallaMenu,
@@ -253,6 +254,8 @@ function MenuLateral({
   onSalir: () => void;
 }) {
   const { grupo, alternar } = useGrupoAbierto(ruta);
+  const { usuario } = useAuth();
+  const grupos = gruposVisibles(usuario?.id);
 
   if (contraido) return <RailContraido ruta={ruta} onExpandir={() => onContraer(false)} />;
 
