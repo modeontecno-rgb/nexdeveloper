@@ -290,7 +290,7 @@ function MenuLateral({
 
       <nav aria-label="Categorías" className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-2">
         <ul className="flex flex-col gap-3">
-          {GRUPOS_MENU.map((g) => {
+          {grupos.map((g) => {
             const abierto = grupo === g.id;
             const tieneActiva = g.pantallas.some((p) => esRutaActiva(p.to, ruta));
             return (
