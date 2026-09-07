@@ -269,3 +269,28 @@ export function IndicadorCabeceraTrabajo({ className }: { className?: string }) 
     </span>
   );
 }
+
+/* ------------------------- Ayuda para las mutaciones ---------------------- */
+
+/** Envuelve cualquier acción larga con el indicador global. */
+export function useConTrabajo() {
+  const { iniciarTrabajo } = useTrabajo();
+  return React.useCallback(
+    async <T,>(
+      titulo: string,
+      accion: (manejador: ManejadorTrabajo) => Promise<T>,
+      opciones?: { pasos?: string[]; mensajeOk?: string },
+    ): Promise<T | undefined> => {
+      const manejador = iniciarTrabajo({ titulo, pasos: opciones?.pasos ?? [] });
+      try {
+        const resultado = await accion(manejador);
+        manejador.terminar(opciones?.mensajeOk);
+        return resultado;
+      } catch (e) {
+        manejador.fallar(e instanceof Error ? e.message : "No se ha podido completar la operación.");
+        return undefined;
+      }
+    },
+    [iniciarTrabajo],
+  );
+}
