@@ -1104,6 +1104,7 @@ export function TarjetaPlaudConexion() {
 }
 
 function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
+  const conTrabajo = useConTrabajo();
   const { data: grabaciones = [] } = useGrabacionesPlaud();
   const crearBorrador = useCrearBorrador();
   const procesar = usePlaudProcesar();
