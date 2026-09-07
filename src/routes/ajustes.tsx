@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Cpu, Database, Smartphone, Trash2 } from "lucide-react";
+import { Check, Cpu, Database, Smartphone, Trash2, TriangleAlert } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -19,6 +19,8 @@ import {
   type RutaMenu,
 } from "@/lib/nex/menu";
 import { VERSION_APP } from "@/lib/nex/version";
+import { PastillaVersion } from "@/components/nex/pastilla-version";
+import { useAutoria } from "@/lib/nex/queries/datos";
 
 
 export const Route = createFileRoute("/ajustes")({
@@ -113,10 +115,7 @@ function Ajustes() {
           <DiccionarioNombres />
         </div>
 
-        <section className="panel p-5">
-          <h2 className="font-display text-sm font-semibold">Versión</h2>
-          <p className="mt-2 text-sm text-muted-foreground">NexDeveloper {VERSION_APP}</p>
-        </section>
+        <AcercaDe />
 
         <AccesosRapidosMovil />
 
@@ -316,6 +315,49 @@ function AccesosRapidosMovil() {
           Restaurar los de fábrica
         </Boton>
       </div>
+    </section>
+  );
+}
+
+function AcercaDe() {
+  const { data: autoria } = useAutoria();
+  const nombre = autoria?.nombre_app || "NexDeveloper";
+  const versionRegistrada = autoria?.version ?? "";
+
+  return (
+    <section className="panel p-5">
+      <h2 className="font-display text-sm font-semibold">Acerca de</h2>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <p className="text-sm text-foreground">{nombre}</p>
+        <span className="text-sm text-muted-foreground">Versión {VERSION_APP}</span>
+        <PastillaVersion />
+      </div>
+      {autoria?.powered_by ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {autoria.url ? (
+            <a href={autoria.url} target="_blank" rel="noreferrer" className="hover:text-foreground">
+              Powered by {autoria.powered_by}
+            </a>
+          ) : (
+            <>Powered by {autoria.powered_by}</>
+          )}
+        </p>
+      ) : null}
+      <p className="mt-2 text-xs text-muted-foreground">
+        Autoría: la sociedad que figura se cambia en configuración (<code>autoria.powered_by</code>), sin tocar código.
+      </p>
+      {versionRegistrada ? (
+        versionRegistrada === VERSION_APP ? (
+          <p className="mt-3 flex items-center gap-2 text-xs text-success">
+            <Check className="size-4" /> Versión registrada correctamente
+          </p>
+        ) : (
+          <p className="mt-3 flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <TriangleAlert className="size-4 shrink-0" />
+            La versión registrada en configuración ({versionRegistrada}) no coincide con la publicada ({VERSION_APP})
+          </p>
+        )
+      ) : null}
     </section>
   );
 }

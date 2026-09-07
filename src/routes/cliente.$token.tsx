@@ -16,6 +16,7 @@ import {
 import * as React from "react";
 
 import type { TipoPeticionPortal } from "@/lib/nex/db-types";
+import { useAutoria } from "@/lib/nex/queries/datos";
 import { formatoFecha, formatoFechaHora } from "@/lib/nex/labels";
 import {
   ETIQUETA_ESTADO_PETICION,
@@ -25,6 +26,19 @@ import {
   useEnviarPeticionPublica,
   usePortalPublico,
 } from "@/lib/nex/queries/portal-cliente";
+
+function LeyendaAutoriaPortal() {
+  const { data } = useAutoria();
+  if (!data?.powered_by || data.mostrar_en_pie !== "siempre") return null;
+  const texto = `Powered by ${data.powered_by}`;
+  return data.url ? (
+    <a href={data.url} target="_blank" rel="noreferrer">
+      {texto}
+    </a>
+  ) : (
+    <span>{texto}</span>
+  );
+}
 
 const DESCRIPCION = "Consulta el estado de tu proyecto, sus novedades y tus documentos.";
 
@@ -116,7 +130,7 @@ function PortalCliente() {
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        {data.marca?.powered_by ? <span>Powered by {data.marca.powered_by}</span> : null}
+        {data.marca?.powered_by ? <span>Powered by {data.marca.powered_by}</span> : <LeyendaAutoriaPortal />}
       </footer>
     </div>
   );

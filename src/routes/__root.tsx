@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Puerta } from "@/components/nex/puerta";
 import { ProveedorAuth } from "@/lib/nex/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { useAutoria } from "@/lib/nex/queries/datos";
 
 
 function NotFoundComponent() {
@@ -23,16 +24,16 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Página no encontrada</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          La página que buscas no existe o se ha movido.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            Volver al inicio
           </Link>
         </div>
       </div>
@@ -51,10 +52,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Esta página no se ha cargado
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Algo ha fallado. Puedes volver a intentarlo o ir al inicio.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -64,13 +65,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Reintentar
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Ir al inicio
           </a>
         </div>
       </div>
@@ -88,6 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "description",
         content: "Gestiona todos tus proyectos de IA, agentes, tareas y costes desde un único lugar.",
       },
+      { name: "generator", content: "Powered by Modeontecno S.L." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#0f1116" },
@@ -138,6 +140,16 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ActualizarGenerator() {
+  const { data } = useAutoria();
+  useEffect(() => {
+    if (typeof document === "undefined" || !data?.powered_by) return;
+    const etiqueta = document.querySelector('meta[name="generator"]');
+    if (etiqueta) etiqueta.setAttribute("content", `Powered by ${data.powered_by}`);
+  }, [data?.powered_by]);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const ruta = useRouterState({ select: (s) => s.location.pathname });
@@ -154,6 +166,7 @@ function RootComponent() {
   if (esPortalCliente) {
     return (
       <QueryClientProvider client={queryClient}>
+        <ActualizarGenerator />
         <Outlet />
       </QueryClientProvider>
     );
@@ -161,6 +174,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ActualizarGenerator />
       <ProveedorAuth>
         {/* Puerta contiene el <Outlet /> donde se dibujan las rutas hijas. */}
         <Puerta />
