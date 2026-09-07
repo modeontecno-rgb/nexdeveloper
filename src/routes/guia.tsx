@@ -37,9 +37,9 @@ const PASOS = [
   {
     numero: 3,
     titulo: "Sigue las tareas",
-    texto: "La Cola reúne todo el trabajo. «Requiere tu atención» espera una decisión tuya; «Trabajo desatendido» avanza solo.",
+    texto: "Tareas reúne todo el trabajo. «Requiere tu atención» espera una decisión tuya; «Trabajo desatendido» avanza solo.",
     to: "/tareas" as const,
-    accion: "Abrir la Cola",
+    accion: "Abrir Tareas",
     icono: ListTodo,
   },
   {
@@ -53,7 +53,7 @@ const PASOS = [
   {
     numero: 5,
     titulo: "Atiende los avisos",
-    texto: "Un aviso te lleva directamente al elemento que necesita revisión. Al abrir una tarea, aparecerá destacada en la Cola.",
+    texto: "Un aviso te lleva directamente al elemento que necesita revisión. Al abrir una tarea, aparecerá destacada en Tareas.",
     to: "/avisos" as const,
     accion: "Abrir avisos",
     icono: Bell,
@@ -109,7 +109,7 @@ function GuiaTrabajo() {
         <div className="border-l-2 border-primary pl-4">
           <h2 className="flex items-center gap-2 font-display text-base font-semibold"><Users className="size-4 text-primary" /> Cuándo usar la Mesa</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Úsala para decisiones complejas: arquitectura, diseño, estrategia o comparación de alternativas. Al terminar, pulsa una sola vez «Crear tareas del plan» y abre la Cola.
+            Úsala para decisiones complejas: arquitectura, diseño, estrategia o comparación de alternativas. Al terminar, pulsa una sola vez «Crear tareas del plan» y abre Tareas.
           </p>
           <Link to="/mesa" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">Abrir la Mesa <ArrowRight className="size-4" /></Link>
         </div>
