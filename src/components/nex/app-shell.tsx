@@ -30,7 +30,6 @@ import {
   CLAVE_GRUPO_ABIERTO,
   CLAVE_MENU_CONTRAIDO,
   FIJOS_ARRIBA,
-  GRUPOS_MENU,
   TODAS_LAS_PANTALLAS,
   buscarPantallas,
   esRutaActiva,
