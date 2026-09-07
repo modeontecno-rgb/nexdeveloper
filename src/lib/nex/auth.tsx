@@ -52,6 +52,15 @@ export function ProveedorAuth({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password: contrasena });
       if (error) throw new Error(traducirError(error.message));
     },
+    registrar: async (email, contrasena) => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: contrasena,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw new Error(traducirErrorRegistro(error.message));
+      return { confirmacionPendiente: !data.session };
+    },
     salir: async () => {
       await queryClient.cancelQueries();
       queryClient.clear();
