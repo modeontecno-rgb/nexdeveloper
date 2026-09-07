@@ -149,11 +149,8 @@ export function useHistorialProyectian() {
 
 export function useSincronizarProyectian() {
   const queryClient = useQueryClient();
-  const seguirTrabajo = useSeguirTrabajo('Probando Proyectian');
-  const seguirTrabajo = useSeguirTrabajo('Sincronizando con Proyectian');
+  const seguirTrabajo = useSeguirTrabajo("Sincronizando con Proyectian");
   return useMutation({
-    onMutate: seguirTrabajo.empezar,
-    onSettled: seguirTrabajo.acabar,
     onMutate: seguirTrabajo.empezar,
     onSettled: seguirTrabajo.acabar,
     mutationFn: async ({ accion, proyectoId }: { accion: AccionProyectian; proyectoId?: string | undefined }) =>
