@@ -27,6 +27,7 @@ export const clavesInfra = {
 /* --------------------------------- Textos --------------------------------- */
 
 export const ETIQUETA_TIPO_SERVICIO: Record<TipoServicioInfra, string> = {
+  conexion: "Cuenta o autorización",
   supabase: "Base de datos (Supabase)",
   github: "GitHub",
   http: "Página o API",
@@ -43,6 +44,7 @@ export const ETIQUETA_TIPO_SERVICIO: Record<TipoServicioInfra, string> = {
 };
 
 export const EXPLICACION_TIPO_SERVICIO: Record<TipoServicioInfra, string> = {
+  conexion: "Se comprueba que la cuenta o autorización sigue siendo válida.",
   supabase: "Se consulta el estado del proyecto de Supabase con la referencia indicada.",
   github: "Se comprueba el repositorio en GitHub con el token guardado.",
   http: "Se pide la dirección y se comprueba el código de respuesta y, si lo indicas, un texto que debe aparecer.",
