@@ -100,8 +100,9 @@ function PantallaRevisores() {
                     <tr key={r.id} className="border-b border-border/60 last:border-0">
                       <td className="px-4 py-2.5 font-medium">{r.email}</td>
                       <td className="px-4 py-2.5 text-muted-foreground">
-                        {r.ultimo_acceso ? formatoFechaHora(r.ultimo_acceso) : "Todavía no ha entrado"}
+                        {r.ultimo_acceso ? formatoFechaHora(r.ultimo_acceso) : "—"}
                       </td>
+
                       <td className="px-4 py-2.5 text-right">{r.manuales_totales}</td>
                       <td className="px-4 py-2.5 text-right">{r.manuales_revisados}</td>
                       <td className="px-4 py-2.5 text-right">{r.correcciones_totales}</td>
