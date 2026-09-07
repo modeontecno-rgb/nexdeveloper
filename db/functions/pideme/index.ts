@@ -1,4 +1,4 @@
-// NexDeveloper · Edge Function «pideme» (0.31.0)
+// NexDeveloper · Edge Function «pideme» (0.37.2) — v4: transcripción Plaud legible (segments), «personal» solo si es explícito, proyecto elegido al revisar se respeta
 // «Pídeme qué quieres»: la tecla directa de Javier. Recibe texto (escrito, dictado o de una grabación del Plaud), lo CLASIFICA
 // (¿de qué proyecto habla? ¿es personal? ¿es una consulta, una modificación o tareas?) y lo ENRUTA:
 //  - proyecto + consulta  → chat nuevo en ese proyecto con título propio y respuesta con contexto del proyecto
@@ -8,6 +8,7 @@
 //  - personal (o sin proyecto) → conversación en el apartado PERSONAL (fusión de IAs)
 // Plaud: conexión OAuth (PKCE, registro dinámico) con el servidor MCP de Plaud, importación de grabaciones (manual y cada 30 min)
 // y procesado por el mismo clasificador. Nada personal se guarda en los proyectos ni en Proyectian.
+// 0.36.1: la prueba de conexión con Plaud pedía list_files con page_size 5 y la API exige un mínimo de 10 → salía en rojo estando bien.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
@@ -21,13 +22,15 @@ const ahora = () => new Date().toISOString();
 const URL_FUNCION = `${URL_SUPABASE}/functions/v1/pideme`;
 const URL_CALLBACK = `${URL_FUNCION}/callback`;
 const PLAUD = { issuer: "https://mcp.plaud.ai/", authorize: "https://mcp.plaud.ai/authorize", token: "https://mcp.plaud.ai/token", register: "https://mcp.plaud.ai/register", mcp: "https://mcp.plaud.ai/mcp" };
+// La API de Plaud exige page_size >= 10 en list_files.
+const PLAUD_PAGE_MIN = 10;
 const INICIO = Date.now();
 const quedaTiempo = (ms = 95_000) => Date.now() - INICIO < ms;
 
 // ---------- IA ----------
 type Prov = { slug: string; nombre: string; clave: string; modelo: string; modelo_id: string | null; ce: number; cs: number; calidad: number };
 async function proveedoresDisponibles(sb: SB, userId: string): Promise<Prov[]> {
-  const { data: provs } = await sb.from("proveedores_ia").select("id, nombre, clave_slug, clave_cifrada").eq("user_id", userId).eq("activo", true).not("clave_cifrada", "is", null).in("clave_slug", ["anthropic", "openai", "google", "groq", "mistral", "deepseek", "xai", "openrouter"]);
+  const { data: provs } = await sb.from("proveedores_ia").select("id, nombre, clave_slug, clave_cifrada").eq("user_id", userId).eq("activo", true).not("clave_cifrada", "is", null).in("clave_slug", ["abacus", "anthropic", "openai", "google", "groq", "mistral", "deepseek", "xai", "openrouter"]);
   const out: Prov[] = [];
   for (const p of provs ?? []) {
     const { data: clave } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: p.id }); if (!clave) continue;
@@ -35,7 +38,7 @@ async function proveedoresDisponibles(sb: SB, userId: string): Promise<Prov[]> {
     const m = (modelos ?? []).find((x) => !/image|imagen|tts|whisper|embed/i.test(x.identificador)); if (!m) continue;
     out.push({ slug: p.clave_slug, nombre: p.nombre, clave: String(clave), modelo: m.identificador, modelo_id: m.id, ce: Number(m.coste_entrada ?? 0), cs: Number(m.coste_salida ?? 0), calidad: Number(m.calidad ?? 3) });
   }
-  return out.sort((a, b) => (a.slug === "anthropic" ? -1 : b.slug === "anthropic" ? 1 : b.calidad - a.calidad));
+  return out.sort((a, b) => (a.slug === "abacus" ? -1 : b.slug === "abacus" ? 1 : a.slug === "anthropic" ? -1 : b.slug === "anthropic" ? 1 : b.calidad - a.calidad));
 }
 const coste = (p: Prov, te: number, ts: number) => Number(((te * p.ce + ts * p.cs) / 1_000_000).toFixed(4));
 async function llamar(p: Prov, sistema: string, pregunta: string, maxTokens = 2500, jsonMode = false) {
@@ -49,7 +52,7 @@ async function llamar(p: Prov, sistema: string, pregunta: string, maxTokens = 25
     if (!r.ok) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
     return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 };
   }
-  const bases: Record<string, string> = { openai: "https://api.openai.com/v1", groq: "https://api.groq.com/openai/v1", mistral: "https://api.mistral.ai/v1", deepseek: "https://api.deepseek.com/v1", xai: "https://api.x.ai/v1", openrouter: "https://openrouter.ai/api/v1" };
+  const bases: Record<string, string> = { abacus: "https://routellm.abacus.ai/v1", openai: "https://api.openai.com/v1", groq: "https://api.groq.com/openai/v1", mistral: "https://api.mistral.ai/v1", deepseek: "https://api.deepseek.com/v1", xai: "https://api.x.ai/v1", openrouter: "https://openrouter.ai/api/v1" };
   const r = await fetch(`${bases[p.slug]}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.2, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
   if (!r.ok) throw new Error(`${p.slug} ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
   return { texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
@@ -58,11 +61,11 @@ const extraerJson = (t: string) => { const m = t.match(/```json\s*([\s\S]*?)```/
 async function anotar(sb: SB, userId: string, p: Prov, te: number, ts: number, proyectoId: string | null) { if (p.modelo_id) await sb.from("consumos_ia").insert({ user_id: userId, proyecto_id: proyectoId, modelo_id: p.modelo_id, tokens_entrada: te, tokens_salida: ts, coste: coste(p, te, ts), resultado: "ok" }).then(() => {}, () => {}); return coste(p, te, ts); }
 
 // ---------- Clasificación ----------
-const normalizar = (s: string) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-async function clasificar(sb: SB, userId: string, texto: string, provs: Prov[]) {
+const normalizar = (s: string) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+async function clasificar(sb: SB, userId: string, texto: string, provs: Prov[], forzarProyectoId: string | null = null) {
   const { data: ps } = await sb.from("proyectos").select("id, nombre, slug, alias, descripcion, palabras_clave").eq("user_id", userId);
   const t = normalizar(texto);
-  const personalExplicito = /\b(a nivel personal|personal|para mi|cosa mia|nada que ver con (los )?proyectos|es personal)\b/.test(t) && !/\bproyecto\b/.test(t);
+  const personalExplicito = !forzarProyectoId && /\b(a nivel personal|es personal|esto es personal|es algo personal|cosa mia|es cosa mia|nada que ver con (los |mis )?proyectos|para mi personalmente)\b/.test(t) && !/\bproyecto\b/.test(t);
   // 1) Coincidencia directa por nombre, slug, alias o palabras clave
   const candidatos = (ps ?? []).map((p) => {
     const nombres = [p.nombre, p.slug, ...(p.alias ?? []), ...((p.palabras_clave ?? []) as string[])].filter(Boolean).map(normalizar);
@@ -84,6 +87,10 @@ async function clasificar(sb: SB, userId: string, texto: string, provs: Prov[]) 
   if (personalExplicito) { clasificacion.destino = "personal"; clasificacion.tipo = "personal"; clasificacion.proyecto_id = null; clasificacion.confianza = 0.95; clasificacion.motivo = "Javier lo ha marcado como personal"; }
   else if (candidatos.length && candidatos[0].puntos >= 3 && clasificacion.destino !== "proyecto") { clasificacion.destino = "proyecto"; clasificacion.proyecto_id = candidatos[0].p.id; clasificacion.proyecto_nombre = candidatos[0].p.nombre; clasificacion.confianza = Math.max(clasificacion.confianza ?? 0, 0.8); if (clasificacion.tipo === "personal") clasificacion.tipo = "consulta"; }
   if (clasificacion.destino === "proyecto" && clasificacion.proyecto_id && !(ps ?? []).some((p) => p.id === clasificacion.proyecto_id)) { const porNombre = (ps ?? []).find((p) => normalizar(p.nombre) === normalizar(clasificacion.proyecto_nombre ?? "")); if (porNombre) clasificacion.proyecto_id = porNombre.id; else { clasificacion.destino = "personal"; clasificacion.proyecto_id = null; } }
+  if (forzarProyectoId) {
+    const pf = (ps ?? []).find((p) => p.id === forzarProyectoId);
+    if (pf) { clasificacion.destino = "proyecto"; clasificacion.proyecto_id = pf.id; clasificacion.proyecto_nombre = pf.nombre; clasificacion.confianza = 1; clasificacion.motivo = "Proyecto elegido por Javier al revisar"; if (clasificacion.tipo === "personal") clasificacion.tipo = /\b(cambia|anade|añade|quita|mejora|arregla|modifica|pon|crea|implementa|desarrolla|integra)\b/.test(t) ? "modificacion" : "consulta"; }
+  }
   return clasificacion;
 }
 
@@ -137,7 +144,14 @@ async function procesarPeticion(sb: SB, userId: string, peticionId: string) {
   const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", peticionId).single();
   if (!pet) throw new Error("Petición no encontrada");
   const provs = await proveedoresDisponibles(sb, userId);
-  const c = await clasificar(sb, userId, pet.texto, provs);
+  let forzar: string | null = pet.proyecto_id ?? null;
+  if (!forzar) {
+    // Si viene de un borrador revisado en el que Javier eligió proyecto, respetarlo (el borrador se lanzó hace un momento y su texto es el inicio de esta petición)
+    const { data: bor } = await sb.from("peticiones_directas").select("id, texto, proyecto_id").eq("user_id", userId).eq("estado", "lanzada").not("proyecto_id", "is", null).gte("lanzada_el", new Date(Date.now() - 10 * 60_000).toISOString()).order("lanzada_el", { ascending: false }).limit(5);
+    const b = (bor ?? []).find((x: any) => x.texto && String(pet.texto).startsWith(String(x.texto).slice(0, 200)));
+    if (b) forzar = b.proyecto_id;
+  }
+  const c = await clasificar(sb, userId, pet.texto, provs, forzar);
   await sb.from("peticiones_directas").update({ clasificacion: c, destino: c.destino, proyecto_id: c.destino === "proyecto" ? c.proyecto_id : null, estado: "clasificada", actualizado_el: ahora() }).eq("id", pet.id);
   const salida: any = { clasificacion: c };
   try {
@@ -219,7 +233,7 @@ async function mcp(token: string, sesion: string | null, cuerpo: unknown) {
 }
 async function herramientaPlaud(token: string, nombre: string, argumentos: Record<string, unknown>, sesion?: string | null) {
   let s = sesion ?? null;
-  if (!s) { const ini = await mcp(token, null, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "NexDeveloper", version: "0.31.0" } } }); s = ini.sesion; try { await mcp(token, s, { jsonrpc: "2.0", method: "notifications/initialized" }); } catch { /* opcional */ } }
+  if (!s) { const ini = await mcp(token, null, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "NexDeveloper", version: "0.36.1" } } }); s = ini.sesion; try { await mcp(token, s, { jsonrpc: "2.0", method: "notifications/initialized" }); } catch { /* opcional */ } }
   const r = await mcp(token, s, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: nombre, arguments: argumentos } });
   const d = r.datos; if (!d) throw new Error(`Plaud no respondió a ${nombre}`);
   if (d.error) throw new Error(`Plaud (${nombre}): ${d.error.message ?? JSON.stringify(d.error)}`);
@@ -231,7 +245,7 @@ async function herramientaPlaud(token: string, nombre: string, argumentos: Recor
 }
 const textoDeTranscripcion = (t: any): string => {
   if (!t) return ""; if (typeof t === "string") return t;
-  const lista = t.utterances ?? t.items ?? t.transcript ?? t.data ?? t.transaction ?? (Array.isArray(t) ? t : null);
+  const lista = t.segments ?? t.utterances ?? t.items ?? t.transcript ?? t.data ?? t.transaction ?? (Array.isArray(t) ? t : null);
   if (Array.isArray(lista)) return lista.map((u: any) => typeof u === "string" ? u : `${u.speaker ?? u.speaker_name ?? ""}${u.speaker || u.speaker_name ? ": " : ""}${u.text ?? u.content ?? ""}`).join("\n");
   if (t.texto) return String(t.texto); if (t.text) return String(t.text); if (t.content) return textoDeTranscripcion(t.content);
   return JSON.stringify(t).slice(0, 20000);
@@ -324,7 +338,7 @@ Deno.serve(async (req) => {
       }
       case "pedir": {
         const texto = String(cuerpo.texto ?? "").trim(); if (texto.length < 3) return json({ ok: false, error: "Dime qué quieres" }, 400);
-        const { data: pet } = await sb.from("peticiones_directas").insert({ user_id: userId, texto, origen: cuerpo.origen === "voz" ? "voz" : "texto" }).select("id").single();
+        const { data: pet } = await sb.from("peticiones_directas").insert({ user_id: userId, texto, origen: cuerpo.origen === "voz" ? "voz" : "texto", proyecto_id: cuerpo.proyecto_id ? String(cuerpo.proyecto_id) : null }).select("id").single();
         const r = await procesarPeticion(sb, userId, pet!.id);
         const { data: fin } = await sb.from("peticiones_directas").select("*").eq("id", pet!.id).single();
         return json({ ok: true, peticion: fin, ...r });
@@ -379,7 +393,7 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
       case "plaud_probar": {
-        try { const token = await tokenPlaud(sb, userId); const me = await herramientaPlaud(token, "get_current_user", {}); const l = await herramientaPlaud(token, "list_files", { page: 1, page_size: 5 }, me.sesion); const archivos = l.salida?.files ?? l.salida?.items ?? l.salida?.data ?? (Array.isArray(l.salida) ? l.salida : []); await sb.from("conexiones_externas").update({ estado: "conectada", ultimo_error: null, ultima_comprobacion: ahora() }).eq("user_id", userId).eq("proveedor", "plaud"); return json({ ok: true, cuenta: me.salida?.email ?? me.salida?.name ?? null, grabaciones_vistas: archivos.length }); }
+        try { const token = await tokenPlaud(sb, userId); const me = await herramientaPlaud(token, "get_current_user", {}); const l = await herramientaPlaud(token, "list_files", { page: 1, page_size: PLAUD_PAGE_MIN }, me.sesion); const archivos = l.salida?.files ?? l.salida?.items ?? l.salida?.data ?? (Array.isArray(l.salida) ? l.salida : []); await sb.from("conexiones_externas").update({ estado: "conectada", ultimo_error: null, ultima_comprobacion: ahora() }).eq("user_id", userId).eq("proveedor", "plaud"); return json({ ok: true, cuenta: me.salida?.email ?? me.salida?.name ?? null, grabaciones_vistas: archivos.length }); }
         catch (e) { await sb.from("conexiones_externas").update({ estado: "error", ultimo_error: String(e?.message ?? e).slice(0, 300), ultima_comprobacion: ahora() }).eq("user_id", userId).eq("proveedor", "plaud"); return json({ ok: false, error: String(e?.message ?? e) }); }
       }
       case "plaud_configurar": {
