@@ -319,6 +319,34 @@ export function normalizarPlan(plan: unknown): PasoPlanMesa[] {
   return [];
 }
 
+/** Recupera un plan numerado escrito en Markdown por el experto planificador. */
+export function planDeIntervencion(texto: string | null | undefined): PasoPlanMesa[] {
+  const contenido = (texto ?? "").trim();
+  if (!contenido) return [];
+  const coincidencias = [...contenido.matchAll(/^\s*\*\*(\d+)\.\s+(.+?)\*\*\s*$/gm)];
+  return coincidencias.map((coincidencia, indice) => {
+    const inicio = (coincidencia.index ?? 0) + coincidencia[0].length;
+    const fin = coincidencias[indice + 1]?.index ?? contenido.length;
+    const bloque = contenido.slice(inicio, fin).trim();
+    const tituloConHoras = (coincidencia[2] ?? "Paso").trim();
+    const horasTexto = tituloConHoras.match(/\((\d+(?:[.,]\d+)?)\s*h\)\s*$/i)?.[1];
+    const titulo = tituloConHoras.replace(/\s*\(\d+(?:[.,]\d+)?\s*h\)\s*$/i, "").trim();
+    const responsable = bloque.match(/^-\s*\*\*(?:Quién|Responsable)\*\*\s*:\s*(.+)$/im)?.[1]?.trim() ?? null;
+    const lineasDescripcion = bloque
+      .split("\n")
+      .map((linea) => linea.trim())
+      .filter((linea) => linea && !/^[-*]\s*\*\*(?:Quién|Responsable|Riesgo)\*\*/i.test(linea));
+    return {
+      orden: Number(coincidencia[1] ?? indice + 1),
+      titulo,
+      descripcion: lineasDescripcion.join("\n").replace(/^[-*]\s*/, "") || null,
+      responsable,
+      horas: horasTexto ? Number(horasTexto.replace(",", ".")) : null,
+      requiere_atencion: /javier/i.test(responsable ?? ""),
+    };
+  });
+}
+
 /**
  * Algunos coordinadores devuelven el plan dentro del texto de la conclusión
  * (en un bloque JSON) en lugar de en el campo estructurado. Esto lo rescata.
