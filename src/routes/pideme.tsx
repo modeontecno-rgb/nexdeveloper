@@ -14,6 +14,8 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
+import { useTrabajo } from "@/components/nex/indicador-trabajo";
+import { sonidoTic } from "@/lib/nex/sonidos";
 import { RevisarBorrador } from "@/components/nex/revisar-borrador";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
@@ -82,6 +84,14 @@ export const Route = createFileRoute("/pideme")({
 
 function PidemePantalla() {
   const busqueda = Route.useSearch();
+  const [destello, setDestello] = React.useState(true);
+
+  React.useEffect(() => {
+    sonidoTic();
+    const t = window.setTimeout(() => setDestello(false), 1000);
+    return () => window.clearTimeout(t);
+  }, []);
+
   const [pestana, setPestana] = React.useState<Pestana>(busqueda.tab ?? "peticiones");
   const { data: peticiones = [] } = usePeticiones();
   const estado = useEstadoPideme();
@@ -93,7 +103,7 @@ function PidemePantalla() {
   return (
     <>
       <Encabezado
-        titulo="Pídeme qué quieres"
+        titulo={destello ? "Pídeme qué quieres ✨" : "Pídeme qué quieres"}
         descripcion="Tu tecla directa: escribe o dicta y yo decido si es de un proyecto o personal, y actúo."
         acciones={<BotonImportarPlaud />}
       />
@@ -656,21 +666,43 @@ export function useLanzarBorradorCompleto() {
   const lanzar = useLanzarBorrador();
   const pedir = usePedir();
   const vincular = useVincularBorrador();
+  const { iniciarTrabajo } = useTrabajo();
   const [enCurso, setEnCurso] = React.useState<string | null>(null);
 
   const lanzarBorrador = async (id: string, alTerminar?: (peticionId: string) => void) => {
     setEnCurso(id);
+    const pasos = [
+      "Cerrando el borrador",
+      "Entendiendo lo que pides",
+      "Preparando la propuesta con los expertos",
+      "Guardando el resultado",
+    ];
+    const trabajo = iniciarTrabajo({ titulo: "Lanzando lo que me has pedido", pasos });
     try {
+      trabajo.avanzar(pasos[0]!, 10);
       const borrador = await lanzar.mutateAsync(id);
-      const respuesta = await pedir.mutateAsync({ texto: borrador.texto_final, origen: "texto" });
+      trabajo.avanzar(pasos[1]!, 30);
+      const respuesta = await pedir.mutateAsync({
+        texto: borrador.texto_final,
+        origen: "texto",
+        proyecto_id: borrador.proyecto_id,
+      });
+      trabajo.avanzar(
+        respuesta.clasificacion?.tipo === "consulta" ? "Respondiendo" : pasos[2]!,
+        75,
+      );
       const peticionId = respuesta.peticion?.id;
       if (peticionId) {
+        trabajo.avanzar(pasos[3]!, 92);
         await vincular.mutateAsync({ borradorId: id, peticionId });
         alTerminar?.(peticionId);
       }
+      trabajo.terminar("Tarea lanzada.");
       toast.success("Tarea lanzada.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se ha podido lanzar la tarea.");
+      const mensaje = e instanceof Error ? e.message : "No se ha podido lanzar la tarea.";
+      trabajo.fallar(mensaje);
+      toast.error(mensaje);
     } finally {
       setEnCurso(null);
     }
@@ -748,20 +780,36 @@ export function BotonImportarPlaud({ className }: { className?: string }) {
   const importar = usePlaudImportar();
   const procesar = usePlaudProcesar();
   const estado = useEstadoPideme();
+  const { iniciarTrabajo } = useTrabajo();
   const auto = Boolean(estado.data?.plaud_config?.procesar_automatico);
+
+  const traer = async () => {
+    const pasos = ["Conectando con Plaud", "Descargando grabaciones", "Guardando transcripciones"];
+    const trabajo = iniciarTrabajo({ titulo: "Importar de Plaud", pasos });
+    try {
+      trabajo.avanzar(pasos[0]!, 15);
+      trabajo.avanzar(pasos[1]!, 45);
+      const r = await importar.mutateAsync(undefined);
+      const resumen =
+        typeof r.nuevas === "number"
+          ? `${r.nuevas} ${r.nuevas === 1 ? "grabación nueva" : "grabaciones nuevas"} de ${r.total_plaud ?? 0}`
+          : "Grabaciones al día.";
+      if (auto) {
+        trabajo.avanzar(pasos[2]!, 80);
+        await procesar.mutateAsync(undefined);
+      }
+      trabajo.terminar(resumen);
+    } catch (e) {
+      trabajo.fallar(e instanceof Error ? e.message : "No se ha podido importar de Plaud.");
+    }
+  };
 
   return (
     <Boton
       variante="suave"
       className={className ?? ""}
       disabled={importar.isPending || procesar.isPending}
-      onClick={() =>
-        importar.mutate(undefined, {
-          onSuccess: () => {
-            if (auto) procesar.mutate(undefined);
-          },
-        })
-      }
+      onClick={() => void traer()}
     >
       {importar.isPending || procesar.isPending ? (
         <Loader2 className="size-4 animate-spin" />
