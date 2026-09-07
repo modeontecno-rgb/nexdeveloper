@@ -331,11 +331,11 @@ export function planDeIntervencion(texto: string | null | undefined): PasoPlanMe
     const tituloConHoras = (coincidencia[2] ?? "Paso").trim();
     const horasTexto = tituloConHoras.match(/\((\d+(?:[.,]\d+)?)\s*h\)\s*$/i)?.[1];
     const titulo = tituloConHoras.replace(/\s*\(\d+(?:[.,]\d+)?\s*h\)\s*$/i, "").trim();
-    const responsable = bloque.match(/^-\s*\*\*(?:Quién|Responsable)\*\*\s*:\s*(.+)$/im)?.[1]?.trim() ?? null;
+    const responsable = bloque.match(/^-\s*\*\*(?:Quién|Responsable):?\*\*\s*:?\s*(.+)$/im)?.[1]?.trim() ?? null;
     const lineasDescripcion = bloque
       .split("\n")
       .map((linea) => linea.trim())
-      .filter((linea) => linea && !/^[-*]\s*\*\*(?:Quién|Responsable|Riesgo)\*\*/i.test(linea));
+      .filter((linea) => linea && !/^[-*]\s*\*\*(?:Quién|Responsable|Riesgo):?\*\*/i.test(linea));
     return {
       orden: Number(coincidencia[1] ?? indice + 1),
       titulo,
