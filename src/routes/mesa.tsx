@@ -41,6 +41,8 @@ import {
   useMesa,
   useMesas,
   usePingMesa,
+  recomendacionDeMesa,
+  sintesisLegible,
   useRealtimeMesa,
   useRecomendarMesa,
   useValoraciones,
@@ -417,9 +419,19 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
   }
 
   const equipo = leerParticipantes(mesa);
-  const recomendacion = mesa.recomendacion ?? null;
-  const plan: PasoPlanMesa[] = Array.isArray(recomendacion?.plan) ? recomendacion!.plan! : [];
-  const riesgos = Array.isArray(recomendacion?.riesgos) ? recomendacion!.riesgos! : [];
+  const recomendacion = recomendacionDeMesa(mesa);
+  const plan: PasoPlanMesa[] = Array.isArray(recomendacion?.plan) ? recomendacion.plan : [];
+  const riesgos = Array.isArray(recomendacion?.riesgos) ? recomendacion.riesgos : [];
+  const faltaPlanGuardado =
+    plan.length > 0 && !(Array.isArray(mesa.recomendacion?.plan) && mesa.recomendacion.plan.length > 0);
+
+  const crearTareasDelPlan = async () => {
+    if (faltaPlanGuardado && recomendacion) {
+      await actualizar.mutateAsync({ id: mesa.id, cambios: { recomendacion } });
+    }
+    crearTareas.mutate(mesa.id);
+  };
+
 
   const cambiarParticipante = (indice: number, cambios: Partial<ParticipanteMesa>) => {
     const nuevos = equipo.map((p, i) => (i === indice ? { ...p, ...cambios } : p));
@@ -648,7 +660,7 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           <h2 className="font-display text-sm font-semibold">Conclusión del coordinador</h2>
           <div
             className="prose-nex mt-3 text-sm text-muted-foreground"
-            dangerouslySetInnerHTML={{ __html: markdownAHtml(mesa.sintesis) }}
+            dangerouslySetInnerHTML={{ __html: markdownAHtml(sintesisLegible(mesa.sintesis)) }}
           />
 
           {plan.length > 0 ? (
@@ -708,7 +720,7 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Boton type="button" disabled={crearTareas.isPending} onClick={() => crearTareas.mutate(mesa.id)}>
+            <Boton type="button" disabled={crearTareas.isPending || actualizar.isPending} onClick={() => void crearTareasDelPlan()}>
               <ListChecks className="size-4" /> Crear tareas del plan
             </Boton>
             <Boton type="button" variante="suave" disabled={crearOrden.isPending} onClick={() => void enviarComoOrden()}>

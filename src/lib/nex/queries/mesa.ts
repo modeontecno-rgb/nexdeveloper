@@ -280,3 +280,51 @@ export function useValorarMesa() {
 export function participantes(mesa: MesaRow | null | undefined): ParticipanteMesa[] {
   return Array.isArray(mesa?.participantes) ? (mesa?.participantes as ParticipanteMesa[]) : [];
 }
+
+/**
+ * Algunos coordinadores devuelven el plan dentro del texto de la conclusión
+ * (en un bloque JSON) en lugar de en el campo estructurado. Esto lo rescata.
+ */
+export function planDeSintesis(sintesis: string | null | undefined): RecomendacionMesa | null {
+  const texto = (sintesis ?? "").trim();
+  if (!texto) return null;
+  const candidatos: string[] = [];
+  const bloques = texto.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi);
+  for (const b of bloques) candidatos.push(b[1] ?? "");
+  const inicio = texto.indexOf("{");
+  const fin = texto.lastIndexOf("}");
+  if (inicio >= 0 && fin > inicio) candidatos.push(texto.slice(inicio, fin + 1));
+  for (const bruto of candidatos) {
+    try {
+      const dato = JSON.parse(bruto.trim()) as RecomendacionMesa;
+      if (dato && typeof dato === "object" && Array.isArray(dato.plan) && dato.plan.length > 0) {
+        return dato;
+      }
+    } catch {
+      /* seguimos probando */
+    }
+  }
+  return null;
+}
+
+/** Devuelve la conclusión sin el bloque JSON técnico, para mostrarla al usuario. */
+export function sintesisLegible(sintesis: string | null | undefined): string {
+  const texto = (sintesis ?? "").trim();
+  if (!texto) return "";
+  let limpio = texto.replace(/```(?:json)?\s*[\s\S]*?```/gi, "").trim();
+  const inicio = limpio.indexOf("{");
+  const fin = limpio.lastIndexOf("}");
+  if (inicio >= 0 && fin > inicio && fin - inicio > 80) {
+    limpio = (limpio.slice(0, inicio) + limpio.slice(fin + 1)).trim();
+  }
+  return limpio || texto;
+}
+
+/** La recomendación de la mesa, rescatando el plan del texto si hiciera falta. */
+export function recomendacionDeMesa(mesa: MesaRow | null | undefined): RecomendacionMesa | null {
+  const guardada = mesa?.recomendacion ?? null;
+  if (guardada && Array.isArray(guardada.plan) && guardada.plan.length > 0) return guardada;
+  const rescatada = planDeSintesis(mesa?.sintesis);
+  if (!rescatada) return guardada;
+  return { ...(guardada ?? {}), ...rescatada };
+}
