@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 0.40.0 — Cuánto cuesta y cuánto se tarda de verdad
+
+- Coste real en créditos, tokens, euros y tiempo en cada mesa de expertos.
+- Resumen real por proyecto: créditos, tokens y tiempo de IA consumidos.
+- Comparativa con programadores humanos: precio de mercado y plazo estimados.
+- Etiquetas «Real» y «Estimado» para no confundir lo medido con lo calculado.
+- Ajustes → Costes y comparativa de mercado: euros por crédito, tarifa por hora y factor humano.
+
 ## 0.39.0 — Siempre sabes que estoy trabajando
 
 - Indicador global «Trabajando»: panel flotante con logo animado, paso actual, barra de progreso y tiempo transcurrido.

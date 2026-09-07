@@ -18,6 +18,8 @@ import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
 import { useConTrabajo } from "@/components/nex/indicador-trabajo";
+import { PanelCostes } from "@/components/nex/costes";
+import { duracionEntre } from "@/lib/nex/costes";
 import type {
   MesaRow,
   ModoMesa,
@@ -675,6 +677,18 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           </p>
         ) : null}
       </section>
+
+      <PanelCostes
+        titulo="Lo que ha costado esta mesa"
+        costeEur={Number(mesa.coste ?? 0)}
+        tokensEntrada={mesa.tokens_entrada}
+        tokensSalida={mesa.tokens_salida}
+        duracionMs={duracionEntre(mesa.creado_el, mesa.concluida_el)}
+        horasEstimadas={Number(recomendacion?.horas_estimadas ?? 0) || null}
+        costeEstimado={Number(recomendacion?.coste_estimado ?? 0) || null}
+      />
+
+
 
       {mesa.estado === "concluida" && mesa.sintesis ? (
         <section className="panel border-success/40 p-5">

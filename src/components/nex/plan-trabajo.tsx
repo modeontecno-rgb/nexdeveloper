@@ -52,8 +52,8 @@ export function PlanTrabajo({
               <th className="px-3 py-2 font-medium">Agente</th>
               <th className="px-3 py-2 font-medium">Prioridad</th>
               <th className="px-3 py-2 font-medium">Enviada</th>
-              <th className="px-3 py-2 text-right font-medium">Horas</th>
-              <th className="px-3 py-2 text-right font-medium">Coste</th>
+              <th className="px-3 py-2 text-right font-medium">Horas real / estimada</th>
+              <th className="px-3 py-2 text-right font-medium">Coste real / estimado</th>
               <th className="px-3 py-2 text-center font-medium">Hecha</th>
             </tr>
           </thead>
