@@ -64,7 +64,7 @@ export const obtenerPanelRevisores = createServerFn({ method: "GET" })
       if (lista.length < 100) break;
     }
 
-    const { data: manualesBrutos, error: errorManuales } = await supabaseAdmin
+    const { data: manualesBrutos, error: errorManuales } = await (supabaseAdmin as never as {
       .from("manuales")
       .select("id,user_id,titulo,proyecto_id,revision,revisado_el");
     if (errorManuales) throw new Error(errorManuales.message);
