@@ -2359,7 +2359,49 @@ export type PeticionDirectaRow = {
   propuesta: PropuestaPeticion | null
   error: string | null
   creado_el: string
+  texto_original?: string | null
+  grabacion_id?: string | null
+  correcciones?: CorreccionNombre[] | null
+  aclaraciones?: string | null
+  revisada?: boolean | null
+  lanzada_el?: string | null
 }
+
+/** Nombre corregido en un borrador de Pídeme. */
+export type CorreccionNombre = {
+  de?: string | null
+  a?: string | null
+  tipo?: "variante" | "aprendida" | "sugerencia" | string
+  termino?: string | null
+  confianza?: number | null
+}
+
+export type RolMensajePeticion = "usuario" | "asistente" | "sistema"
+
+export type PeticionMensajeRow = {
+  id: string
+  user_id: string
+  peticion_id: string
+  rol: RolMensajePeticion
+  texto: string
+  creado_el: string
+}
+
+export type OrigenDiccionario = "manual" | "proyecto" | "aprendido"
+
+export type DiccionarioNombreRow = {
+  id: string
+  user_id: string
+  termino: string
+  variantes: string[] | null
+  proyecto_id: string | null
+  origen: OrigenDiccionario
+  activo: boolean
+  usos: number | null
+  creado_el?: string
+}
+
+
 
 export type EstadoGrabacionPlaud = "importada" | "clasificada" | "procesada" | "descartada"
 
