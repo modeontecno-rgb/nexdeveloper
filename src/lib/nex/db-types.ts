@@ -2304,6 +2304,8 @@ export type EstadoPeticion =
   | "propuesta"
   | "aprobada"
   | "descartada"
+  | "borrador"
+  | "lanzada"
   | "error"
 
 export type ClasificacionPeticion = {
