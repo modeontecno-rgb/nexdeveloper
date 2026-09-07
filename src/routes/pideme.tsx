@@ -594,6 +594,99 @@ function DialogoReclasificar({
   );
 }
 
+
+/* ------------------------------- Borradores ------------------------------- */
+
+/** Lanza un borrador por el mismo camino que una petición escrita. */
+export function useLanzarBorradorCompleto() {
+  const lanzar = useLanzarBorrador();
+  const pedir = usePedir();
+  const vincular = useVincularBorrador();
+  const [enCurso, setEnCurso] = React.useState<string | null>(null);
+
+  const lanzarBorrador = async (id: string, alTerminar?: (peticionId: string) => void) => {
+    setEnCurso(id);
+    try {
+      const borrador = await lanzar.mutateAsync(id);
+      const respuesta = await pedir.mutateAsync({ texto: borrador.texto_final, origen: "texto" });
+      const peticionId = respuesta.peticion?.id;
+      if (peticionId) {
+        await vincular.mutateAsync({ borradorId: id, peticionId });
+        alTerminar?.(peticionId);
+      }
+      toast.success("Tarea lanzada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se ha podido lanzar la tarea.");
+    } finally {
+      setEnCurso(null);
+    }
+  };
+
+  return { lanzarBorrador, enCurso };
+}
+
+function PanelBorradores() {
+  const { data: borradores = [] } = useBorradores();
+  const [abiertoId, setAbiertoId] = React.useState<string | null>(null);
+  const { lanzarBorrador, enCurso } = useLanzarBorradorCompleto();
+  const [resultado, setResultado] = React.useState<string | null>(null);
+
+  const abierto = borradores.find((b) => b.id === abiertoId) ?? null;
+
+  if (abierto) {
+    return (
+      <div className="space-y-4">
+        <RevisarBorrador
+          borrador={abierto}
+          lanzando={enCurso === abierto.id}
+          onCerrar={() => setAbiertoId(null)}
+          onLanzar={(id) =>
+            void lanzarBorrador(id, (peticionId) => {
+              setAbiertoId(null);
+              setResultado(peticionId);
+            })
+          }
+        />
+        {resultado ? <TarjetaResultado peticionId={resultado} /> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {resultado ? <TarjetaResultado peticionId={resultado} /> : null}
+      {borradores.length === 0 ? (
+        <p className="panel p-6 text-sm text-muted-foreground">No hay nada pendiente de revisar.</p>
+      ) : (
+        borradores.map((b) => {
+          const correcciones = Array.isArray(b.correcciones) ? b.correcciones.length : 0;
+          return (
+            <article key={b.id} className="panel flex flex-wrap items-start justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <p className="text-sm text-foreground">{b.texto.slice(0, 160)}{b.texto.length > 160 ? "…" : ""}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {b.grabacion_id ? "De Plaud" : b.origen === "voz" ? "Dictado" : "Escrito"} ·{" "}
+                  {marcaTiempo(b.creado_el)} ·{" "}
+                  {correcciones ? `${correcciones} ${correcciones === 1 ? "corrección" : "correcciones"}` : "sin correcciones"}
+                </p>
+              </div>
+              <Boton variante="suave" className="px-2.5 py-1.5 text-xs" onClick={() => setAbiertoId(b.id)}>
+                <ClipboardCheck className="size-3.5" /> Revisar
+              </Boton>
+            </article>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+/** Contador de borradores pendientes para el menú. */
+export function useBorradoresPendientesMenu() {
+  const { data = [] } = useBorradores();
+  return data.length;
+}
+
 /* ---------------------------------- Plaud -------------------------------- */
 
 /** Botón para traerse las grabaciones del Plaud. Se usa en varias pantallas. */
