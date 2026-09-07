@@ -88,7 +88,7 @@ function PantallaRevisores() {
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
                     <th className="px-4 py-2.5 font-medium">Revisor</th>
-                    <th className="px-4 py-2.5 font-medium">Último acceso</th>
+                    <th className="px-4 py-2.5 font-medium">Primera actividad</th>
                     <th className="px-4 py-2.5 text-right font-medium">Manuales</th>
                     <th className="px-4 py-2.5 text-right font-medium">Revisados</th>
                     <th className="px-4 py-2.5 text-right font-medium">Correcciones</th>
