@@ -42,6 +42,22 @@ import {
 } from "@/lib/nex/queries/avisos";
 import { cn } from "@/lib/utils";
 
+/** El silencio nocturno puede llegar como número de hora (23) o como texto ("23:00"). */
+function aHoraTexto(valor: string | number | null | undefined) {
+  if (valor === null || valor === undefined || valor === "") return "";
+  if (typeof valor === "number") return `${String(valor).padStart(2, "0")}:00`;
+  const texto = String(valor);
+  if (/^\d{1,2}$/.test(texto)) return `${texto.padStart(2, "0")}:00`;
+  return texto.slice(0, 5);
+}
+
+function deHoraTexto(valor: string): number | null {
+  if (!valor) return null;
+  const hora = Number(valor.split(":")[0]);
+  return Number.isFinite(hora) ? hora : null;
+}
+
+
 export const Route = createFileRoute("/avisos")({
   head: () => ({
     meta: [
@@ -304,16 +320,16 @@ function PanelConfiguracion() {
           <input
             type="time"
             className={claseCampo}
-            value={(config?.silencio_desde ?? "").slice(0, 5)}
-            onChange={(e) => guardar.mutate({ silencio_desde: e.target.value || null })}
+            value={aHoraTexto(config?.silencio_desde)}
+            onChange={(e) => guardar.mutate({ silencio_desde: deHoraTexto(e.target.value) })}
           />
         </Campo>
         <Campo etiqueta="Silencio hasta">
           <input
             type="time"
             className={claseCampo}
-            value={(config?.silencio_hasta ?? "").slice(0, 5)}
-            onChange={(e) => guardar.mutate({ silencio_hasta: e.target.value || null })}
+            value={aHoraTexto(config?.silencio_hasta)}
+            onChange={(e) => guardar.mutate({ silencio_hasta: deHoraTexto(e.target.value) })}
           />
         </Campo>
       </div>
