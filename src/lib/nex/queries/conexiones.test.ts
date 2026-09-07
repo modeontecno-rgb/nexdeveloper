@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { InfraServicioRow, Semaforo, TipoServicioInfra } from "../db-types";
-import { filasVisibles, resumenConexiones, textoEstado } from "./conexiones";
+import { conLimiteDeTiempo, filasVisibles, resumenConexiones, textoEstado } from "./conexiones";
 
 function fila(nombre: string, tipo: TipoServicioInfra, estado: Semaforo): InfraServicioRow {
   return {
@@ -29,6 +29,12 @@ function fila(nombre: string, tipo: TipoServicioInfra, estado: Semaforo): InfraS
     notas: null,
   };
 }
+
+describe("conLimiteDeTiempo", () => {
+  it("termina una comprobación que no responde", async () => {
+    await expect(conLimiteDeTiempo(new Promise(() => {}), 5)).rejects.toThrow("está tardando demasiado");
+  });
+});
 
 describe("resumenConexiones", () => {
   it("cuenta cada semáforo", () => {
