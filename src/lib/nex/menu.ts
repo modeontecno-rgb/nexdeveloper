@@ -494,3 +494,15 @@ export function guardarAccesosMovil(rutas: RutaMenu[]) {
 
 export const CLAVE_GRUPO_ABIERTO = "nexdeveloper-menu-grupo";
 export const CLAVE_MENU_CONTRAIDO = "nexdeveloper-menu-contraido";
+
+/** Cuenta del propietario: la única que ve la pantalla «Revisores». */
+export const PROPIETARIO_ID = "59e35aca-cf1f-44c1-9693-8a48e11f55cc";
+
+/** Grupos del menú visibles para el usuario; «Revisores» solo la ve el propietario. */
+export function gruposVisibles(usuarioId: string | undefined): GrupoMenu[] {
+  if (usuarioId === PROPIETARIO_ID) return GRUPOS_MENU;
+  return GRUPOS_MENU.map((g) => ({
+    ...g,
+    pantallas: g.pantallas.filter((p) => p.to !== "/revisores"),
+  })).filter((g) => g.pantallas.length > 0);
+}
