@@ -44,7 +44,10 @@ export type PanelRevisores = {
  */
 export const obtenerPanelRevisores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async (): Promise<PanelRevisores> => {
+  .handler(async ({ context }): Promise<PanelRevisores> => {
+    if (context.userId !== "59e35aca-cf1f-44c1-9693-8a48e11f55cc") {
+      throw new Error("Sin permiso");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Cuentas reales (hasta 1000) con su último acceso.
