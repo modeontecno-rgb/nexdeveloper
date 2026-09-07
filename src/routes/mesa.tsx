@@ -17,7 +17,9 @@ import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
+import { BotonDictado, unirDictado } from "@/components/nex/dictado";
 import { useConTrabajo } from "@/components/nex/indicador-trabajo";
+
 import { PanelCostes } from "@/components/nex/costes";
 import { duracionEntre } from "@/lib/nex/costes";
 import type {
