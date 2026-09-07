@@ -1,4 +1,4 @@
-// NexDeveloper · Edge Function «infraestructura» (0.30.0)
+// NexDeveloper · Edge Function «infraestructura» (0.30.0 · v5 7/09/2026: conexiones de cuenta y claves de IA comprobadas de verdad)
 // Control total de la infraestructura: inventario de servicios (descubierto + manual), comprobación continua cada 10 min
 // (Supabase, GitHub, Lovable, DNS, HTTP, TCP, almacén S3, Edge Functions, proveedores de IA, Sentry, Proyectian, servidores),
 // incidencias con los proyectos y módulos afectados (aviso push + tarea), y sincronización por proyecto GitHub ↔ Supabase ↔ Mac
@@ -10,6 +10,8 @@ const CLAVE_SERVICIO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const TOKEN_CUENTA = Deno.env.get("CUENTA_SUPABASE_TOKEN") ?? "";
 const TOKEN_GITHUB = Deno.env.get("GITHUB_TOKEN") ?? "";
 const SENTRY_TOKEN = Deno.env.get("SENTRY_AUTH_TOKEN") ?? "";
+const CANVA_ID = Deno.env.get("CANVA_CLIENT_ID") ?? "";
+const CANVA_SECRETO = Deno.env.get("CANVA_CLIENT_SECRET") ?? "";
 const REF_PROYECTIAN = "hjtweberlereyfhagkvx";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-token", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
@@ -56,6 +58,19 @@ async function comprobarS3(endpoint: string, region: string, bucket: string, acc
   const r = await conTiempo(fetch(`${u.protocol}//${host}${path}?${q}`, { headers: { ...cabs, Authorization: `AWS4-HMAC-SHA256 Credential=${access}/${corta}/${region}/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=${firma}` } }));
   if (!r.ok) throw new Error(`Almacén ${r.status}`);
   return `Bucket «${bucket}» accesible`;
+}
+
+// ---------- Prueba mínima (gratuita) de una clave de proveedor de IA ----------
+function pruebaClaveIa(slug: string, clave: string, urlBase: string | null): { url: string; cabeceras: Record<string, string> } | null {
+  const base = (urlBase ?? "").replace(/\/$/, "");
+  switch (slug) {
+    case "anthropic": return { url: `${base || "https://api.anthropic.com"}/v1/models`, cabeceras: { "x-api-key": clave, "anthropic-version": "2023-06-01" } };
+    case "google": return { url: `${base || "https://generativelanguage.googleapis.com"}/v1beta/models?key=${encodeURIComponent(clave)}`, cabeceras: {} };
+    case "elevenlabs": return { url: `${base || "https://api.elevenlabs.io"}/v1/models`, cabeceras: { "xi-api-key": clave } };
+    case "cohere": return { url: `${base || "https://api.cohere.com"}/v1/models`, cabeceras: { Authorization: `Bearer ${clave}` } };
+    case "fal": case "perplexity": case "canva": case "ollama": return null; // sin endpoint gratuito de comprobación
+    default: return base ? { url: `${base}/models`, cabeceras: { Authorization: `Bearer ${clave}` } } : null;
+  }
 }
 
 // ---------- Comprobación de un servicio ----------
@@ -121,10 +136,59 @@ async function comprobarServicio(sb: SB, s: any, cfg: any): Promise<Resultado> {
         return caidos.length ? fin("rojo", undefined, `Proyectian: ${caidos.map((x: any) => x.name).join(", ")}`) : fin("verde", "Proyectian operativo");
       }
       case "proveedor_ia": {
-        // Sin usar la clave: basta con que el endpoint responda (401/403/404 también significan «vivo»)
+        // Con clave guardada: llamada mínima gratuita (listar modelos) para saber si la clave sigue siendo válida.
+        // Sin clave: gris (no es una caída, es que falta configurarla en Ajustes → Proveedores de IA).
         const url = s.url; if (!url) return fin("gris", undefined, "Sin URL");
-        const r = await conTiempo(fetch(url, { method: "GET", redirect: "manual" }));
-        return r.status < 500 ? fin("verde", `Responde (HTTP ${r.status})`) : fin("rojo", undefined, `HTTP ${r.status}`);
+        const slug = String(s.referencia ?? "");
+        const { data: prov } = await sb.from("proveedores_ia").select("id, clave_slug, url_base, activo").eq("user_id", s.user_id).eq("clave_slug", slug).maybeSingle();
+        if (!prov) return fin("gris", undefined, "Proveedor no encontrado en Ajustes → Proveedores de IA");
+        const { data: clave } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: prov.id });
+        if (!clave) return fin("gris", "Sin clave guardada", "Ponla en Ajustes → Proveedores de IA");
+        const prueba = pruebaClaveIa(slug, String(clave), prov.url_base);
+        if (!prueba) { const r = await conTiempo(fetch(url, { method: "GET", redirect: "manual" })); return r.status < 500 ? fin("verde", `Clave guardada · el servicio responde (no admite comprobación de la clave)`) : fin("rojo", undefined, `HTTP ${r.status}`); }
+        const r = await conTiempo(fetch(prueba.url, { headers: prueba.cabeceras, redirect: "manual" }));
+        if (r.status === 401 || r.status === 403) return fin("rojo", undefined, `La clave no es válida o ha caducado (HTTP ${r.status}). Cámbiala en Ajustes → Proveedores de IA`);
+        if (r.status >= 500) return fin("rojo", undefined, `El proveedor no responde (HTTP ${r.status})`);
+        return fin("verde", `Clave válida · responde en ${Date.now() - t0} ms`);
+      }
+      case "conexion": {
+        // Conexiones de cuenta (OAuth y tokens): lo que se ve en la pantalla «Conexiones».
+        switch (String(s.referencia ?? "")) {
+          case "cuenta_supabase": {
+            if (!TOKEN_CUENTA) return fin("gris", "Sin token", "Falta el secreto CUENTA_SUPABASE_TOKEN en Supabase → Edge Functions → Secrets");
+            const ps = await admin("/projects");
+            return fin("verde", `Token válido · acceso a ${Array.isArray(ps) ? ps.length : "?"} proyectos`);
+          }
+          case "github_token": {
+            if (!TOKEN_GITHUB) return fin("gris", "Sin token", "Falta el secreto GITHUB_TOKEN en Supabase → Edge Functions → Secrets");
+            const r = await conTiempo(fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${TOKEN_GITHUB}`, Accept: "application/vnd.github+json", "User-Agent": "NexDeveloper" } }));
+            if (r.status === 401) return fin("rojo", undefined, "El GITHUB_TOKEN ha caducado o se ha revocado. Genera otro en GitHub → Settings → Developer settings → Tokens y guárdalo en Supabase → Edge Functions → Secrets");
+            if (!r.ok) throw new Error(`GitHub ${r.status}`);
+            const u = await r.json(); return fin("verde", `Usuario ${u.login} · permisos: ${r.headers.get("x-oauth-scopes") ?? "—"}`);
+          }
+          case "lovable": {
+            const { data: c } = await sb.from("lovable_conexion").select("estado, cuenta, expira_el, ultimo_error").eq("user_id", s.user_id).maybeSingle();
+            if (!c || c.estado === "desconectada" || !c.estado) return fin("gris", "Sin autorizar", "Ejecución de la IA → «Conectar con Lovable»");
+            if (c.estado === "error") return fin("rojo", undefined, `Lovable rechazó la conexión: ${String(c.ultimo_error ?? "").slice(0, 160)}`);
+            return fin("verde", `Autorizada${c.cuenta ? ` · ${c.cuenta}` : ""}`);
+          }
+          case "plaud": case "evoluteia": {
+            const { data: c } = await sb.from("conexiones_externas").select("estado, cuenta, expira_el, ultimo_error").eq("user_id", s.user_id).eq("proveedor", s.referencia).maybeSingle();
+            if (!c) return fin("gris", "Sin conectar", s.referencia === "plaud" ? "Pídeme qué quieres → «Conectar Plaud»" : "Facturación → Configuración (usuario de EvoluteIA)");
+            if (c.estado === "error") return fin("rojo", undefined, `Conexión con error: ${String(c.ultimo_error ?? "").slice(0, 160)}`);
+            if (c.estado !== "conectada") return fin("gris", `Estado: ${c.estado}`, undefined);
+            const caducada = c.expira_el && new Date(c.expira_el).getTime() < Date.now() - 36 * 3600 * 1000;
+            return caducada ? fin("ambar", `Conectada como ${c.cuenta ?? "—"} · sesión caducada hace más de 36 h (se renueva al usarse; si falla, vuelve a conectar)`) : fin("verde", `Conectada${c.cuenta ? ` · ${c.cuenta}` : ""}`);
+          }
+          case "canva": {
+            const { data: prov } = await sb.from("proveedores_ia").select("id").eq("user_id", s.user_id).eq("clave_slug", "canva").maybeSingle();
+            const { data: tok } = prov ? await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: prov.id }) : { data: null };
+            if (!tok) return CANVA_ID && CANVA_SECRETO ? fin("ambar", "Claves de la aplicación guardadas · falta autorizar tu cuenta", "Ajustes → Proveedores de IA → Canva → «Conectar con Canva» → «Permitir»") : fin("gris", "Sin configurar", "Faltan CANVA_CLIENT_ID y CANVA_CLIENT_SECRET en Supabase → Edge Functions → Secrets");
+            try { const j = JSON.parse(String(tok)); const r = await conTiempo(fetch("https://api.canva.com/rest/v1/users/me", { headers: { Authorization: `Bearer ${j.access_token}` } })); if (r.ok) return fin("verde", "Cuenta autorizada"); if (j.refresh_token) return fin("ambar", "Sesión caducada · se renueva sola al usar Canva"); return fin("rojo", undefined, `Canva respondió ${r.status}. Vuelve a conectar`); }
+            catch { return fin("rojo", undefined, "Los datos guardados de Canva no son válidos. Vuelve a conectar"); }
+          }
+          default: return fin("gris", undefined, `Conexión desconocida: ${s.referencia}`);
+        }
       }
       default: {
         // http / lovable / servidor / correo / otro: petición HTTP
@@ -149,7 +213,7 @@ async function impacto(sb: SB, servicio: any) {
   if (afectaTodo && !lista.length) {
     const { data: ps } = await sb.from("proyectos").select("id, nombre, slug").eq("user_id", servicio.user_id);
     const modulos = MODULOS_GLOBALES[servicio.tipo] ?? ["Todo el proyecto"];
-    lista = (ps ?? []).map((p) => ({ proyecto_id: p.id, nombre: p.nombre, slug: p.slug, modulos, critica: servicio.tipo !== "github" && servicio.tipo !== "sentry" }));
+    lista = (ps ?? []).map((p) => ({ proyecto_id: p.id, nombre: p.nombre, slug: p.slug, modulos, critica: !["github", "sentry", "conexion", "proveedor_ia"].includes(servicio.tipo) }));
   }
   return { lista, afectaTodo };
 }
@@ -161,6 +225,7 @@ const MODULOS_GLOBALES: Record<string, string[]> = {
   sentry: ["Errores en tiempo real (Salud)"],
   proyectian: ["Versiones y documentos en Proyectian", "Usuarios de clientes"],
   dns: ["Acceso por dominio"],
+  conexion: ["Funciones que dependen de esa cuenta (ver «usos» en Conexiones)"],
 };
 
 async function abrirIncidencia(sb: SB, s: any, cfg: any, r: Resultado) {
@@ -168,16 +233,16 @@ async function abrirIncidencia(sb: SB, s: any, cfg: any, r: Resultado) {
   if (ya?.length) return;
   const { lista, afectaTodo } = await impacto(sb, s);
   const criticos = lista.filter((x) => x.critica);
-  const titulo = `Caída de ${s.nombre}`;
+  const titulo = s.tipo === "conexion" || s.tipo === "proveedor_ia" ? `Conexión caída: ${s.nombre}` : `Caída de ${s.nombre}`;
   const resumenProy = afectaTodo ? `Afecta a TODOS los proyectos (${lista.length})` : lista.length ? `Proyectos afectados: ${lista.slice(0, 8).map((x) => `${x.nombre}${x.modulos?.length ? ` (${x.modulos.slice(0, 3).join(", ")})` : ""}`).join("; ")}${lista.length > 8 ? "…" : ""}` : "Sin proyectos dependientes registrados";
   const detalle = `${r.error ?? r.detalle ?? "Sin detalle"}.\n${resumenProy}.`;
   let tareaId: string | null = null;
   if (cfg.crear_tareas) {
-    const { data: t } = await sb.from("tareas").insert({ user_id: s.user_id, proyecto_id: lista.length === 1 ? lista[0].proyecto_id : null, titulo: `INFRAESTRUCTURA: ${titulo}`, descripcion: detalle, estado: "esperando_revision", prioridad: criticos.length || afectaTodo ? "critica" : "alta", requiere_atencion: true, motivo_atencion: "Servicio caído", instrucciones: `Abre Infraestructura → ${s.nombre} para ver el detalle, los proyectos y módulos afectados y el histórico. ${s.url ? `URL: ${s.url}. ` : ""}Cuando se recupere, la incidencia se cierra sola y recibirás el aviso.` }).select("id").single();
+    const { data: t } = await sb.from("tareas").insert({ user_id: s.user_id, proyecto_id: lista.length === 1 ? lista[0].proyecto_id : null, titulo: `INFRAESTRUCTURA: ${titulo}`, descripcion: detalle, estado: "esperando_revision", prioridad: criticos.length || afectaTodo ? "critica" : "alta", requiere_atencion: true, motivo_atencion: "Servicio caído", instrucciones: s.tipo === "conexion" || s.tipo === "proveedor_ia" ? `Abre Conexiones → ${s.nombre}. ${r.error ?? ""} ${s.metodo?.donde ? `Se configura en: ${s.metodo.donde}. ` : ""}Cuando vuelva a estar en verde, la incidencia se cierra sola y recibirás el aviso.` : `Abre Infraestructura → ${s.nombre} para ver el detalle, los proyectos y módulos afectados y el histórico. ${s.url ? `URL: ${s.url}. ` : ""}Cuando se recupere, la incidencia se cierra sola y recibirás el aviso.` }).select("id").single();
     tareaId = t?.id ?? null;
   }
   await sb.from("infra_incidencias").insert({ user_id: s.user_id, servicio_id: s.id, titulo, detalle, proyectos_afectados: lista, afecta_todo: afectaTodo, tarea_id: tareaId });
-  if (cfg.avisar_push && !tareaId) await sb.rpc("crear_aviso", { p_user: s.user_id, p_tipo: "infraestructura", p_titulo: `🔴 ${titulo}`, p_cuerpo: detalle, p_url: "/infraestructura", p_proyecto: null, p_referencia: `caida:${s.id}:${Date.now()}` });
+  if (cfg.avisar_push && !tareaId) await sb.rpc("crear_aviso", { p_user: s.user_id, p_tipo: "infraestructura", p_titulo: `🔴 ${titulo}`, p_cuerpo: detalle, p_url: s.tipo === "conexion" || s.tipo === "proveedor_ia" ? "/conexiones" : "/infraestructura", p_proyecto: null, p_referencia: `caida:${s.id}:${Date.now()}` });
 }
 async function cerrarIncidencia(sb: SB, s: any, cfg: any) {
   const { data: abiertas } = await sb.from("infra_incidencias").select("id, abierta_el, tarea_id").eq("servicio_id", s.id).eq("estado", "abierta");
@@ -275,6 +340,16 @@ async function descubrir(sb: SB, userId: string) {
   await upsert("plataforma:lovable", { nombre: "Lovable (constructor)", tipo: "http", proveedor: "Lovable", url: "https://lovable.dev", ambito: "global", critico: false });
   await upsert("plataforma:supabase-api", { nombre: "Supabase (API de administración)", tipo: "http", proveedor: "Supabase", url: "https://api.supabase.com/v1/projects", ambito: "global", critico: false, metodo: { esperado: 401 } });
   await upsert("plataforma:proyectian", { nombre: "Proyectian (base de datos)", tipo: "proyectian", proveedor: "Supabase", url: `https://${REF_PROYECTIAN}.supabase.co`, referencia: REF_PROYECTIAN, ambito: "global", critico: false });
+  // Conexiones de cuenta (pantalla «Conexiones»)
+  const CONEXIONES = [
+    { ref: "cuenta_supabase", nombre: "Cuenta de Supabase (token de gestión)", donde: "Supabase → Edge Functions → Secrets → CUENTA_SUPABASE_TOKEN", ruta: "/conexiones", usos: ["Salud de todos los Supabase", "Copias de seguridad", "Usuarios de clientes", "Acciones en Supabase"] },
+    { ref: "github_token", nombre: "GitHub (token de la cuenta modeontecno-rgb)", donde: "Supabase → Edge Functions → Secrets → GITHUB_TOKEN", ruta: "/repositorios", usos: ["Repositorios", "Calidad", "Órdenes con el motor Claude", "Copias de repositorios"] },
+    { ref: "lovable", nombre: "Lovable (autorización de tu cuenta)", donde: "Ejecución de la IA → «Conectar con Lovable»", ruta: "/ejecucion", usos: ["Ejecución de órdenes con Lovable", "Publicación"] },
+    { ref: "canva", nombre: "Canva (autorización de tu cuenta)", donde: "Ajustes → Proveedores de IA → Canva → «Conectar con Canva»", ruta: "/ajustes/proveedores", usos: ["Diseños y material gráfico"] },
+    { ref: "plaud", nombre: "Plaud (grabadora)", donde: "Pídeme qué quieres → «Conectar Plaud»", ruta: "/pideme", usos: ["Importar grabaciones y reuniones", "Pídeme qué quieres"] },
+    { ref: "evoluteia", nombre: "EvoluteIA (ERP de facturación)", donde: "Facturación → Configuración", ruta: "/facturacion", usos: ["Facturación", "Horas y gasto de IA facturable"] },
+  ];
+  for (const c of CONEXIONES) await upsert(`conexion:${c.ref}`, { nombre: c.nombre, tipo: "conexion", proveedor: "Cuenta", url: null, referencia: c.ref, ambito: "global", critico: false, metodo: { pantalla: "conexiones", donde: c.donde, ruta: c.ruta, usos: c.usos } });
   if (SENTRY_TOKEN) await upsert("plataforma:sentry", { nombre: "Sentry", tipo: "sentry", proveedor: "Sentry", url: "https://sentry.io", ambito: "global", critico: false });
   await upsert("plataforma:nexdeveloper-app", { nombre: "NexDeveloper (app)", tipo: "http", proveedor: "Lovable", url: "https://nexdeveloper.lovable.app", ambito: "global", critico: true });
   // Edge Functions propias de NexDeveloper
