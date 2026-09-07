@@ -108,8 +108,9 @@ function Inicio() {
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_20rem]">
         <div>
-          <div className="panel mb-4 flex flex-wrap items-center gap-3 p-4">
+          <div className="panel mb-4 grid grid-cols-1 items-center gap-3 p-4 sm:grid-cols-3">
             <Selector
+              className="w-full min-w-0"
               etiqueta="Estado"
               valor={estado}
               onChange={(v) => setEstado(v as EstadoProyecto | "todos")}
