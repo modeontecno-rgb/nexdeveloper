@@ -353,8 +353,9 @@ export function sintesisLegible(sintesis: string | null | undefined): string {
 /** La recomendación de la mesa, rescatando el plan del texto si hiciera falta. */
 export function recomendacionDeMesa(mesa: MesaRow | null | undefined): RecomendacionMesa | null {
   const guardada = mesa?.recomendacion ?? null;
-  if (guardada && Array.isArray(guardada.plan) && guardada.plan.length > 0) return guardada;
+  const planGuardado = normalizarPlan(guardada?.plan);
+  if (guardada && planGuardado.length > 0) return { ...guardada, plan: planGuardado };
   const rescatada = planDeSintesis(mesa?.sintesis);
-  if (!rescatada) return guardada;
+  if (!rescatada) return guardada ? { ...guardada, plan: planGuardado } : null;
   return { ...(guardada ?? {}), ...rescatada };
 }
