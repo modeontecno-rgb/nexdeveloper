@@ -52,7 +52,7 @@ export function useActualizarTerminoDiccionario() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: async (v: { id: string; variantes?: string[]; activo?: boolean; termino?: string }) => {
-      const cambios: Partial<DiccionarioNombreRow> = {};
+      const cambios: { variantes?: string[]; activo?: boolean; termino?: string } = {};
       if (v.variantes) cambios.variantes = v.variantes;
       if (typeof v.activo === "boolean") cambios.activo = v.activo;
       if (v.termino) cambios.termino = v.termino;
