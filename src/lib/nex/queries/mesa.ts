@@ -8,6 +8,7 @@ import type {
   MesaValoracionRow,
   ModoMesa,
   ParticipanteMesa,
+  PasoPlanMesa,
   RecomendacionMesa,
 } from "../db-types";
 import { supabase } from "../supabase";
