@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "sonner";
@@ -199,7 +200,10 @@ function useRefrescarSalud() {
 
 export function useComprobarSalud() {
   const refrescar = useRefrescarSalud();
+  const seguirTrabajo = useSeguirTrabajo('Comprobando la salud de la cartera');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (entrada?: { proyectoId?: string }) =>
       llamar<{ informe?: SaludInformeRow; hecho?: number; hechos?: number; quedan?: number }>({
         accion: "comprobar",
@@ -218,7 +222,10 @@ export function useComprobarSalud() {
 }
 
 export function useProbarSalud() {
+  const seguirTrabajo = useSeguirTrabajo('Probando la salud');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: () => llamar<PruebaSalud>({ accion: "probar" }),
     onError: (e: Error) => toast.error(e.message),
   });

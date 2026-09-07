@@ -14,6 +14,8 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
+import { useTrabajo } from "@/components/nex/indicador-trabajo";
+import { sonidoTic } from "@/lib/nex/sonidos";
 import { RevisarBorrador } from "@/components/nex/revisar-borrador";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
@@ -82,6 +84,14 @@ export const Route = createFileRoute("/pideme")({
 
 function PidemePantalla() {
   const busqueda = Route.useSearch();
+  const [destello, setDestello] = React.useState(true);
+
+  React.useEffect(() => {
+    sonidoTic();
+    const t = window.setTimeout(() => setDestello(false), 1000);
+    return () => window.clearTimeout(t);
+  }, []);
+
   const [pestana, setPestana] = React.useState<Pestana>(busqueda.tab ?? "peticiones");
   const { data: peticiones = [] } = usePeticiones();
   const estado = useEstadoPideme();
@@ -93,7 +103,7 @@ function PidemePantalla() {
   return (
     <>
       <Encabezado
-        titulo="Pídeme qué quieres"
+        titulo={destello ? "Pídeme qué quieres ✨" : "Pídeme qué quieres"}
         descripcion="Tu tecla directa: escribe o dicta y yo decido si es de un proyecto o personal, y actúo."
         acciones={<BotonImportarPlaud />}
       />
@@ -155,6 +165,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
     setTexto((t) => (t ? `${t} ${dicho}` : dicho));
   });
   const borradorAbierto = borradores.find((b) => b.id === borradorId) ?? null;
+  const lienzoOnda = useOndaMicrofono(escuchando);
 
   React.useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
@@ -271,6 +282,17 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
         </div>
       </form>
 
+      {escuchando ? (
+        <div className="mt-3">
+          <p className="flex items-center gap-2 text-sm text-destructive">
+            <span className="size-2 animate-pulse rounded-full bg-destructive" aria-hidden /> Te escucho…
+          </p>
+          <canvas ref={lienzoOnda} height={72} className="mt-2 h-[72px] w-full rounded-lg border border-border bg-surface text-primary" />
+        </div>
+      ) : usoVoz ? (
+        <p className="mt-3 text-sm text-muted-foreground">Escuchado</p>
+      ) : null}
+
       {pedir.isPending ? (
         <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -304,11 +326,114 @@ function TarjetaResultado({ peticionId }: { peticionId: string }) {
   const { data: peticiones = [] } = usePeticiones();
   const peticion = peticiones.find((p) => p.id === peticionId);
   if (!peticion) return null;
+
+  const url = urlPeticion(peticion);
+  const clasificacion = peticion.clasificacion ?? {};
+  const donde =
+    peticion.estado === "propuesta"
+      ? "Propuesta pendiente de aprobar"
+      : peticion.destino === "personal"
+        ? "PERSONAL"
+        : `Chat en ${clasificacion.proyecto_nombre ?? "el proyecto"}`;
+
   return (
-    <div className="mt-4">
+    <div className="mt-4 space-y-3">
+      <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
+        <p className="text-xs text-muted-foreground">Ha ido a</p>
+        <p className="font-display text-base font-semibold">{donde}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {url ? (
+            <a href={url} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+              Ir a verlo
+            </a>
+          ) : null}
+          {peticion.estado === "propuesta" ? (
+            <Link
+              to="/pideme"
+              search={{ tab: "propuestas" }}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium"
+            >
+              Ver propuesta
+            </Link>
+          ) : null}
+        </div>
+      </div>
       <TarjetaPeticion peticion={peticion} abiertaPorDefecto />
     </div>
   );
+}
+
+/** Dibuja la onda del micrófono en directo mientras se dicta. */
+export function useOndaMicrofono(activo: boolean) {
+  const lienzo = React.useRef<HTMLCanvasElement | null>(null);
+
+  React.useEffect(() => {
+    if (!activo || typeof window === "undefined") return;
+    let parado = false;
+    let pista: MediaStream | null = null;
+    let ctxAudio: AudioContext | null = null;
+    let animacion = 0;
+
+    const arrancar = async () => {
+      try {
+        pista = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        return;
+      }
+      if (parado) {
+        pista.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      const Ctor = (window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as
+        | typeof AudioContext
+        | undefined;
+      if (!Ctor) return;
+      ctxAudio = new Ctor();
+      const fuente = ctxAudio.createMediaStreamSource(pista);
+      const analizador = ctxAudio.createAnalyser();
+      analizador.fftSize = 2048;
+      fuente.connect(analizador);
+      const datos = new Uint8Array(analizador.frequencyBinCount);
+
+      const pintar = () => {
+        animacion = window.requestAnimationFrame(pintar);
+        const canvas = lienzo.current;
+        const ctx2d = canvas?.getContext("2d");
+        if (!canvas || !ctx2d) return;
+        const ancho = (canvas.width = canvas.clientWidth || 300);
+        const alto = (canvas.height = 72);
+        analizador.getByteTimeDomainData(datos);
+        ctx2d.clearRect(0, 0, ancho, alto);
+        ctx2d.lineWidth = 2;
+        ctx2d.strokeStyle = getComputedStyle(canvas).color || "#6366f1";
+        ctx2d.beginPath();
+        const paso = ancho / datos.length;
+        for (let i = 0; i < datos.length; i += 1) {
+          const v = (datos[i]! - 128) / 128;
+          const y = alto / 2 + v * (alto / 2 - 4);
+          if (i === 0) ctx2d.moveTo(0, y);
+          else ctx2d.lineTo(i * paso, y);
+        }
+        ctx2d.stroke();
+      };
+      pintar();
+    };
+
+    void arrancar();
+
+    return () => {
+      parado = true;
+      if (animacion) window.cancelAnimationFrame(animacion);
+      pista?.getTracks().forEach((t) => t.stop());
+      void ctxAudio?.close();
+      const canvas = lienzo.current;
+      const ctx2d = canvas?.getContext("2d");
+      if (canvas && ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    };
+  }, [activo]);
+
+  return lienzo;
 }
 
 /* ------------------------------- Peticiones ------------------------------- */
@@ -656,21 +781,43 @@ export function useLanzarBorradorCompleto() {
   const lanzar = useLanzarBorrador();
   const pedir = usePedir();
   const vincular = useVincularBorrador();
+  const { iniciarTrabajo } = useTrabajo();
   const [enCurso, setEnCurso] = React.useState<string | null>(null);
 
   const lanzarBorrador = async (id: string, alTerminar?: (peticionId: string) => void) => {
     setEnCurso(id);
+    const pasos = [
+      "Cerrando el borrador",
+      "Entendiendo lo que pides",
+      "Preparando la propuesta con los expertos",
+      "Guardando el resultado",
+    ];
+    const trabajo = iniciarTrabajo({ titulo: "Lanzando lo que me has pedido", pasos });
     try {
+      trabajo.avanzar(pasos[0]!, 10);
       const borrador = await lanzar.mutateAsync(id);
-      const respuesta = await pedir.mutateAsync({ texto: borrador.texto_final, origen: "texto" });
+      trabajo.avanzar(pasos[1]!, 30);
+      const respuesta = await pedir.mutateAsync({
+        texto: borrador.texto_final,
+        origen: "texto",
+        proyecto_id: borrador.proyecto_id,
+      });
+      trabajo.avanzar(
+        respuesta.clasificacion?.tipo === "consulta" ? "Respondiendo" : pasos[2]!,
+        75,
+      );
       const peticionId = respuesta.peticion?.id;
       if (peticionId) {
+        trabajo.avanzar(pasos[3]!, 92);
         await vincular.mutateAsync({ borradorId: id, peticionId });
         alTerminar?.(peticionId);
       }
+      trabajo.terminar("Tarea lanzada.");
       toast.success("Tarea lanzada.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se ha podido lanzar la tarea.");
+      const mensaje = e instanceof Error ? e.message : "No se ha podido lanzar la tarea.";
+      trabajo.fallar(mensaje);
+      toast.error(mensaje);
     } finally {
       setEnCurso(null);
     }
@@ -748,20 +895,36 @@ export function BotonImportarPlaud({ className }: { className?: string }) {
   const importar = usePlaudImportar();
   const procesar = usePlaudProcesar();
   const estado = useEstadoPideme();
+  const { iniciarTrabajo } = useTrabajo();
   const auto = Boolean(estado.data?.plaud_config?.procesar_automatico);
+
+  const traer = async () => {
+    const pasos = ["Conectando con Plaud", "Descargando grabaciones", "Guardando transcripciones"];
+    const trabajo = iniciarTrabajo({ titulo: "Importar de Plaud", pasos });
+    try {
+      trabajo.avanzar(pasos[0]!, 15);
+      trabajo.avanzar(pasos[1]!, 45);
+      const r = await importar.mutateAsync(undefined);
+      const resumen =
+        typeof r.nuevas === "number"
+          ? `${r.nuevas} ${r.nuevas === 1 ? "grabación nueva" : "grabaciones nuevas"} de ${r.total_plaud ?? 0}`
+          : "Grabaciones al día.";
+      if (auto) {
+        trabajo.avanzar(pasos[2]!, 80);
+        await procesar.mutateAsync(undefined);
+      }
+      trabajo.terminar(resumen);
+    } catch (e) {
+      trabajo.fallar(e instanceof Error ? e.message : "No se ha podido importar de Plaud.");
+    }
+  };
 
   return (
     <Boton
       variante="suave"
       className={className ?? ""}
       disabled={importar.isPending || procesar.isPending}
-      onClick={() =>
-        importar.mutate(undefined, {
-          onSuccess: () => {
-            if (auto) procesar.mutate(undefined);
-          },
-        })
-      }
+      onClick={() => void traer()}
     >
       {importar.isPending || procesar.isPending ? (
         <Loader2 className="size-4 animate-spin" />
@@ -1035,11 +1198,13 @@ export function useDictado(alTexto: (t: string) => void) {
     if (escuchando) {
       reconocimiento.stop();
       setEscuchando(false);
+      sonidoTic();
       return;
     }
     try {
       reconocimiento.start();
       setEscuchando(true);
+      sonidoTic();
     } catch {
       setEscuchando(false);
     }

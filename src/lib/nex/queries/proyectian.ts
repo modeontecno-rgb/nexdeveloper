@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -148,7 +149,10 @@ export function useHistorialProyectian() {
 
 export function useSincronizarProyectian() {
   const queryClient = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo("Sincronizando con Proyectian");
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: async ({ accion, proyectoId }: { accion: AccionProyectian; proyectoId?: string | undefined }) =>
       invocar<ResultadoSincronizacion>({ accion, ...(proyectoId ? { proyecto_id: proyectoId } : {}) }),
     onSuccess: (resultado) => {

@@ -8,6 +8,7 @@ import { DiccionarioNombres } from "@/components/nex/diccionario-nombres";
 import { TarjetaPlaudConexion } from "@/routes/pideme";
 import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
+import { guardarSonidos, sonidosActivos } from "@/lib/nex/sonidos";
 import { useAuth } from "@/lib/nex/auth";
 import { borrarDatosDemostracion, cargarDatosDemostracion } from "@/lib/nex/demo";
 import { useAjustes, usePerfil } from "@/lib/nex/queries/datos";
@@ -114,6 +115,8 @@ function Ajustes() {
         <div className="xl:col-span-2">
           <DiccionarioNombres />
         </div>
+
+        <Sonidos />
 
         <AcercaDe />
 
@@ -230,6 +233,34 @@ function Ajustes() {
         </Boton>
       </div>
     </>
+  );
+}
+
+/** Sonidos de aviso mientras NexDeveloper trabaja. */
+function Sonidos() {
+  const [activos, setActivos] = React.useState(true);
+
+  React.useEffect(() => {
+    setActivos(sonidosActivos());
+  }, []);
+
+  return (
+    <section className="panel p-5">
+      <h2 className="font-display text-sm font-semibold">Sonidos</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Avisos discretos: un tic al empezar algo, dos tonos al terminar bien y un tono grave si algo falla.
+      </p>
+      <div className="mt-4">
+        <Interruptor
+          etiqueta="Reproducir sonidos"
+          valor={activos}
+          onChange={(v) => {
+            setActivos(v);
+            guardarSonidos(v);
+          }}
+        />
+      </div>
+    </section>
   );
 }
 

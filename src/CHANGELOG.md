@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 0.39.0 — Siempre sabes que estoy trabajando
+
+- Indicador global «Trabajando»: panel flotante con logo animado, paso actual, barra de progreso y tiempo transcurrido.
+- Aviso «Trabajando» también en la cabecera, en cualquier pantalla.
+- Sonidos discretos al empezar, al terminar bien y al fallar, activables en Ajustes.
+- Pídeme: onda de audio en directo al dictar, tono de bienvenida y resultado con «Ir a verlo».
+- Al lanzar un borrador se envía el proyecto elegido.
+
 ## 0.38.0 — Conexiones
 
 - Conexiones: una sola pantalla con todo lo de fuera en verde o rojo, comprobado de verdad; sustituye a Integraciones.

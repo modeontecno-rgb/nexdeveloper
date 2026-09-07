@@ -207,12 +207,22 @@ export type RespuestaPedir = {
   tareas?: { id?: string; titulo?: string }[];
 };
 
+/** Cuerpo que se envía a la función `pideme` al pedir algo. */
+export function cuerpoPedir(v: { texto: string; origen?: "texto" | "voz"; proyecto_id?: string | null }) {
+  return {
+    accion: "pedir",
+    texto: v.texto,
+    origen: v.origen ?? "texto",
+    ...(v.proyecto_id ? { proyecto_id: v.proyecto_id } : {}),
+  };
+}
+
 /** Envía lo que pide Javier: NexDeveloper decide a dónde va. Tarda entre 10 y 60 segundos. */
 export function usePedir() {
   const invalidar = useInvalidar();
   return useMutation({
-    mutationFn: (v: { texto: string; origen?: "texto" | "voz" }) =>
-      llamar<RespuestaPedir>({ accion: "pedir", texto: v.texto, origen: v.origen ?? "texto" }),
+    mutationFn: (v: { texto: string; origen?: "texto" | "voz"; proyecto_id?: string | null }) =>
+      llamar<RespuestaPedir>(cuerpoPedir(v)),
     onSuccess: () => invalidar(),
     onError: (e: Error) => {
       invalidar();

@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -90,7 +91,10 @@ export function useResolverAccion() {
 
 export function useEjecutarAccion() {
   const queryClient = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Ejecutando la acción');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: async ({ accionId, valorSecreto }: { accionId: string; valorSecreto?: string }) => {
       const cuerpo: Record<string, string> = { accion_id: accionId };
       if (valorSecreto) cuerpo["valor_secreto"] = valorSecreto;

@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "sonner";
@@ -235,7 +236,10 @@ function useRefrescarInfra() {
 
 export function useComprobarInfra() {
   const refrescar = useRefrescarInfra();
+  const seguirTrabajo = useSeguirTrabajo('Comprobando la infraestructura');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (servicioId?: string) =>
       llamar({ accion: "comprobar", ...(servicioId ? { servicio_id: servicioId } : {}) }),
     onSuccess: () => {
@@ -261,7 +265,10 @@ export function useDescubrirInfra() {
 
 export function useSincronizarInfra() {
   const refrescar = useRefrescarInfra();
+  const seguirTrabajo = useSeguirTrabajo('Comprobando la sincronización');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (proyectoId?: string) =>
       llamar({ accion: "sincronizar", ...(proyectoId ? { proyecto_id: proyectoId } : {}) }),
     onSuccess: () => {

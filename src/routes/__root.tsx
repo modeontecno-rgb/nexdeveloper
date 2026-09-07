@@ -14,6 +14,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Puerta } from "@/components/nex/puerta";
+import { TrabajoProvider } from "@/components/nex/indicador-trabajo";
 import { ProveedorAuth } from "@/lib/nex/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { useAutoria } from "@/lib/nex/queries/datos";
@@ -176,9 +177,11 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ActualizarGenerator />
       <ProveedorAuth>
-        {/* Puerta contiene el <Outlet /> donde se dibujan las rutas hijas. */}
-        <Puerta />
-        <Toaster position="top-right" richColors />
+        <TrabajoProvider>
+          {/* Puerta contiene el <Outlet /> donde se dibujan las rutas hijas. */}
+          <Puerta />
+          <Toaster position="top-right" richColors />
+        </TrabajoProvider>
       </ProveedorAuth>
     </QueryClientProvider>
   );

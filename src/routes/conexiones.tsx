@@ -5,6 +5,7 @@ import * as React from "react";
 import { Encabezado } from "@/components/nex/app-shell";
 import { Cargando } from "@/components/nex/badges";
 import { Boton } from "@/components/nex/campos";
+import { useConTrabajo } from "@/components/nex/indicador-trabajo";
 import type { InfraServicioRow } from "@/lib/nex/db-types";
 import { desde } from "@/lib/nex/labels";
 import {
@@ -74,6 +75,7 @@ function Detalle({ texto, rojo }: { texto: string; rojo: boolean }) {
 function FilaConexion({ fila }: { fila: InfraServicioRow }) {
   const navigate = useNavigate();
   const comprobar = useComprobarConexion();
+  const conTrabajo = useConTrabajo();
   const { donde, ruta } = dondeYRuta(fila);
   const usos = metodoDe(fila).usos ?? [];
   const problema = fila.estado === "rojo" || fila.estado === "ambar";
@@ -114,7 +116,11 @@ function FilaConexion({ fila }: { fila: InfraServicioRow }) {
             variante="suave"
             className="w-full sm:w-auto"
             disabled={comprobar.isPending}
-            onClick={() => comprobar.mutate(fila.id)}
+            onClick={() =>
+              void conTrabajo(`Probando ${fila.nombre}`, async () => {
+                await comprobar.mutateAsync(fila.id);
+              }, { mensajeOk: "Comprobación terminada." })
+            }
           >
             Probar
           </Boton>
@@ -149,6 +155,7 @@ function Bloque({ titulo, filas }: { titulo: string; filas: InfraServicioRow[] }
 function Conexiones() {
   const { data: filas = [], isPending } = useConexiones();
   const comprobar = useComprobarConexion();
+  const conTrabajo = useConTrabajo();
   useRealtimeConexiones(true);
 
   const resumen = resumenConexiones(filas);
@@ -168,7 +175,14 @@ function Conexiones() {
               <span className="text-destructive">{resumen.rojos} en rojo</span> · {resumen.grises} sin
               configurar
             </span>
-            <Boton disabled={comprobar.isPending} onClick={() => comprobar.mutate(undefined)}>
+            <Boton
+              disabled={comprobar.isPending}
+              onClick={() =>
+                void conTrabajo("Comprobando todas las conexiones", async () => {
+                  await comprobar.mutateAsync(undefined);
+                }, { mensajeOk: "Comprobación terminada." })
+              }
+            >
               <RefreshCw className={cn("size-4", comprobar.isPending && "animate-spin")} />
               Comprobar todo ahora
             </Boton>

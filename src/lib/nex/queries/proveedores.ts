@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -129,7 +130,10 @@ export function useGuardarClaveProveedor() {
 }
 
 export function useProbarProveedor() {
+  const seguirTrabajo = useSeguirTrabajo('Probando el proveedor de IA');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.functions.invoke("probar-proveedor", {
         body: { proveedor_id: id },
