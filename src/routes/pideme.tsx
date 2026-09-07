@@ -287,7 +287,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
           <p className="flex items-center gap-2 text-sm text-destructive">
             <span className="size-2 animate-pulse rounded-full bg-destructive" aria-hidden /> Te escucho…
           </p>
-          <canvas ref={lienzoOnda} height={72} className="mt-2 h-[72px] w-full rounded-lg border border-border bg-surface" />
+          <canvas ref={lienzoOnda} height={72} className="mt-2 h-[72px] w-full rounded-lg border border-border bg-surface text-primary" />
         </div>
       ) : usoVoz ? (
         <p className="mt-3 text-sm text-muted-foreground">Escuchado</p>
@@ -343,9 +343,9 @@ function TarjetaResultado({ peticionId }: { peticionId: string }) {
         <p className="font-display text-base font-semibold">{donde}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {url ? (
-            <Link to={url} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+            <a href={url} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
               Ir a verlo
-            </Link>
+            </a>
           ) : null}
           {peticion.estado === "propuesta" ? (
             <Link
