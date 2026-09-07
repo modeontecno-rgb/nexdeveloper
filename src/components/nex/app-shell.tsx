@@ -17,6 +17,7 @@ import * as React from "react";
 
 import { CronometroBarra } from "@/components/nex/cronometro";
 import { BotonInstalar } from "@/components/nex/instalar-app";
+import { IndicadorCabeceraTrabajo } from "@/components/nex/indicador-trabajo";
 import { PaletaAsistente } from "@/components/nex/paleta-asistente";
 import { PastillaVersion, PastillaVersionFija } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
@@ -263,6 +264,7 @@ function MenuLateral({
     <>
       <div className="flex items-center justify-between gap-2 px-4 pt-5 pb-3">
         <Marca />
+        <IndicadorCabeceraTrabajo className="ml-auto" />
         <button
           type="button"
           onClick={() => onContraer(true)}
@@ -680,6 +682,7 @@ function CabeceraMovil({ titulo, onMenu }: { titulo: string; onMenu: () => void 
         <Menu className="size-5" />
       </button>
       <p className="min-w-0 flex-1 truncate font-display text-sm font-semibold">{titulo}</p>
+      <IndicadorCabeceraTrabajo />
       <Link
         to="/avisos"
         aria-label={`Avisos${avisos > 0 ? `: ${avisos} sin leer` : ""}`}
