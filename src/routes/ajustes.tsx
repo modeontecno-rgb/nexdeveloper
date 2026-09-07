@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado, useAccesosMovil } from "@/components/nex/app-shell";
+import { DiccionarioNombres } from "@/components/nex/diccionario-nombres";
 import { TarjetaPlaudConexion } from "@/routes/pideme";
 import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
@@ -107,6 +108,10 @@ function Ajustes() {
         </section>
 
         <TarjetaPlaudConexion />
+
+        <div className="xl:col-span-2">
+          <DiccionarioNombres />
+        </div>
 
         <section className="panel p-5">
           <h2 className="font-display text-sm font-semibold">Versión</h2>

@@ -925,7 +925,7 @@ function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
                           texto: g.transcripcion ?? "",
                           origen: "voz",
                           grabacionId: g.id,
-                        })
+                        }, { onSuccess: () => toast.success("Borrador creado: revísalo en «Pendientes de revisar».") })
                       }
                     >
                       <ClipboardCheck className="size-3.5" /> Revisar antes de lanzar
