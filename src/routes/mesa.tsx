@@ -731,7 +731,23 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
                 </tbody>
               </table>
             </div>
-          ) : null}
+          ) : (
+            <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+              <p className="font-medium">Esta mesa terminó sin plan de trabajo.</p>
+              <p className="mt-1">
+                La conclusión llegó incompleta, así que no hay pasos que convertir en tareas. Pulsa «Volver a
+                deliberar» para que los expertos la rehagan.
+              </p>
+              <button
+                type="button"
+                className="mt-2 rounded-md border border-warning/50 px-2 py-1 font-medium hover:bg-warning/20 disabled:opacity-50"
+                disabled={deliberar.isPending}
+                onClick={() => deliberar.mutate(mesa.id)}
+              >
+                Volver a deliberar
+              </button>
+            </div>
+          )}
 
           {riesgos.length > 0 ? (
             <ul className="mt-4 list-disc space-y-1 pl-5 text-xs text-warning">
