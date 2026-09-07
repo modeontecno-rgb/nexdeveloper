@@ -93,32 +93,41 @@ export function formatoDinero(valor: number, moneda = "EUR") {
 
 export const formatoEuros = (valor: number) => formatoDinero(valor, "EUR");
 
+/** Convierte a fecha válida o devuelve null (evita que la pantalla se caiga con datos raros). */
+function aFecha(iso: string | number | Date | null | undefined): Date | null {
+  if (iso === null || iso === undefined || iso === "") return null;
+  const fecha = iso instanceof Date ? iso : new Date(iso);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
 export function formatoFecha(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "2-digit" }).format(
-    new Date(iso),
-  );
+  const fecha = aFecha(iso);
+  if (!fecha) return "—";
+  return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "2-digit" }).format(fecha);
 }
 
 export function formatoFechaHora(iso: string | null | undefined) {
-  if (!iso) return "—";
+  const fecha = aFecha(iso);
+  if (!fecha) return "—";
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  }).format(fecha);
 }
 
 export function desde(iso: string | null | undefined) {
-  if (!iso) return "sin actividad";
-  const minutos = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  const fecha = aFecha(iso);
+  if (!fecha) return "sin actividad";
+  const minutos = Math.round((Date.now() - fecha.getTime()) / 60000);
   if (minutos < 1) return "ahora mismo";
   if (minutos < 60) return `hace ${minutos} min`;
   const h = Math.round(minutos / 60);
   if (h < 24) return `hace ${h} h`;
   return `hace ${Math.round(h / 24)} d`;
 }
+
 
 export function crearSlug(nombre: string) {
   return (

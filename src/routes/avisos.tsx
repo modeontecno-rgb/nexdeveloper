@@ -71,7 +71,21 @@ export const Route = createFileRoute("/avisos")({
     ],
   }),
   component: PantallaAvisos,
+  errorComponent: ({ error }) => (
+    <div className="mx-auto max-w-md p-6 text-center">
+      <h1 className="font-display text-lg font-semibold">No se han podido cargar los avisos</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{error instanceof Error ? error.message : "Error desconocido."}</p>
+      <a href="/" className="mt-4 inline-flex rounded-md border border-border px-4 py-2 text-sm">Ir al inicio</a>
+    </div>
+  ),
 });
+
+/** Devuelve siempre una lista, venga lo que venga del servidor. */
+function comoLista<T>(valor: unknown): T[] {
+  if (Array.isArray(valor)) return valor as T[];
+  if (valor && typeof valor === "object") return Object.values(valor as Record<string, T>);
+  return [];
+}
 
 const ICONO_TIPO: Record<TipoAviso, React.ComponentType<{ className?: string }>> = {
   tarea_atencion: Bell,
@@ -92,7 +106,8 @@ function Panel({ children, className }: { children: React.ReactNode; className?:
 
 function PantallaAvisos() {
   const estado = useEstadoAvisos();
-  const { data: avisos = [], isPending } = useAvisos();
+  const { data: avisosCrudos, isPending } = useAvisos();
+  const avisos = comoLista<AvisoRow>(avisosCrudos);
   useRealtimeAvisos();
 
   const sinLeer = avisos.filter((a) => !a.leido).length;
@@ -238,7 +253,9 @@ function TarjetaDispositivo({ clavePublica }: { clavePublica: string | null }) {
 function ListaDispositivos() {
   const estado = useEstadoAvisos();
   const quitar = useQuitarDispositivo();
-  const dispositivos = estado.data?.dispositivos ?? [];
+  const dispositivos = comoLista<{ id: string; dispositivo?: string | null; ultimo_envio?: string | null; ultimo_error?: string | null }>(
+    estado.data?.dispositivos,
+  );
 
   return (
     <Panel>
@@ -280,7 +297,10 @@ function PanelConfiguracion() {
   const estado = useEstadoAvisos();
   const guardar = useGuardarConfigAvisos();
   const config = estado.data?.config ?? null;
-  const tipos = (config?.tipos ?? {}) as Record<string, boolean>;
+  const tiposCrudos = config?.tipos;
+  const tipos = (tiposCrudos && typeof tiposCrudos === "object" && !Array.isArray(tiposCrudos)
+    ? tiposCrudos
+    : {}) as Record<string, boolean>;
 
   const cambiarTipo = (tipo: TipoAviso, valor: boolean) =>
     guardar.mutate({ tipos: { ...tipos, [tipo]: valor } });
@@ -343,11 +363,12 @@ function PanelConfiguracion() {
 function BandejaAvisos({ avisos, cargando }: { avisos: AvisoRow[]; cargando: boolean }) {
   const navegar = useNavigate();
   const marcar = useMarcarLeidos();
-  const { data: proyectos = [] } = useProyectos();
+  const { data: proyectosCrudos } = useProyectos();
+  const proyectos = comoLista<{ id: string; nombre: string }>(proyectosCrudos);
   const [tipo, setTipo] = React.useState<"todos" | TipoAviso>("todos");
   const [soloNoLeidos, setSoloNoLeidos] = React.useState(false);
 
-  const visibles = avisos.filter(
+  const visibles = comoLista<AvisoRow>(avisos).filter(
     (a) => (tipo === "todos" || a.tipo === tipo) && (!soloNoLeidos || !a.leido),
   );
 
