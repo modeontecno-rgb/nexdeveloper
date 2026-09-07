@@ -760,7 +760,12 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Boton type="button" disabled={crearTareas.isPending || actualizar.isPending} onClick={() => void crearTareasDelPlan()}>
+            <Boton
+              type="button"
+              disabled={plan.length === 0 || crearTareas.isPending || actualizar.isPending}
+              title={plan.length === 0 ? "Esta mesa todavía no tiene plan de trabajo." : undefined}
+              onClick={() => void crearTareasDelPlan()}
+            >
               <ListChecks className="size-4" /> Crear tareas del plan
             </Boton>
             <Boton type="button" variante="suave" disabled={crearOrden.isPending} onClick={() => void enviarComoOrden()}>
