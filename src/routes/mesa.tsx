@@ -821,7 +821,10 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
             {tareasCreadas.length > 0 ? (
               <Link
                 to="/tareas"
-                search={{ proyecto: mesa.proyecto_id, mesa: mesa.titulo }}
+                search={{
+                  proyecto: mesa.proyecto_id ?? undefined,
+                  mesa: mesa.titulo ?? undefined,
+                }}
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3.5 py-2 text-sm font-medium text-primary transition hover:bg-primary/15"
               >
                 Ver {tareasCreadas.length} tareas <ListChecks className="size-4" />
