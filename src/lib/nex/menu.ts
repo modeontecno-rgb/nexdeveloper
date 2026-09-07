@@ -219,7 +219,7 @@ export const GRUPOS_MENU: GrupoMenu[] = [
         descripcion: "Tu espacio privado, separado de los proyectos.",
       },
       {
-        to: "/personal_/estilo",
+        to: "/personal/estilo",
         etiqueta: "Editor de estilo",
         icono: PenLine,
         alias: ["estilo", "glosario", "mi voz", "redacción", "perfil de estilo"],
