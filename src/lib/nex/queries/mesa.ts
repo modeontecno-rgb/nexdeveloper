@@ -356,8 +356,15 @@ export function sintesisLegible(sintesis: string | null | undefined): string {
   if (inicio >= 0 && fin > inicio && fin - inicio > 80) {
     limpio = (limpio.slice(0, inicio) + limpio.slice(fin + 1)).trim();
   }
-  return limpio || texto;
+  // Restos de un bloque JSON cortado a medias: ```json suelto, comas o llaves huérfanas.
+  limpio = limpio
+    .replace(/^`{1,3}\s*json\b/gim, "")
+    .replace(/`{1,3}/g, "")
+    .replace(/^[\s,{}[\]]+$/gm, "")
+    .trim();
+  return limpio;
 }
+
 
 /** La recomendación de la mesa, rescatando el plan del texto si hiciera falta. */
 export function recomendacionDeMesa(mesa: MesaRow | null | undefined): RecomendacionMesa | null {
