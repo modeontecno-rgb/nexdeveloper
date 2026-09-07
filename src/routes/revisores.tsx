@@ -9,7 +9,7 @@ import { formatoFechaHora } from "@/lib/nex/labels";
 import { obtenerPanelRevisores } from "@/lib/nex/revisores.functions";
 
 const DESCRIPCION =
-  "Quién ha entrado a revisar, cuántos manuales lleva revisados cada uno y el historial de insignias de redacción.";
+  "Quién revisa manuales, cuántos lleva revisados cada uno y el historial de insignias de redacción.";
 
 export const Route = createFileRoute("/revisores")({
   head: () => ({
