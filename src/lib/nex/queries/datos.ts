@@ -9,8 +9,6 @@ import type {
   CargaAgenteRow,
   ChatRow,
   ConfiguracionAppRow,
-  CredencialRefRow,
-  IntegracionRow,
   MensajeRow,
   OrdenRow,
   PerfilRow,
@@ -112,20 +110,6 @@ export function usePreviews() {
   return useQuery({
     queryKey: claves.previews,
     queryFn: () => pedir<PreviewRow>(supabase.from("previews").select("*")),
-  });
-}
-
-export function useIntegraciones() {
-  return useQuery({
-    queryKey: claves.integraciones,
-    queryFn: () => pedir<IntegracionRow>(supabase.from("integraciones").select("*").order("nombre")),
-  });
-}
-
-export function useCredenciales() {
-  return useQuery({
-    queryKey: claves.credenciales,
-    queryFn: () => pedir<CredencialRefRow>(supabase.from("credenciales_ref").select("*").order("referencia")),
   });
 }
 
