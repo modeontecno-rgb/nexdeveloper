@@ -1,24 +1,44 @@
 import { MessageCircle } from "lucide-react";
 
-import { useConfiguracionApp } from "@/lib/nex/queries/datos";
+import { useAutoria, useConfiguracionApp } from "@/lib/nex/queries/datos";
 import { cn } from "@/lib/utils";
+
+/** Indica si la leyenda «Powered by» debe verse según la configuración de autoría. */
+export function debeMostrarPie(mostrar: string | undefined): boolean {
+  return mostrar === "siempre" || mostrar === "solo_marca_propia";
+}
+
+export function LeyendaAutoria({ className }: { className?: string }) {
+  const { data } = useAutoria();
+  if (!data?.powered_by || !debeMostrarPie(data.mostrar_en_pie)) return null;
+
+  const estilo = cn(
+    "text-[10px] text-muted-foreground/40 transition-opacity hover:text-muted-foreground",
+    className,
+  );
+  const texto = `Powered by ${data.powered_by}`;
+
+  if (data.url) {
+    return (
+      <a href={data.url} target="_blank" rel="noreferrer" className={estilo}>
+        {texto}
+      </a>
+    );
+  }
+  return <span className={estilo}>{texto}</span>;
+}
 
 export function PieMarca({ className }: { className?: string }) {
   const { data } = useConfiguracionApp();
-  const poweredBy = data?.["powered_by"];
+  const { data: autoria } = useAutoria();
   const whatsapp = data?.["whatsapp_url"];
+  const hayLeyenda = Boolean(autoria?.powered_by) && debeMostrarPie(autoria?.mostrar_en_pie);
 
-  if (!poweredBy && !whatsapp) return null;
+  if (!hayLeyenda && !whatsapp) return null;
 
   return (
     <div className={cn("flex items-center justify-between gap-2 px-1 py-2", className)}>
-      {poweredBy ? (
-        <span className="text-[10px] text-muted-foreground/40 transition-opacity hover:text-muted-foreground">
-          Powered by {poweredBy}
-        </span>
-      ) : (
-        <span />
-      )}
+      {hayLeyenda ? <LeyendaAutoria /> : <span />}
       {whatsapp ? (
         <a
           href={whatsapp}
