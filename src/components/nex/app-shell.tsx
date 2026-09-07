@@ -421,6 +421,8 @@ function ItemMenu({
 /* ------------------------------ Rail contraído ---------------------------- */
 
 function RailContraido({ ruta, onExpandir }: { ruta: string; onExpandir: () => void }) {
+  const { usuario } = useAuth();
+  const grupos = gruposVisibles(usuario?.id);
   const [flotante, setFlotante] = React.useState<string | null>(null);
 
   return (
