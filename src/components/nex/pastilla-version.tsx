@@ -30,10 +30,10 @@ export function PastillaVersion({ className }: { className?: string }) {
 }
 
 /** Pastilla fija abajo a la derecha, para pantallas sin menú lateral. */
-export function PastillaVersionFija() {
+export function PastillaVersionFija({ className }: { className?: string }) {
   return (
     <div
-      className="pointer-events-none fixed right-3 bottom-3 z-40"
+      className={cn("pointer-events-none fixed right-3 bottom-3 z-40", className)}
       style={{ paddingBottom: "env(safe-area-inset-bottom)", paddingRight: "env(safe-area-inset-right)" }}
     >
       <PastillaVersion className="pointer-events-auto bg-surface/80 backdrop-blur" />

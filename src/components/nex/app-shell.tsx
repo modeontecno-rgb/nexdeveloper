@@ -18,7 +18,7 @@ import * as React from "react";
 import { CronometroBarra } from "@/components/nex/cronometro";
 import { BotonInstalar } from "@/components/nex/instalar-app";
 import { PaletaAsistente } from "@/components/nex/paleta-asistente";
-import { PastillaVersion } from "@/components/nex/pastilla-version";
+import { PastillaVersion, PastillaVersionFija } from "@/components/nex/pastilla-version";
 import { PieMarca } from "@/components/nex/pie-marca";
 import { useAuth } from "@/lib/nex/auth";
 import { usePerfil, useProyectos } from "@/lib/nex/queries/datos";
@@ -184,6 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
+        <PastillaVersionFija className="bottom-[calc(4.25rem+env(safe-area-inset-bottom))] lg:hidden" />
         <BarraInferior ruta={ruta} onMenu={() => setHoja(true)} />
         <BotonPideme ruta={ruta} />
         <CronometroBarra />

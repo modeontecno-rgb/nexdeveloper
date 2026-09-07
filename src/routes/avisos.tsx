@@ -87,7 +87,7 @@ const ICONO_TIPO: Record<TipoAviso, React.ComponentType<{ className?: string }>>
 };
 
 function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <section className={cn("panel p-5", className)}>{children}</section>;
+  return <section className={cn("panel min-w-0 max-w-full overflow-hidden p-5", className)}>{children}</section>;
 }
 
 function PantallaAvisos() {
@@ -374,7 +374,7 @@ function BandejaAvisos({ avisos, cargando }: { avisos: AvisoRow[]; cargando: boo
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <select
-          className="rounded-md border border-input bg-surface px-2 py-1.5 text-sm"
+          className="min-w-0 max-w-full rounded-md border border-input bg-surface px-2 py-1.5 text-sm"
           value={tipo}
           onChange={(e) => setTipo(e.target.value as "todos" | TipoAviso)}
         >
@@ -415,14 +415,14 @@ function BandejaAvisos({ avisos, cargando }: { avisos: AvisoRow[]; cargando: boo
                   type="button"
                   onClick={() => abrir(aviso)}
                   className={cn(
-                    "flex w-full gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary/40",
+                    "flex w-full min-w-0 gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary/40",
                     aviso.leido ? "border-border bg-surface" : "border-primary/40 bg-primary/5",
                   )}
                 >
                   <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
                     <Icono className="size-4" />
                   </span>
-                  <span className="min-w-0 flex-1">
+                  <span className="min-w-0 flex-1 break-words">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">{aviso.titulo}</span>
                       {!aviso.leido ? <span className="size-2 rounded-full bg-primary" /> : null}

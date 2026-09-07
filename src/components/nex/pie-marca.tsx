@@ -46,7 +46,7 @@ export function PieMarca({ className }: { className?: string }) {
           rel="noreferrer"
           aria-label="Abrir WhatsApp"
           title="Contactar por WhatsApp"
-          className="text-muted-foreground/40 transition-colors hover:text-success"
+          className="-m-2 inline-flex size-11 items-center justify-center text-muted-foreground/40 transition-colors hover:text-success"
         >
           <MessageCircle className="size-4" />
         </a>

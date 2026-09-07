@@ -95,7 +95,7 @@ export function useGastoDiario(mes: string) {
         .from("gasto_ia_diario")
         .select("*")
         .gte("fecha", `${mes}-01`)
-        .lte("fecha", `${mes}-31`)
+        .lte("fecha", finDeMes(mes))
         .order("fecha", { ascending: true });
       if (error) throw new Error(error.message);
       return (data ?? []) as GastoIaDiarioRow[];
@@ -333,6 +333,11 @@ export function nombreMes(mes: string) {
 export function diasDelMes(mes: string) {
   const [anio, m] = mes.split("-");
   return new Date(Number(anio), Number(m), 0).getDate();
+}
+
+/** Último día real del mes (AAAA-MM-DD), para no pedir fechas que no existen. */
+export function finDeMes(mes: string): string {
+  return `${mes}-${String(diasDelMes(mes)).padStart(2, "0")}`;
 }
 
 /** Proyección de gasto a fin de mes con lo consumido hasta hoy. */
