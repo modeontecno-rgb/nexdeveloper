@@ -41,6 +41,7 @@ import {
   useMesa,
   useMesas,
   usePingMesa,
+  normalizarPlan,
   recomendacionDeMesa,
   sintesisLegible,
   useRealtimeMesa,
@@ -420,10 +421,10 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
 
   const equipo = leerParticipantes(mesa);
   const recomendacion = recomendacionDeMesa(mesa);
-  const plan: PasoPlanMesa[] = Array.isArray(recomendacion?.plan) ? recomendacion.plan : [];
+  const plan: PasoPlanMesa[] = normalizarPlan(recomendacion?.plan);
   const riesgos = Array.isArray(recomendacion?.riesgos) ? recomendacion.riesgos : [];
   const faltaPlanGuardado =
-    plan.length > 0 && !(Array.isArray(mesa.recomendacion?.plan) && mesa.recomendacion.plan.length > 0);
+    plan.length > 0 && normalizarPlan(mesa.recomendacion?.plan).length === 0;
 
   const crearTareasDelPlan = async () => {
     if (faltaPlanGuardado && recomendacion) {
