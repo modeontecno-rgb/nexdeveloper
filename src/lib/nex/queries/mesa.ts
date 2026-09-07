@@ -343,6 +343,52 @@ export function planDeSintesis(sintesis: string | null | undefined): Recomendaci
       /* seguimos probando */
     }
   }
+
+  // Algunos modelos agotan el límite de salida antes de cerrar el JSON. En ese
+  // caso conservamos todos los objetos completos que ya hayan escrito dentro
+  // de `plan`, en vez de obligar a repetir toda la deliberación.
+  const inicioPlan = texto.search(/"plan"\s*:\s*\[/i);
+  if (inicioPlan >= 0) {
+    const inicioArray = texto.indexOf("[", inicioPlan);
+    const pasos: PasoPlanMesa[] = [];
+    let inicioObjeto = -1;
+    let profundidad = 0;
+    let enCadena = false;
+    let escapado = false;
+
+    for (let i = inicioArray + 1; i < texto.length; i += 1) {
+      const caracter = texto[i];
+      if (enCadena) {
+        if (escapado) escapado = false;
+        else if (caracter === "\\") escapado = true;
+        else if (caracter === '"') enCadena = false;
+        continue;
+      }
+      if (caracter === '"') {
+        enCadena = true;
+        continue;
+      }
+      if (caracter === "{") {
+        if (profundidad === 0) inicioObjeto = i;
+        profundidad += 1;
+      } else if (caracter === "}" && profundidad > 0) {
+        profundidad -= 1;
+        if (profundidad === 0 && inicioObjeto >= 0) {
+          try {
+            const paso = JSON.parse(texto.slice(inicioObjeto, i + 1)) as PasoPlanMesa;
+            if (paso && typeof paso === "object" && typeof paso.titulo === "string") pasos.push(paso);
+          } catch {
+            // Un objeto incompleto no invalida los pasos anteriores.
+          }
+          inicioObjeto = -1;
+        }
+      } else if (caracter === "]" && profundidad === 0) {
+        break;
+      }
+    }
+
+    if (pasos.length > 0) return { plan: pasos };
+  }
   return null;
 }
 
