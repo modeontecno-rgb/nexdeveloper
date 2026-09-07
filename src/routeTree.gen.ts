@@ -41,6 +41,7 @@ import { Route as ProyectianRouteImport } from './routes/proyectian'
 import { Route as ReferenciaRouteImport } from './routes/referencia'
 import { Route as RepositoriosRouteImport } from './routes/repositorios'
 import { Route as ResumenesRouteImport } from './routes/resumenes'
+import { Route as RevisoresRouteImport } from './routes/revisores'
 import { Route as SaludRouteImport } from './routes/salud'
 import { Route as UsuariosClientesRouteImport } from './routes/usuarios-clientes'
 import { Route as VigilanciaRouteImport } from './routes/vigilancia'
@@ -213,6 +214,11 @@ const ResumenesRoute = ResumenesRouteImport.update({
   path: '/resumenes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RevisoresRoute = RevisoresRouteImport.update({
+  id: '/revisores',
+  path: '/revisores',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SaludRoute = SaludRouteImport.update({
   id: '/salud',
   path: '/salud',
@@ -303,6 +309,7 @@ export interface FileRoutesByFullPath {
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
+  '/revisores': typeof RevisoresRoute
   '/salud': typeof SaludRoute
   '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
@@ -348,6 +355,7 @@ export interface FileRoutesByTo {
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
+  '/revisores': typeof RevisoresRoute
   '/salud': typeof SaludRoute
   '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
@@ -394,6 +402,7 @@ export interface FileRoutesById {
   '/referencia': typeof ReferenciaRoute
   '/repositorios': typeof RepositoriosRoute
   '/resumenes': typeof ResumenesRoute
+  '/revisores': typeof RevisoresRoute
   '/salud': typeof SaludRoute
   '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
@@ -441,6 +450,7 @@ export interface FileRouteTypes {
     | '/referencia'
     | '/repositorios'
     | '/resumenes'
+    | '/revisores'
     | '/salud'
     | '/usuarios-clientes'
     | '/vigilancia'
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/referencia'
     | '/repositorios'
     | '/resumenes'
+    | '/revisores'
     | '/salud'
     | '/usuarios-clientes'
     | '/vigilancia'
@@ -531,6 +542,7 @@ export interface FileRouteTypes {
     | '/referencia'
     | '/repositorios'
     | '/resumenes'
+    | '/revisores'
     | '/salud'
     | '/usuarios-clientes'
     | '/vigilancia'
@@ -577,6 +589,7 @@ export interface RootRouteChildren {
   ReferenciaRoute: typeof ReferenciaRoute
   RepositoriosRoute: typeof RepositoriosRoute
   ResumenesRoute: typeof ResumenesRoute
+  RevisoresRoute: typeof RevisoresRoute
   SaludRoute: typeof SaludRoute
   UsuariosClientesRoute: typeof UsuariosClientesRoute
   VigilanciaRoute: typeof VigilanciaRoute
@@ -815,6 +828,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResumenesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/revisores': {
+      id: '/revisores'
+      path: '/revisores'
+      fullPath: '/revisores'
+      preLoaderRoute: typeof RevisoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/salud': {
       id: '/salud'
       path: '/salud'
@@ -939,6 +959,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReferenciaRoute: ReferenciaRoute,
   RepositoriosRoute: RepositoriosRoute,
   ResumenesRoute: ResumenesRoute,
+  RevisoresRoute: RevisoresRoute,
   SaludRoute: SaludRoute,
   UsuariosClientesRoute: UsuariosClientesRoute,
   VigilanciaRoute: VigilanciaRoute,
