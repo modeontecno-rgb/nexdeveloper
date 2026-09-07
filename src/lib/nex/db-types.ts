@@ -858,8 +858,8 @@ export type AvisosConfigRow = {
   user_id: string
   activo: boolean
   tipos: Record<string, boolean> | null
-  silencio_desde: string | null
-  silencio_hasta: string | null
+  silencio_desde: string | number | null
+  silencio_hasta: string | number | null
 }
 
 // ---- Asistente de cartera (0.24.0) ----
