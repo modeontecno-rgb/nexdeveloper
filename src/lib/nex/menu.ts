@@ -387,11 +387,20 @@ export const ANCLADOS_PIE: PantallaMenu[] = [
     descripcion: "Sincronización con Proyectian y con los repositorios.",
   },
   {
-    to: "/integraciones",
-    etiqueta: "Integraciones",
+    to: "/conexiones",
+    etiqueta: "Conexiones",
     icono: Plug,
-    alias: ["conexiones", "github", "canva", "servicios externos", "enlaces"],
-    descripcion: "Conexiones con servicios de fuera.",
+    alias: [
+      "integraciones",
+      "conexiones",
+      "claves",
+      "github",
+      "canva",
+      "lovable",
+      "plaud",
+      "servicios externos",
+    ],
+    descripcion: "Todo lo de fuera, comprobado en verde o rojo.",
   },
 ];
 

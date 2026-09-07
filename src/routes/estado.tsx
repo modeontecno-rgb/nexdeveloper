@@ -6,12 +6,11 @@ import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
 import { Boton } from "@/components/nex/campos";
+import { useConexiones } from "@/lib/nex/queries/conexiones";
 import { useAuth } from "@/lib/nex/auth";
 import {
   useAgentes,
   useAlertas,
-  useCredenciales,
-  useIntegraciones,
   useProyectos,
   useTareas,
 } from "@/lib/nex/queries/datos";
@@ -510,8 +509,7 @@ function EstadoSistema() {
   const proyectos = useProyectos();
   const tareas = useTareas();
   const agentes = useAgentes();
-  const integraciones = useIntegraciones();
-  const credenciales = useCredenciales();
+  const conexiones = useConexiones();
   const alertas = useAlertas();
   const verificaciones = useVerificacionesBackend(Boolean(sesion));
   const secretos = useComprobarSecretos(Boolean(sesion));
@@ -541,14 +539,14 @@ function EstadoSistema() {
       detalle: `${agentes.data?.filter((a) => a.conectado).length ?? 0} conectados de ${agentes.data?.length ?? 0}`,
     },
     {
-      nombre: "Integraciones",
-      nivel: (integraciones.data?.filter((i) => i.conectada).length ?? 0) === 0 ? "aviso" : "ok",
-      detalle: `${integraciones.data?.filter((i) => i.conectada).length ?? 0} conectadas de ${integraciones.data?.length ?? 0}`,
-    },
-    {
-      nombre: "Credenciales",
-      nivel: (credenciales.data?.some((c) => !c.configurado) ?? false) ? "aviso" : "ok",
-      detalle: `${credenciales.data?.filter((c) => c.configurado).length ?? 0} configuradas de ${credenciales.data?.length ?? 0}`,
+      nombre: "Conexiones",
+      nivel:
+        (conexiones.data?.some((c) => c.estado === "rojo") ?? false)
+          ? "error"
+          : (conexiones.data?.some((c) => c.estado !== "verde") ?? false)
+            ? "aviso"
+            : "ok",
+      detalle: `${conexiones.data?.filter((c) => c.estado === "verde").length ?? 0} en verde de ${conexiones.data?.length ?? 0}`,
     },
     {
       nombre: "Alertas abiertas",

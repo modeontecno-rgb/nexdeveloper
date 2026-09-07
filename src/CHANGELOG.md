@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## 0.38.0 — Conexiones
+
+- Conexiones: una sola pantalla con todo lo de fuera en verde o rojo, comprobado de verdad; sustituye a Integraciones.
+
 ## 0.37.0 — Auditoría, seguridad y autoría (7 de septiembre de 2026)
 
 - Auditoría completa de la base de datos: 112 tablas, 130 claves foráneas y cero registros huérfanos.

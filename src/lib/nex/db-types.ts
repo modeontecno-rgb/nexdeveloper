@@ -2153,6 +2153,7 @@ export type SaludConfigRow = {
 /* ------------------------- Infraestructura (0.30.0) ------------------------ */
 
 export type TipoServicioInfra =
+  | "conexion"
   | "supabase"
   | "github"
   | "http"
@@ -2172,6 +2173,12 @@ export type OrigenServicioInfra = "descubierto" | "manual"
 export type EstadoIncidenciaInfra = "abierta" | "resuelta" | "ignorada"
 
 export type MetodoInfra = {
+  /** Dónde se configura esta conexión (texto para la persona). */
+  donde?: string | null
+  /** Ruta interna de la app donde se conecta o configura. */
+  ruta?: string | null
+  /** Para qué se usa esta conexión. */
+  usos?: string[] | null
   esperado?: number | null
   texto?: string | null
   metodo_http?: string | null
