@@ -45,29 +45,10 @@ export type PanelRevisores = {
 export const obtenerPanelRevisores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PanelRevisores> => {
-    if (context.userId !== "59e35aca-cf1f-44c1-9693-8a48e11f55cc") {
-      throw new Error("Sin permiso");
-    }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabase = context.supabase;
+    const correoPropio = (context.claims["email"] as string | undefined) ?? "tu cuenta";
 
-    // Cuentas reales (hasta 1000) con su último acceso.
-    const usuarios: { id: string; email: string; creado_el: string | null; ultimo_acceso: string | null }[] = [];
-    for (let pagina = 1; pagina <= 10; pagina += 1) {
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: pagina, perPage: 100 });
-      if (error) throw new Error(error.message);
-      const lista = data?.users ?? [];
-      for (const u of lista) {
-        usuarios.push({
-          id: u.id,
-          email: u.email ?? "sin correo",
-          creado_el: u.created_at ?? null,
-          ultimo_acceso: u.last_sign_in_at ?? null,
-        });
-      }
-      if (lista.length < 100) break;
-    }
-
-    const { data: manualesBrutos, error: errorManuales } = await supabaseAdmin
+    const { data: manualesBrutos, error: errorManuales } = await supabase
       .from("manuales" as never)
       .select("id,user_id,titulo,proyecto_id,revision,revisado_el");
     if (errorManuales) throw new Error(errorManuales.message);
@@ -80,40 +61,47 @@ export const obtenerPanelRevisores = createServerFn({ method: "GET" })
       revisado_el: string | null;
     }[];
 
-    const { data: proyectosBrutos, error: errorProyectos } = await supabaseAdmin.from("proyectos" as never).select("id,nombre");
+    const { data: proyectosBrutos, error: errorProyectos } = await supabase
+      .from("proyectos" as never)
+      .select("id,nombre");
     if (errorProyectos) throw new Error(errorProyectos.message);
     const proyectos = (proyectosBrutos ?? []) as unknown as { id: string; nombre: string }[];
     const nombreProyecto = new Map(proyectos.map((p) => [p.id, p.nombre]));
 
-    const correoDe = new Map(usuarios.map((u) => [u.id, u.email]));
     const porUsuario = new Map<string, RevisorResumen>();
-    for (const u of usuarios) {
-      porUsuario.set(u.id, {
-        ...u,
+    const asegurar = (id: string): RevisorResumen => {
+      const existente = porUsuario.get(id);
+      if (existente) return existente;
+      const nuevo: RevisorResumen = {
+        id,
+        email: id === context.userId ? correoPropio : "otra cuenta",
+        creado_el: null,
+        ultimo_acceso: null,
         manuales_totales: 0,
         manuales_revisados: 0,
         correcciones_totales: 0,
         ultima_revision: null,
-      });
-    }
+      };
+      porUsuario.set(id, nuevo);
+      return nuevo;
+    };
+    asegurar(context.userId);
 
     const insignias: InsigniaRevision[] = [];
-    for (const m of manuales ?? []) {
-      const fila = porUsuario.get(m.user_id as string);
-      if (fila) fila.manuales_totales += 1;
-      const revision = (m.revision ?? null) as RevisionManual | null;
-      const revisadoEl = (m.revisado_el ?? null) as string | null;
+    for (const m of manuales) {
+      const fila = asegurar(m.user_id);
+      fila.manuales_totales += 1;
+      const revision = m.revision ?? null;
+      const revisadoEl = m.revisado_el ?? null;
       if (!revision || !revisadoEl) continue;
-      if (fila) {
-        fila.manuales_revisados += 1;
-        fila.correcciones_totales += revision.correcciones ?? 0;
-        if (!fila.ultima_revision || revisadoEl > fila.ultima_revision) fila.ultima_revision = revisadoEl;
-      }
+      fila.manuales_revisados += 1;
+      fila.correcciones_totales += revision.correcciones ?? 0;
+      if (!fila.ultima_revision || revisadoEl > fila.ultima_revision) fila.ultima_revision = revisadoEl;
       insignias.push({
-        manual_id: m.id as string,
-        titulo: (m.titulo as string) ?? "Manual",
-        proyecto: nombreProyecto.get(m.proyecto_id as string) ?? null,
-        revisor: correoDe.get(m.user_id as string) ?? "desconocido",
+        manual_id: m.id,
+        titulo: m.titulo ?? "Manual",
+        proyecto: nombreProyecto.get(m.proyecto_id) ?? null,
+        revisor: fila.email,
         correcciones: revision.correcciones ?? 0,
         capitulos: revision.capitulos ?? 0,
         nivel: revision.nivel ?? null,
@@ -122,21 +110,20 @@ export const obtenerPanelRevisores = createServerFn({ method: "GET" })
     }
     insignias.sort((a, b) => b.revisado_el.localeCompare(a.revisado_el));
 
-    const revisores = [...porUsuario.values()].sort((a, b) => {
-      const accesoA = a.ultimo_acceso ?? "";
-      const accesoB = b.ultimo_acceso ?? "";
-      return accesoB.localeCompare(accesoA);
-    });
+    const revisores = [...porUsuario.values()].sort(
+      (a, b) => (b.ultima_revision ?? "").localeCompare(a.ultima_revision ?? ""),
+    );
 
     return {
       revisores,
       insignias,
       totales: {
-        cuentas: usuarios.length,
-        han_entrado: usuarios.filter((u) => u.ultimo_acceso).length,
-        manuales: (manuales ?? []).length,
+        cuentas: revisores.length,
+        han_entrado: revisores.filter((r) => r.ultima_revision).length,
+        manuales: manuales.length,
         revisados: insignias.length,
         correcciones: insignias.reduce((suma, i) => suma + i.correcciones, 0),
       },
     };
   });
+
