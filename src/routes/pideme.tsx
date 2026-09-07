@@ -144,8 +144,17 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
   const [texto, setTexto] = React.useState("");
   const [paso, setPaso] = React.useState(0);
   const [resultado, setResultado] = React.useState<{ peticionId: string } | null>(null);
+  const [borradorId, setBorradorId] = React.useState<string | null>(null);
+  const [usoVoz, setUsoVoz] = React.useState(false);
+  const crearBorrador = useCrearBorrador();
+  const { data: borradores = [] } = useBorradores();
+  const { lanzarBorrador, enCurso } = useLanzarBorradorCompleto();
   const areaRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const { escuchando, soportado, alternar } = useDictado((dicho) => setTexto((t) => (t ? `${t} ${dicho}` : dicho)));
+  const { escuchando, soportado, alternar } = useDictado((dicho) => {
+    setUsoVoz(true);
+    setTexto((t) => (t ? `${t} ${dicho}` : dicho));
+  });
+  const borradorAbierto = borradores.find((b) => b.id === borradorId) ?? null;
 
   React.useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
@@ -168,9 +177,29 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
     return () => window.clearTimeout(t);
   }, [pedir.isPending]);
 
+  const revisar = (origen: "texto" | "voz") => {
+    const limpio = texto.trim();
+    if (!limpio || crearBorrador.isPending) return;
+    crearBorrador.mutate(
+      { texto: limpio, origen },
+      {
+        onSuccess: (b) => {
+          setTexto("");
+          setUsoVoz(false);
+          setBorradorId(b.id);
+        },
+      },
+    );
+  };
+
   const enviar = (origen: "texto" | "voz") => {
     const limpio = texto.trim();
     if (!limpio || pedir.isPending) return;
+    // Lo dictado se revisa antes de lanzarse.
+    if (origen === "voz") {
+      revisar("voz");
+      return;
+    }
     pedir.mutate(
       { texto: limpio, origen },
       {
@@ -193,7 +222,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          enviar("texto");
+          enviar(usoVoz ? "voz" : "texto");
         }}
         className="mt-3"
       >
@@ -207,7 +236,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              enviar("texto");
+              enviar(usoVoz ? "voz" : "texto");
             }
           }}
         />
@@ -215,6 +244,15 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
           <Boton type="submit" disabled={!texto.trim() || pedir.isPending}>
             {pedir.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             Pídemelo
+          </Boton>
+          <Boton
+            type="button"
+            variante="suave"
+            onClick={() => revisar(usoVoz ? "voz" : "texto")}
+            disabled={!texto.trim() || crearBorrador.isPending}
+          >
+            {crearBorrador.isPending ? <Loader2 className="size-4 animate-spin" /> : <ClipboardCheck className="size-4" />}
+            Revisar antes de lanzar
           </Boton>
           {soportado ? (
             <Boton
@@ -238,6 +276,22 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
           <Loader2 className="size-4 animate-spin" />
           {paso < 2 ? "Entendiendo lo que pides…" : "Preparando la propuesta con los expertos…"}
         </p>
+      ) : null}
+
+      {borradorAbierto ? (
+        <div className="mt-4">
+          <RevisarBorrador
+            borrador={borradorAbierto}
+            lanzando={enCurso === borradorAbierto.id}
+            onCerrar={() => setBorradorId(null)}
+            onLanzar={(id) =>
+              void lanzarBorrador(id, (peticionId) => {
+                setBorradorId(null);
+                setResultado({ peticionId });
+              })
+            }
+          />
+        </div>
       ) : null}
 
       {resultado ? <TarjetaResultado peticionId={resultado.peticionId} /> : null}
@@ -826,6 +880,7 @@ export function TarjetaPlaudConexion() {
 
 function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
   const { data: grabaciones = [] } = useGrabacionesPlaud();
+  const crearBorrador = useCrearBorrador();
   const procesar = usePlaudProcesar();
   const descartar = usePlaudDescartar();
   const [verId, setVerId] = React.useState<string | null>(null);
@@ -860,6 +915,20 @@ function PanelPlaud({ estadoCargando }: { estadoCargando: boolean }) {
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Boton variante="suave" className="px-2.5 py-1 text-xs" onClick={() => setVerId(g.id)}>
                       Ver transcripción
+                    </Boton>
+                    <Boton
+                      variante="suave"
+                      className="px-2.5 py-1 text-xs"
+                      disabled={crearBorrador.isPending || !g.transcripcion}
+                      onClick={() =>
+                        crearBorrador.mutate({
+                          texto: g.transcripcion ?? "",
+                          origen: "voz",
+                          grabacionId: g.id,
+                        })
+                      }
+                    >
+                      <ClipboardCheck className="size-3.5" /> Revisar antes de lanzar
                     </Boton>
                     <Boton
                       variante="suave"
