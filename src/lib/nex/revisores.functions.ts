@@ -64,14 +64,23 @@ export const obtenerPanelRevisores = createServerFn({ method: "GET" })
       if (lista.length < 100) break;
     }
 
-    const { data: manuales, error: errorManuales } = await supabaseAdmin
+    const { data: manualesBrutos, error: errorManuales } = await supabaseAdmin
       .from("manuales")
       .select("id,user_id,titulo,proyecto_id,revision,revisado_el");
     if (errorManuales) throw new Error(errorManuales.message);
+    const manuales = (manualesBrutos ?? []) as unknown as {
+      id: string;
+      user_id: string;
+      titulo: string;
+      proyecto_id: string;
+      revision: RevisionManual | null;
+      revisado_el: string | null;
+    }[];
 
-    const { data: proyectos, error: errorProyectos } = await supabaseAdmin.from("proyectos").select("id,nombre");
+    const { data: proyectosBrutos, error: errorProyectos } = await supabaseAdmin.from("proyectos").select("id,nombre");
     if (errorProyectos) throw new Error(errorProyectos.message);
-    const nombreProyecto = new Map((proyectos ?? []).map((p) => [p.id as string, p.nombre as string]));
+    const proyectos = (proyectosBrutos ?? []) as unknown as { id: string; nombre: string }[];
+    const nombreProyecto = new Map(proyectos.map((p) => [p.id, p.nombre]));
 
     const correoDe = new Map(usuarios.map((u) => [u.id, u.email]));
     const porUsuario = new Map<string, RevisorResumen>();

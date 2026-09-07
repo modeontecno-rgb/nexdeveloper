@@ -41,7 +41,7 @@ function PantallaRevisores() {
         descripcion={DESCRIPCION}
         acciones={
           <Boton
-            variante="secundario"
+            variante="suave"
             onClick={() => consulta.refetch()}
             disabled={consulta.isFetching}
           >
