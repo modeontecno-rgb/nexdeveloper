@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ChevronDown,
+  ClipboardCheck,
   Download,
   Loader2,
   Mic,
@@ -13,6 +14,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Encabezado } from "@/components/nex/app-shell";
+import { RevisarBorrador } from "@/components/nex/revisar-borrador";
 import { Boton, Campo, Selector, claseCampo } from "@/components/nex/campos";
 import { Dialogo } from "@/components/nex/dialogo";
 import type { DestinoPeticion, PeticionDirectaRow, PlaudGrabacionRow, TipoPeticion } from "@/lib/nex/db-types";
@@ -31,8 +33,12 @@ import {
   useEstadoPideme,
   useGrabacionPlaud,
   useGrabacionesPlaud,
+  useBorradores,
+  useCrearBorrador,
+  useLanzarBorrador,
   usePedir,
   usePeticiones,
+  useVincularBorrador,
   usePlaudConectar,
   usePlaudConfigurar,
   usePlaudDescartar,
@@ -46,7 +52,7 @@ import {
 } from "@/lib/nex/queries/pideme";
 import { cn } from "@/lib/utils";
 
-type Pestana = "peticiones" | "propuestas" | "plaud";
+type Pestana = "peticiones" | "borradores" | "propuestas" | "plaud";
 
 export const Route = createFileRoute("/pideme")({
   validateSearch: (busqueda: Record<string, unknown>): { tab?: Pestana; peticion?: string } => ({
@@ -82,6 +88,7 @@ function PidemePantalla() {
   useRealtimePideme(true);
 
   const pendientes = peticiones.filter((p) => p.estado === "propuesta");
+  const { data: borradores = [] } = useBorradores();
 
   return (
     <>
@@ -97,6 +104,7 @@ function PidemePantalla() {
         {(
           [
             ["peticiones", "Peticiones"],
+            ["borradores", `Pendientes de revisar${borradores.length ? ` (${borradores.length})` : ""}`],
             ["propuestas", `Propuestas pendientes${pendientes.length ? ` (${pendientes.length})` : ""}`],
             ["plaud", "Plaud"],
           ] as const
@@ -120,6 +128,7 @@ function PidemePantalla() {
 
       <div className="mt-4">
         {pestana === "peticiones" ? <PanelPeticiones peticiones={peticiones} /> : null}
+        {pestana === "borradores" ? <PanelBorradores /> : null}
         {pestana === "propuestas" ? <PanelPeticiones peticiones={pendientes} soloPropuestas /> : null}
         {pestana === "plaud" ? <PanelPlaud estadoCargando={estado.isPending} /> : null}
       </div>
