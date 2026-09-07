@@ -9,6 +9,7 @@ interface Autenticacion {
   usuario: User | null;
   cargando: boolean;
   entrar: (email: string, contrasena: string) => Promise<void>;
+  registrar: (email: string, contrasena: string) => Promise<{ confirmacionPendiente: boolean }>;
   salir: () => Promise<void>;
 }
 
