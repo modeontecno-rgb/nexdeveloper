@@ -2729,6 +2729,12 @@ export type Database = {
       infra_sincronizacion: Tabla<InfraSincronizacionRow>
       infra_config: Tabla<InfraConfigRow, Partial<SinUsuario<InfraConfigRow>>, Partial<SinUsuario<InfraConfigRow>>>
       peticiones_directas: Tabla<PeticionDirectaRow>
+      peticiones_mensajes: Tabla<PeticionMensajeRow>
+      diccionario_nombres: Tabla<
+        DiccionarioNombreRow,
+        Partial<SinUsuario<DiccionarioNombreRow>> & { termino: string },
+        Partial<SinUsuario<DiccionarioNombreRow>>
+      >
       plaud_grabaciones: Tabla<PlaudGrabacionRow>
       personal_conversaciones: Tabla<PersonalConversacionRow>
       personal_mensajes: Tabla<PersonalMensajeRow>
