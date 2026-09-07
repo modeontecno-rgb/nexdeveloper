@@ -87,7 +87,7 @@ const ICONO_TIPO: Record<TipoAviso, React.ComponentType<{ className?: string }>>
 };
 
 function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <section className={cn("panel p-5", className)}>{children}</section>;
+  return <section className={cn("panel min-w-0 max-w-full overflow-hidden p-5", className)}>{children}</section>;
 }
 
 function PantallaAvisos() {
