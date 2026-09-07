@@ -304,16 +304,16 @@ function PanelConfiguracion() {
           <input
             type="time"
             className={claseCampo}
-            value={(config?.silencio_desde ?? "").slice(0, 5)}
-            onChange={(e) => guardar.mutate({ silencio_desde: e.target.value || null })}
+            value={aHoraTexto(config?.silencio_desde)}
+            onChange={(e) => guardar.mutate({ silencio_desde: deHoraTexto(e.target.value) })}
           />
         </Campo>
         <Campo etiqueta="Silencio hasta">
           <input
             type="time"
             className={claseCampo}
-            value={(config?.silencio_hasta ?? "").slice(0, 5)}
-            onChange={(e) => guardar.mutate({ silencio_hasta: e.target.value || null })}
+            value={aHoraTexto(config?.silencio_hasta)}
+            onChange={(e) => guardar.mutate({ silencio_hasta: deHoraTexto(e.target.value) })}
           />
         </Campo>
       </div>
