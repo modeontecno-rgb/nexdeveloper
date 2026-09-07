@@ -48,6 +48,7 @@ import { Route as VozRouteImport } from './routes/voz'
 import { Route as AjustesProveedoresRouteImport } from './routes/ajustes_.proveedores'
 import { Route as ClienteTokenRouteImport } from './routes/cliente.$token'
 import { Route as ManualesManualIdRouteImport } from './routes/manuales_.$manualId'
+import { Route as PersonalEstiloRouteImport } from './routes/personal_.estilo'
 import { Route as ProyectosIndexRouteImport } from './routes/proyectos/index'
 import { Route as ProyectosProyectoIdRouteImport } from './routes/proyectos/$proyectoId'
 import { Route as AjustesProveedoresCanvaRetornoRouteImport } from './routes/ajustes_.proveedores.canva.retorno'
@@ -247,6 +248,11 @@ const ManualesManualIdRoute = ManualesManualIdRouteImport.update({
   path: '/manuales/$manualId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PersonalEstiloRoute = PersonalEstiloRouteImport.update({
+  id: '/personal_/estilo',
+  path: '/personal/estilo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProyectosIndexRoute = ProyectosIndexRouteImport.update({
   id: '/proyectos/',
   path: '/proyectos/',
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/cliente/$token': typeof ClienteTokenRoute
   '/manuales/$manualId': typeof ManualesManualIdRoute
+  '/personal/estilo': typeof PersonalEstiloRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
   '/ajustes/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
@@ -348,6 +355,7 @@ export interface FileRoutesByTo {
   '/ajustes/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/cliente/$token': typeof ClienteTokenRoute
   '/manuales/$manualId': typeof ManualesManualIdRoute
+  '/personal/estilo': typeof PersonalEstiloRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos': typeof ProyectosIndexRoute
   '/ajustes/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
@@ -393,6 +401,7 @@ export interface FileRoutesById {
   '/ajustes_/proveedores': typeof AjustesProveedoresRouteWithChildren
   '/cliente/$token': typeof ClienteTokenRoute
   '/manuales_/$manualId': typeof ManualesManualIdRoute
+  '/personal_/estilo': typeof PersonalEstiloRoute
   '/proyectos/$proyectoId': typeof ProyectosProyectoIdRoute
   '/proyectos/': typeof ProyectosIndexRoute
   '/ajustes_/proveedores/canva/retorno': typeof AjustesProveedoresCanvaRetornoRoute
@@ -439,6 +448,7 @@ export interface FileRouteTypes {
     | '/ajustes/proveedores'
     | '/cliente/$token'
     | '/manuales/$manualId'
+    | '/personal/estilo'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
     | '/ajustes/proveedores/canva/retorno'
@@ -483,6 +493,7 @@ export interface FileRouteTypes {
     | '/ajustes/proveedores'
     | '/cliente/$token'
     | '/manuales/$manualId'
+    | '/personal/estilo'
     | '/proyectos/$proyectoId'
     | '/proyectos'
     | '/ajustes/proveedores/canva/retorno'
@@ -527,6 +538,7 @@ export interface FileRouteTypes {
     | '/ajustes_/proveedores'
     | '/cliente/$token'
     | '/manuales_/$manualId'
+    | '/personal_/estilo'
     | '/proyectos/$proyectoId'
     | '/proyectos/'
     | '/ajustes_/proveedores/canva/retorno'
@@ -572,6 +584,7 @@ export interface RootRouteChildren {
   AjustesProveedoresRoute: typeof AjustesProveedoresRouteWithChildren
   ClienteTokenRoute: typeof ClienteTokenRoute
   ManualesManualIdRoute: typeof ManualesManualIdRoute
+  PersonalEstiloRoute: typeof PersonalEstiloRoute
   ProyectosProyectoIdRoute: typeof ProyectosProyectoIdRoute
   ProyectosIndexRoute: typeof ProyectosIndexRoute
 }
@@ -851,6 +864,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManualesManualIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/personal_/estilo': {
+      id: '/personal_/estilo'
+      path: '/personal/estilo'
+      fullPath: '/personal/estilo'
+      preLoaderRoute: typeof PersonalEstiloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/proyectos/': {
       id: '/proyectos/'
       path: '/proyectos'
@@ -926,6 +946,7 @@ const rootRouteChildren: RootRouteChildren = {
   AjustesProveedoresRoute: AjustesProveedoresRouteWithChildren,
   ClienteTokenRoute: ClienteTokenRoute,
   ManualesManualIdRoute: ManualesManualIdRoute,
+  PersonalEstiloRoute: PersonalEstiloRoute,
   ProyectosProyectoIdRoute: ProyectosProyectoIdRoute,
   ProyectosIndexRoute: ProyectosIndexRoute,
 }
