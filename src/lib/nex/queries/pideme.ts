@@ -44,6 +44,8 @@ export const ETIQUETA_ESTADO_PETICION: Record<EstadoPeticion, string> = {
   propuesta: "Propuesta pendiente",
   aprobada: "Aprobada",
   descartada: "Descartada",
+  borrador: "Pendiente de revisar",
+  lanzada: "Lanzada",
   error: "Con error",
 };
 
@@ -54,6 +56,8 @@ export const TONO_ESTADO_PETICION: Record<EstadoPeticion, string> = {
   propuesta: "border-warning/40 bg-warning/10 text-warning",
   aprobada: "border-primary/40 bg-primary/10 text-primary",
   descartada: "border-border bg-muted text-muted-foreground",
+  borrador: "border-warning/40 bg-warning/10 text-warning",
+  lanzada: "border-primary/40 bg-primary/10 text-primary",
   error: "border-destructive/40 bg-destructive/10 text-destructive",
 };
 

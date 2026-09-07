@@ -52,10 +52,10 @@ export function useActualizarTerminoDiccionario() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: async (v: { id: string; variantes?: string[]; activo?: boolean; termino?: string }) => {
-      const cambios: Record<string, unknown> = {};
-      if (v.variantes) cambios["variantes"] = v.variantes;
-      if (typeof v.activo === "boolean") cambios["activo"] = v.activo;
-      if (v.termino) cambios["termino"] = v.termino;
+      const cambios: Partial<DiccionarioNombreRow> = {};
+      if (v.variantes) cambios.variantes = v.variantes;
+      if (typeof v.activo === "boolean") cambios.activo = v.activo;
+      if (v.termino) cambios.termino = v.termino;
       const { error } = await supabase.from("diccionario_nombres").update(cambios).eq("id", v.id);
       if (error) throw new Error(error.message);
       return true;
