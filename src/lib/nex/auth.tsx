@@ -85,3 +85,15 @@ function traducirError(mensaje: string) {
   if (m.includes("failed to fetch")) return "No se ha podido contactar con el servidor.";
   return "No se ha podido iniciar sesión.";
 }
+
+function traducirErrorRegistro(mensaje: string) {
+  const m = mensaje.toLowerCase();
+  if (m.includes("already registered") || m.includes("already been registered"))
+    return "Ya existe una cuenta con este correo. Inicia sesión.";
+  if (m.includes("password")) return "La contraseña debe tener al menos 6 caracteres.";
+  if (m.includes("signups not allowed") || m.includes("disabled"))
+    return "El alta de cuentas está desactivada en este momento.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Demasiados intentos. Espera un momento.";
+  if (m.includes("failed to fetch")) return "No se ha podido contactar con el servidor.";
+  return "No se ha podido crear la cuenta.";
+}
