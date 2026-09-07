@@ -18,7 +18,6 @@ import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AvisosRouteImport } from './routes/avisos'
 import { Route as BandejaRouteImport } from './routes/bandeja'
 import { Route as CalidadRouteImport } from './routes/calidad'
-import { Route as ColaRouteImport } from './routes/cola'
 import { Route as CompilacionesRouteImport } from './routes/compilaciones'
 import { Route as ConexionesRouteImport } from './routes/conexiones'
 import { Route as CopiasRouteImport } from './routes/copias'
@@ -29,6 +28,7 @@ import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as FacturacionRouteImport } from './routes/facturacion'
 import { Route as GastoIaRouteImport } from './routes/gasto-ia'
+import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as HabilidadesRouteImport } from './routes/habilidades'
 import { Route as InfraestructuraRouteImport } from './routes/infraestructura'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
@@ -44,6 +44,7 @@ import { Route as RepositoriosRouteImport } from './routes/repositorios'
 import { Route as ResumenesRouteImport } from './routes/resumenes'
 import { Route as RevisoresRouteImport } from './routes/revisores'
 import { Route as SaludRouteImport } from './routes/salud'
+import { Route as TareasRouteImport } from './routes/tareas'
 import { Route as UsuariosClientesRouteImport } from './routes/usuarios-clientes'
 import { Route as VigilanciaRouteImport } from './routes/vigilancia'
 import { Route as VozRouteImport } from './routes/voz'
@@ -100,11 +101,6 @@ const CalidadRoute = CalidadRouteImport.update({
   path: '/calidad',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ColaRoute = ColaRouteImport.update({
-  id: '/cola',
-  path: '/cola',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CompilacionesRoute = CompilacionesRouteImport.update({
   id: '/compilaciones',
   path: '/compilaciones',
@@ -153,6 +149,11 @@ const FacturacionRoute = FacturacionRouteImport.update({
 const GastoIaRoute = GastoIaRouteImport.update({
   id: '/gasto-ia',
   path: '/gasto-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuiaRoute = GuiaRouteImport.update({
+  id: '/guia',
+  path: '/guia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HabilidadesRoute = HabilidadesRouteImport.update({
@@ -230,6 +231,11 @@ const SaludRoute = SaludRouteImport.update({
   path: '/salud',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TareasRoute = TareasRouteImport.update({
+  id: '/tareas',
+  path: '/tareas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsuariosClientesRoute = UsuariosClientesRouteImport.update({
   id: '/usuarios-clientes',
   path: '/usuarios-clientes',
@@ -292,7 +298,6 @@ export interface FileRoutesByFullPath {
   '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
-  '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/conexiones': typeof ConexionesRoute
   '/copias': typeof CopiasRoute
@@ -303,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/expertos': typeof ExpertosRoute
   '/facturacion': typeof FacturacionRoute
   '/gasto-ia': typeof GastoIaRoute
+  '/guia': typeof GuiaRoute
   '/habilidades': typeof HabilidadesRoute
   '/infraestructura': typeof InfraestructuraRoute
   '/integraciones': typeof IntegracionesRoute
@@ -318,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/resumenes': typeof ResumenesRoute
   '/revisores': typeof RevisoresRoute
   '/salud': typeof SaludRoute
+  '/tareas': typeof TareasRoute
   '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
@@ -339,7 +346,6 @@ export interface FileRoutesByTo {
   '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
-  '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/conexiones': typeof ConexionesRoute
   '/copias': typeof CopiasRoute
@@ -350,6 +356,7 @@ export interface FileRoutesByTo {
   '/expertos': typeof ExpertosRoute
   '/facturacion': typeof FacturacionRoute
   '/gasto-ia': typeof GastoIaRoute
+  '/guia': typeof GuiaRoute
   '/habilidades': typeof HabilidadesRoute
   '/infraestructura': typeof InfraestructuraRoute
   '/integraciones': typeof IntegracionesRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/resumenes': typeof ResumenesRoute
   '/revisores': typeof RevisoresRoute
   '/salud': typeof SaludRoute
+  '/tareas': typeof TareasRoute
   '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
@@ -387,7 +395,6 @@ export interface FileRoutesById {
   '/avisos': typeof AvisosRoute
   '/bandeja': typeof BandejaRoute
   '/calidad': typeof CalidadRoute
-  '/cola': typeof ColaRoute
   '/compilaciones': typeof CompilacionesRoute
   '/conexiones': typeof ConexionesRoute
   '/copias': typeof CopiasRoute
@@ -398,6 +405,7 @@ export interface FileRoutesById {
   '/expertos': typeof ExpertosRoute
   '/facturacion': typeof FacturacionRoute
   '/gasto-ia': typeof GastoIaRoute
+  '/guia': typeof GuiaRoute
   '/habilidades': typeof HabilidadesRoute
   '/infraestructura': typeof InfraestructuraRoute
   '/integraciones': typeof IntegracionesRoute
@@ -413,6 +421,7 @@ export interface FileRoutesById {
   '/resumenes': typeof ResumenesRoute
   '/revisores': typeof RevisoresRoute
   '/salud': typeof SaludRoute
+  '/tareas': typeof TareasRoute
   '/usuarios-clientes': typeof UsuariosClientesRoute
   '/vigilancia': typeof VigilanciaRoute
   '/voz': typeof VozRoute
@@ -436,7 +445,6 @@ export interface FileRouteTypes {
     | '/avisos'
     | '/bandeja'
     | '/calidad'
-    | '/cola'
     | '/compilaciones'
     | '/conexiones'
     | '/copias'
@@ -447,6 +455,7 @@ export interface FileRouteTypes {
     | '/expertos'
     | '/facturacion'
     | '/gasto-ia'
+    | '/guia'
     | '/habilidades'
     | '/infraestructura'
     | '/integraciones'
@@ -462,6 +471,7 @@ export interface FileRouteTypes {
     | '/resumenes'
     | '/revisores'
     | '/salud'
+    | '/tareas'
     | '/usuarios-clientes'
     | '/vigilancia'
     | '/voz'
@@ -483,7 +493,6 @@ export interface FileRouteTypes {
     | '/avisos'
     | '/bandeja'
     | '/calidad'
-    | '/cola'
     | '/compilaciones'
     | '/conexiones'
     | '/copias'
@@ -494,6 +503,7 @@ export interface FileRouteTypes {
     | '/expertos'
     | '/facturacion'
     | '/gasto-ia'
+    | '/guia'
     | '/habilidades'
     | '/infraestructura'
     | '/integraciones'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/resumenes'
     | '/revisores'
     | '/salud'
+    | '/tareas'
     | '/usuarios-clientes'
     | '/vigilancia'
     | '/voz'
@@ -530,7 +541,6 @@ export interface FileRouteTypes {
     | '/avisos'
     | '/bandeja'
     | '/calidad'
-    | '/cola'
     | '/compilaciones'
     | '/conexiones'
     | '/copias'
@@ -541,6 +551,7 @@ export interface FileRouteTypes {
     | '/expertos'
     | '/facturacion'
     | '/gasto-ia'
+    | '/guia'
     | '/habilidades'
     | '/infraestructura'
     | '/integraciones'
@@ -556,6 +567,7 @@ export interface FileRouteTypes {
     | '/resumenes'
     | '/revisores'
     | '/salud'
+    | '/tareas'
     | '/usuarios-clientes'
     | '/vigilancia'
     | '/voz'
@@ -578,7 +590,6 @@ export interface RootRouteChildren {
   AvisosRoute: typeof AvisosRoute
   BandejaRoute: typeof BandejaRoute
   CalidadRoute: typeof CalidadRoute
-  ColaRoute: typeof ColaRoute
   CompilacionesRoute: typeof CompilacionesRoute
   ConexionesRoute: typeof ConexionesRoute
   CopiasRoute: typeof CopiasRoute
@@ -589,6 +600,7 @@ export interface RootRouteChildren {
   ExpertosRoute: typeof ExpertosRoute
   FacturacionRoute: typeof FacturacionRoute
   GastoIaRoute: typeof GastoIaRoute
+  GuiaRoute: typeof GuiaRoute
   HabilidadesRoute: typeof HabilidadesRoute
   InfraestructuraRoute: typeof InfraestructuraRoute
   IntegracionesRoute: typeof IntegracionesRoute
@@ -604,6 +616,7 @@ export interface RootRouteChildren {
   ResumenesRoute: typeof ResumenesRoute
   RevisoresRoute: typeof RevisoresRoute
   SaludRoute: typeof SaludRoute
+  TareasRoute: typeof TareasRoute
   UsuariosClientesRoute: typeof UsuariosClientesRoute
   VigilanciaRoute: typeof VigilanciaRoute
   VozRoute: typeof VozRoute
@@ -680,13 +693,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalidadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cola': {
-      id: '/cola'
-      path: '/cola'
-      fullPath: '/cola'
-      preLoaderRoute: typeof ColaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/compilaciones': {
       id: '/compilaciones'
       path: '/compilaciones'
@@ -755,6 +761,13 @@ declare module '@tanstack/react-router' {
       path: '/gasto-ia'
       fullPath: '/gasto-ia'
       preLoaderRoute: typeof GastoIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guia': {
+      id: '/guia'
+      path: '/guia'
+      fullPath: '/guia'
+      preLoaderRoute: typeof GuiaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/habilidades': {
@@ -862,6 +875,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SaludRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tareas': {
+      id: '/tareas'
+      path: '/tareas'
+      fullPath: '/tareas'
+      preLoaderRoute: typeof TareasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/usuarios-clientes': {
       id: '/usuarios-clientes'
       path: '/usuarios-clientes'
@@ -956,7 +976,6 @@ const rootRouteChildren: RootRouteChildren = {
   AvisosRoute: AvisosRoute,
   BandejaRoute: BandejaRoute,
   CalidadRoute: CalidadRoute,
-  ColaRoute: ColaRoute,
   CompilacionesRoute: CompilacionesRoute,
   ConexionesRoute: ConexionesRoute,
   CopiasRoute: CopiasRoute,
@@ -967,6 +986,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExpertosRoute: ExpertosRoute,
   FacturacionRoute: FacturacionRoute,
   GastoIaRoute: GastoIaRoute,
+  GuiaRoute: GuiaRoute,
   HabilidadesRoute: HabilidadesRoute,
   InfraestructuraRoute: InfraestructuraRoute,
   IntegracionesRoute: IntegracionesRoute,
@@ -982,6 +1002,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResumenesRoute: ResumenesRoute,
   RevisoresRoute: RevisoresRoute,
   SaludRoute: SaludRoute,
+  TareasRoute: TareasRoute,
   UsuariosClientesRoute: UsuariosClientesRoute,
   VigilanciaRoute: VigilanciaRoute,
   VozRoute: VozRoute,
