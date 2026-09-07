@@ -1088,7 +1088,7 @@ export type BandejaEntradaRow = {
   creado_el: string
 }
 
-type SinUsuario<T> = Omit<T, "user_id">
+type SinUsuario<T> = Omit<T, "user_id"> & { user_id?: string }
 
 
 
