@@ -64,12 +64,13 @@ function PantallaRevisores() {
         <>
           {/* Tarjetas de totales */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <Tarjeta icono={<Users className="size-4" />} titulo="Cuentas creadas" valor={panel.totales.cuentas} />
+            <Tarjeta icono={<Users className="size-4" />} titulo="Revisores" valor={panel.totales.cuentas} />
             <Tarjeta
               icono={<UserCheck className="size-4" />}
-              titulo="Han iniciado sesión"
+              titulo="Con revisiones"
               valor={panel.totales.han_entrado}
             />
+
             <Tarjeta icono={<BadgeCheck className="size-4" />} titulo="Manuales" valor={panel.totales.manuales} />
             <Tarjeta icono={<BadgeCheck className="size-4" />} titulo="Revisados" valor={panel.totales.revisados} />
             <Tarjeta
