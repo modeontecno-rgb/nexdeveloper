@@ -1,4 +1,4 @@
-// NexDeveloper · Edge Function «pideme» (0.37.2) — v4: transcripción Plaud legible (segments), «personal» solo si es explícito, proyecto elegido al revisar se respeta
+// NexDeveloper · Edge Function «pideme» (0.37.2) — v5: propuestas a partir de transcripciones (extraer cambios, no tomar las aclaraciones como tarea), JSON recortado recuperable; v4: transcripción Plaud legible (segments), «personal» solo si es explícito, proyecto elegido al revisar se respeta
 // «Pídeme qué quieres»: la tecla directa de Javier. Recibe texto (escrito, dictado o de una grabación del Plaud), lo CLASIFICA
 // (¿de qué proyecto habla? ¿es personal? ¿es una consulta, una modificación o tareas?) y lo ENRUTA:
 //  - proyecto + consulta  → chat nuevo en ese proyecto con título propio y respuesta con contexto del proyecto
@@ -57,7 +57,21 @@ async function llamar(p: Prov, sistema: string, pregunta: string, maxTokens = 25
   if (!r.ok) throw new Error(`${p.slug} ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
   return { texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
 }
-const extraerJson = (t: string) => { const m = t.match(/```json\s*([\s\S]*?)```/) ?? t.match(/(\{[\s\S]*\})/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } };
+const extraerJson = (t: string) => {
+  const m = t.match(/```json\s*([\s\S]*?)```/) ?? t.match(/```\s*([\s\S]*?)```/) ?? t.match(/(\{[\s\S]*\})/);
+  const candidatos = [m?.[1], t.replace(/^[\s\S]*?```json\s*/, "").replace(/```[\s\S]*$/, ""), t.slice(t.indexOf("{"))].filter((x): x is string => !!x && x.trim().startsWith("{"));
+  for (const c of candidatos) {
+    try { return JSON.parse(c); } catch { /* seguir */ }
+    // Respuesta recortada: cerrar cadenas, arrays y objetos abiertos para salvar lo que haya
+    let s = c.trim(); let enCadena = false, esc = false; const pila: string[] = [];
+    for (const ch of s) { if (enCadena) { if (esc) esc = false; else if (ch === "\\") esc = true; else if (ch === '"') enCadena = false; continue; } if (ch === '"') enCadena = true; else if (ch === "{") pila.push("}"); else if (ch === "[") pila.push("]"); else if (ch === "}" || ch === "]") pila.pop(); }
+    if (enCadena) s += '"';
+    s = s.replace(/,\s*$/, "");
+    while (pila.length) s += pila.pop();
+    try { const j = JSON.parse(s); j._recortado = true; return j; } catch { /* siguiente */ }
+  }
+  return null;
+};
 async function anotar(sb: SB, userId: string, p: Prov, te: number, ts: number, proyectoId: string | null) { if (p.modelo_id) await sb.from("consumos_ia").insert({ user_id: userId, proyecto_id: proyectoId, modelo_id: p.modelo_id, tokens_entrada: te, tokens_salida: ts, coste: coste(p, te, ts), resultado: "ok" }).then(() => {}, () => {}); return coste(p, te, ts); }
 
 // ---------- Clasificación ----------
@@ -121,7 +135,11 @@ async function proponer(sb: SB, userId: string, provs: Prov[], proyectoId: strin
   const areas = AREAS.filter((a) => !a.cuando || a.cuando.test(t));
   const mejor = provs[0]; const barato = provs.slice().sort((a, b) => a.ce - b.ce)[0] ?? mejor;
   let costeTotal = 0; const revisiones: any[] = [];
-  const base = `${ctx}\n\nPETICIÓN DE JAVIER (modificación del proyecto):\n${peticion}\n\nResumen de lo pedido: ${resumen}`;
+  const esTranscripcion = /\bSpeaker \d|\[Grabación del Plaud|Aclaraciones:|Notas añadidas:/.test(peticion) || peticion.length > 2500;
+  const guia = esTranscripcion
+    ? `\n\nIMPORTANTE: el texto de la petición es la TRANSCRIPCIÓN de una conversación o grabación (con muletillas, varios interlocutores y posibles errores de transcripción). NO es una orden literal. Tu trabajo es extraer de ella QUÉ CAMBIOS O FUNCIONALIDADES quiere Javier para el proyecto: lo que dice que le gustaría tener, lo que hace la competencia y él quiere igualar o superar, las ideas que se apuntan. Las líneas «Aclaraciones» o «Notas añadidas» son correcciones de vocabulario de la transcripción (por ejemplo, cómo se llama de verdad un producto o una empresa); úsalas para entender el texto, NUNCA las conviertas en la tarea a realizar.`
+    : "";
+  const base = `${ctx}\n\nPETICIÓN DE JAVIER (modificación del proyecto):\n${peticion}\n\nResumen de lo pedido: ${resumen}${guia}`;
   for (const a of areas) {
     if (!quedaTiempo(80_000)) break;
     const ex = (expertos ?? []).find((e) => a.slugs.includes(e.slug));
@@ -132,9 +150,9 @@ async function proponer(sb: SB, userId: string, provs: Prov[], proyectoId: strin
   }
   // Auditor jefe: síntesis y plan
   const jefe = (expertos ?? []).find((e) => e.slug === "auditor-jefe-orquestador");
-  const sistemaS = `${jefe?.instrucciones ? jefe.instrucciones.slice(0, 5000) : "Eres el Auditor jefe y orquestador: director de QA y Tech Lead."}\n\nRecibes la petición de Javier y las revisiones de cada área. Redacta la PROPUESTA final para que Javier la apruebe o la rechace. Español de España. Devuelve SOLO JSON: {"sintesis":"5-8 frases: qué se va a hacer, qué cambia para el usuario y qué han dicho las áreas","plan":[{"orden":1,"titulo":"…","descripcion":"…","responsable":"Lovable|Claude|Javier","horas":1}],"requisitos_obligatorios":["lo que las áreas exigen"],"riesgos":["…"],"decisiones_para_javier":["preguntas que solo él puede responder, si las hay"],"horas_estimadas":0,"coste_estimado_eur":0,"riesgo":"bajo|medio|alto","recomendacion":"aprobar|aprobar con cambios|no hacer","orden_para_la_ia":"texto completo y preciso de la orden que se enviará a la IA constructora si Javier aprueba, con todos los requisitos de las áreas incorporados"}`;
+  const sistemaS = `${jefe?.instrucciones ? jefe.instrucciones.slice(0, 5000) : "Eres el Auditor jefe y orquestador: director de QA y Tech Lead."}\n\nRecibes la petición de Javier y las revisiones de cada área. Redacta la PROPUESTA final para que Javier la apruebe o la rechace. Español de España. Sé conciso: la respuesta completa debe caber en 1500 palabras. Devuelve SOLO JSON (sin texto antes ni después): {"sintesis":"5-8 frases: qué se va a hacer, qué cambia para el usuario y qué han dicho las áreas","funcionalidades":[{"titulo":"…","descripcion":"una frase","prioridad":"alta|media|baja"}],"plan":[{"orden":1,"titulo":"…","descripcion":"…","responsable":"Lovable|Claude|Javier","horas":1}],"requisitos_obligatorios":["lo que las áreas exigen"],"riesgos":["…"],"decisiones_para_javier":["preguntas que solo él puede responder, si las hay"],"horas_estimadas":0,"coste_estimado_eur":0,"riesgo":"bajo|medio|alto","recomendacion":"aprobar|aprobar con cambios|no hacer","orden_para_la_ia":"texto completo y preciso de la orden que se enviará a la IA constructora si Javier aprueba, con todos los requisitos de las áreas incorporados"}`;
   const pregS = `${base}\n\nREVISIONES POR ÁREA:\n${revisiones.map((r) => `[${r.area} · ${r.experto}] veredicto: ${r.veredicto}\n- Observaciones: ${(r.observaciones ?? []).join(" | ")}\n- Riesgos: ${(r.riesgos ?? []).join(" | ")}\n- Requisitos: ${(r.requisitos ?? []).join(" | ")}${r.cambios_sugeridos ? `\n- Cambios sugeridos: ${r.cambios_sugeridos}` : ""}`).join("\n\n")}`;
-  const s = await llamar(mejor, sistemaS, pregS, 2500, true); costeTotal += await anotar(sb, userId, mejor, s.te, s.ts, proyectoId);
+  const s = await llamar(mejor, sistemaS, pregS, 7000, true); costeTotal += await anotar(sb, userId, mejor, s.te, s.ts, proyectoId);
   const j = extraerJson(s.texto) ?? { sintesis: s.texto.slice(0, 1500), plan: [], riesgos: [], recomendacion: "aprobar con cambios", orden_para_la_ia: peticion };
   return { ...j, revisiones, coste: Number(costeTotal.toFixed(4)), areas: areas.map((a) => a.area) };
 }
