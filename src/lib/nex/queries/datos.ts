@@ -199,3 +199,31 @@ export function useIntegracionProyectos() {
       ),
   });
 }
+
+export type Autoria = {
+  powered_by: string;
+  mostrar_en_pie: string;
+  url: string;
+  version: string;
+  nombre_app: string;
+};
+
+export function useAutoria() {
+  return useQuery({
+    queryKey: ["autoria"] as const,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("autoria" as never);
+      if (error) throw new Error(error.message);
+      const fila = (Array.isArray(data) ? data[0] : data) as Partial<Autoria> | null;
+      if (!fila) return null;
+      return {
+        powered_by: fila.powered_by ?? "",
+        mostrar_en_pie: fila.mostrar_en_pie ?? "nunca",
+        url: fila.url ?? "",
+        version: fila.version ?? "",
+        nombre_app: fila.nombre_app ?? "",
+      } as Autoria;
+    },
+  });
+}

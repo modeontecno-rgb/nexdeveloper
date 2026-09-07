@@ -1,5 +1,25 @@
 # Historial de cambios
 
+## 0.37.0 — Auditoría, seguridad y autoría (7 de septiembre de 2026)
+
+- Auditoría completa de la base de datos: 112 tablas, 130 claves foráneas y cero registros huérfanos.
+- Se cierra una fuga: ocho vistas de resumen (gasto de IA, bandeja, dominios, vigilancia, habilidades y compilaciones) podían leerse sin iniciar sesión; ahora respetan los permisos de cada usuario.
+- Ninguna función del servidor se puede ejecutar ya sin sesión (antes 38 podían lanzarse con la clave pública, incluidas las que consumen créditos de IA).
+- Rendimiento: 108 políticas de seguridad optimizadas y 120 índices nuevos; las pantallas con muchas filas responden antes.
+- Leyenda «Powered by» demostrable: en el pie, en «Acerca de» junto a la versión y en el código de la página; la sociedad se cambia desde configuración sin tocar código.
+- La versión registrada en configuración vuelve a ser la real y el enlace de WhatsApp del pie ya lleva número.
+- Las páginas de error («no encontrada» y «no se ha cargado») están ahora en español.
+
+## 0.36.1 — Acceso privado (7 de septiembre de 2026)
+
+- Se retira el registro público que se había añadido por error: NexDeveloper es una aplicación privada de un solo propietario.
+- La pantalla «Revisores» solo la puede ver y abrir el propietario.
+
+## 0.36.0 — Pídeme: borrador conversable (7 de septiembre de 2026)
+
+- Antes de lanzar una petición, «Pídeme qué quieres» prepara un borrador con el que puedes conversar, aclarar y corregir; solo se lanza cuando tú lo confirmas.
+- El diccionario de nombres aprende de tus correcciones y reconoce los alias de cada proyecto.
+
 ## 0.35.0 — Revisor de redacción de manuales (6 de septiembre de 2026)
 
 - Antes de publicar, NexDeveloper repasa la redacción del manual: ortografía, gramática, tratamiento de usted o de tú, frases más cortas y nombres de producto bien escritos, siguiendo tu perfil de estilo propio si lo tienes.
