@@ -24,7 +24,7 @@ export function Selector({
       <select
         value={valor}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-input bg-surface px-2 py-1.5 text-sm text-foreground"
+        className="min-w-0 max-w-full flex-1 rounded-md border border-input bg-surface px-2 py-1.5 text-sm text-foreground"
       >
         {opciones.map((o) => (
           <option key={o.valor} value={o.valor}>

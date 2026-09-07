@@ -120,6 +120,7 @@ function Inicio() {
               ]}
             />
             <Selector
+              className="w-full min-w-0"
               etiqueta="Prioridad"
               valor={prioridad}
               onChange={(v) => setPrioridad(v as Prioridad | "todas")}
@@ -128,7 +129,7 @@ function Inicio() {
                 ...Object.entries(ETIQUETA_PRIORIDAD).map(([valor, texto]) => ({ valor, texto })),
               ]}
             />
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <label className="flex w-full min-w-0 items-center gap-2 text-xs text-muted-foreground">
               Coste mínimo
               <input
                 type="number"
@@ -136,7 +137,7 @@ function Inicio() {
                 step={50}
                 value={costeMin}
                 onChange={(e) => setCosteMin(Number(e.target.value) || 0)}
-                className="w-24 rounded-md border border-input bg-surface px-2 py-1.5 text-sm text-foreground"
+                className="w-full min-w-0 flex-1 rounded-md border border-input bg-surface px-2 py-1.5 text-sm text-foreground"
               />
             </label>
           </div>
