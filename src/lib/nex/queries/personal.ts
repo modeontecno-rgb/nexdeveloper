@@ -317,6 +317,28 @@ export function useGuardarMuestrasEstilo() {
   });
 }
 
+/** Guarda a mano el perfil de estilo aprendido (texto libre). */
+export function useGuardarPerfilEstilo() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: async (perfil: string) => {
+      const { data: sesion } = await supabase.auth.getUser();
+      const usuario = sesion.user?.id;
+      if (!usuario) throw new Error("Necesitas iniciar sesión.");
+      const { error } = await supabase
+        .from("personal_config")
+        .update({ perfil_estilo: perfil.trim() || null })
+        .eq("user_id", usuario);
+      if (error) throw new Error(error.message);
+      return { perfil_estilo: perfil.trim() };
+    },
+    onSuccess: () => invalidar(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+
+
 export type ResultadoReescritura = {
   texto_resultado?: string;
   notas?: NotasTutor;
