@@ -444,7 +444,7 @@ function RailContraido({ ruta, onExpandir }: { ruta: string; onExpandir: () => v
       <div className="my-1 h-px w-8 bg-sidebar-border" />
 
       <div className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto">
-        {GRUPOS_MENU.map((g) => {
+        {grupos.map((g) => {
           const Icono = g.icono;
           const tieneActiva = g.pantallas.some((p) => esRutaActiva(p.to, ruta));
           return (
@@ -712,6 +712,8 @@ function HojaMenu({
   onSalir: () => void;
 }) {
   const { grupo, alternar } = useGrupoAbierto(ruta);
+  const { usuario } = useAuth();
+  const grupos = gruposVisibles(usuario?.id);
 
   React.useEffect(() => {
     if (!abierta) return;
@@ -762,7 +764,7 @@ function HojaMenu({
           </ul>
 
           <ul className="mt-3 flex flex-col gap-3">
-            {GRUPOS_MENU.map((g) => {
+            {grupos.map((g) => {
               const abierto = grupo === g.id;
               const tieneActiva = g.pantallas.some((p) => esRutaActiva(p.to, ruta));
               return (
