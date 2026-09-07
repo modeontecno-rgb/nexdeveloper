@@ -1,12 +1,12 @@
 /**
  * Corrige destinos históricos guardados en avisos.
- * La antigua pantalla `/tareas` pasó a llamarse `/cola`, pero los avisos ya
- * creados conservan la URL anterior.
+ * Durante un tiempo convivieron los nombres `/cola` y `/tareas`. La pantalla
+ * canónica es ahora `/tareas`, que coincide con los avisos guardados.
  */
 export function normalizarDestinoInterno(url: string | null | undefined): string | null {
   const destino = url?.trim();
   if (!destino || !destino.startsWith("/") || destino.startsWith("//")) return null;
-  if (destino === "/tareas") return "/cola";
-  if (destino.startsWith("/tareas?")) return `/cola?${destino.slice("/tareas?".length)}`;
+  if (destino === "/cola") return "/tareas";
+  if (destino.startsWith("/cola?")) return `/tareas?${destino.slice("/cola?".length)}`;
   return destino;
 }

@@ -38,7 +38,7 @@ const PASOS = [
     numero: 3,
     titulo: "Sigue las tareas",
     texto: "La Cola reúne todo el trabajo. «Requiere tu atención» espera una decisión tuya; «Trabajo desatendido» avanza solo.",
-    to: "/cola" as const,
+    to: "/tareas" as const,
     accion: "Abrir la Cola",
     icono: ListTodo,
   },

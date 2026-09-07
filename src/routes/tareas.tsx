@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Ban, Inbox, Link2, PauseCircle, PlayCircle } from "lucide-react";
+import { ArrowRight, Ban, Inbox, Link2, PauseCircle, PlayCircle } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
 
@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
   tarea: z.string().optional(),
+  proyecto: z.string().optional(),
+  mesa: z.string().optional(),
 });
 
 export const Route = createFileRoute("/tareas")({
@@ -43,7 +45,7 @@ export const Route = createFileRoute("/tareas")({
 const PESO = { critica: 0, alta: 1, media: 2, baja: 3 } as const;
 
 function Tareas() {
-  const { tarea: tareaIdFiltro } = Route.useSearch();
+  const { tarea: tareaIdFiltro, proyecto: proyectoFiltro, mesa: mesaFiltro } = Route.useSearch();
   const { data: tareas = [], isPending } = useTareas();
   const { data: proyectos = [] } = useProyectos();
   const { data: agentes = [] } = useAgentes();
@@ -60,7 +62,12 @@ function Tareas() {
   const nombreProyecto = (id: string | null) => proyectos.find((p) => p.id === id)?.nombre ?? "Sin clasificar";
   const nombreAgente = (id: string | null) => agentes.find((a) => a.id === id)?.nombre ?? "Sin asignar";
 
+  const tareasDeMesa = mesaFiltro
+    ? tareas.filter((t) => t.descripcion?.includes(`Mesa: ${mesaFiltro}`))
+    : [];
   const visibles = tareas
+    .filter((t) => !proyectoFiltro || t.proyecto_id === proyectoFiltro)
+    .filter((t) => !mesaFiltro || t.descripcion?.includes(`Mesa: ${mesaFiltro}`))
     .filter((t) => (estado === "activas" ? t.estado !== "completada" && t.estado !== "cancelada" : t.estado === estado))
     .sort((a, b) => PESO[a.prioridad] - PESO[b.prioridad]);
 
@@ -83,6 +90,30 @@ function Tareas() {
           />
         }
       />
+
+      {tareaIdFiltro || mesaFiltro ? (
+        <section className="mb-6 border-l-2 border-primary bg-primary/5 px-4 py-3">
+          <p className="font-display text-sm font-semibold">
+            {mesaFiltro
+              ? `${tareasDeMesa.length} tarea${tareasDeMesa.length === 1 ? "" : "s"} creada${tareasDeMesa.length === 1 ? "" : "s"} por la Mesa`
+              : "Tarea abierta desde un aviso"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {mesaFiltro
+              ? "Esta vista muestra solo el plan creado por esa Mesa."
+              : "La tarea está resaltada debajo para que puedas localizarla."}
+          </p>
+          {(proyectoFiltro || tareasDeMesa[0]?.proyecto_id) ? (
+            <Link
+              to="/proyectos/$proyectoId"
+              params={{ proyectoId: proyectoFiltro ?? tareasDeMesa[0]?.proyecto_id ?? "" }}
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+            >
+              Ver el plan completo del proyecto <ArrowRight className="size-3.5" />
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
 
       {sinClasificar.length > 0 ? (
         <section className="panel mb-6 p-4">
@@ -125,13 +156,18 @@ function Tareas() {
       ) : (
         <div className="space-y-3">
           {visibles.map((t) => (
-            <article 
-              key={t.id} 
-              id={t.id}
+            <article
+              key={t.id}
+              id={`tarea-${t.id}`}
               className={cn(
                 "panel p-4 transition-all duration-500",
-                t.id === tareaIdFiltro ? "ring-2 ring-primary bg-primary/5" : ""
+                t.id === tareaIdFiltro ? "scroll-mt-24 border-primary bg-primary/5 ring-2 ring-primary" : "",
               )}
+              ref={(elemento) => {
+                if (elemento && t.id === tareaIdFiltro) {
+                  window.requestAnimationFrame(() => elemento.scrollIntoView({ behavior: "smooth", block: "center" }));
+                }
+              }}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
