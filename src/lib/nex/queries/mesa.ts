@@ -319,6 +319,34 @@ export function normalizarPlan(plan: unknown): PasoPlanMesa[] {
   return [];
 }
 
+/** Recupera un plan numerado escrito en Markdown por el experto planificador. */
+export function planDeIntervencion(texto: string | null | undefined): PasoPlanMesa[] {
+  const contenido = (texto ?? "").trim();
+  if (!contenido) return [];
+  const coincidencias = [...contenido.matchAll(/^\s*\*\*(\d+)\.\s+(.+?)\*\*\s*$/gm)];
+  return coincidencias.map((coincidencia, indice) => {
+    const inicio = (coincidencia.index ?? 0) + coincidencia[0].length;
+    const fin = coincidencias[indice + 1]?.index ?? contenido.length;
+    const bloque = contenido.slice(inicio, fin).trim();
+    const tituloConHoras = (coincidencia[2] ?? "Paso").trim();
+    const horasTexto = tituloConHoras.match(/\((\d+(?:[.,]\d+)?)\s*h\)\s*$/i)?.[1];
+    const titulo = tituloConHoras.replace(/\s*\(\d+(?:[.,]\d+)?\s*h\)\s*$/i, "").trim();
+    const responsable = bloque.match(/^-\s*\*\*(?:Quién|Responsable):?\*\*\s*:?\s*(.+)$/im)?.[1]?.trim() ?? null;
+    const lineasDescripcion = bloque
+      .split("\n")
+      .map((linea) => linea.trim())
+      .filter((linea) => linea && !/^[-*]\s*\*\*(?:Quién|Responsable|Riesgo):?\*\*/i.test(linea));
+    return {
+      orden: Number(coincidencia[1] ?? indice + 1),
+      titulo,
+      descripcion: lineasDescripcion.join("\n").replace(/^[-*]\s*/, "") || null,
+      responsable,
+      horas: horasTexto ? Number(horasTexto.replace(",", ".")) : null,
+      requiere_atencion: /javier/i.test(responsable ?? ""),
+    };
+  });
+}
+
 /**
  * Algunos coordinadores devuelven el plan dentro del texto de la conclusión
  * (en un bloque JSON) en lugar de en el campo estructurado. Esto lo rescata.
@@ -342,6 +370,52 @@ export function planDeSintesis(sintesis: string | null | undefined): Recomendaci
     } catch {
       /* seguimos probando */
     }
+  }
+
+  // Algunos modelos agotan el límite de salida antes de cerrar el JSON. En ese
+  // caso conservamos todos los objetos completos que ya hayan escrito dentro
+  // de `plan`, en vez de obligar a repetir toda la deliberación.
+  const inicioPlan = texto.search(/"plan"\s*:\s*\[/i);
+  if (inicioPlan >= 0) {
+    const inicioArray = texto.indexOf("[", inicioPlan);
+    const pasos: PasoPlanMesa[] = [];
+    let inicioObjeto = -1;
+    let profundidad = 0;
+    let enCadena = false;
+    let escapado = false;
+
+    for (let i = inicioArray + 1; i < texto.length; i += 1) {
+      const caracter = texto[i];
+      if (enCadena) {
+        if (escapado) escapado = false;
+        else if (caracter === "\\") escapado = true;
+        else if (caracter === '"') enCadena = false;
+        continue;
+      }
+      if (caracter === '"') {
+        enCadena = true;
+        continue;
+      }
+      if (caracter === "{") {
+        if (profundidad === 0) inicioObjeto = i;
+        profundidad += 1;
+      } else if (caracter === "}" && profundidad > 0) {
+        profundidad -= 1;
+        if (profundidad === 0 && inicioObjeto >= 0) {
+          try {
+            const paso = JSON.parse(texto.slice(inicioObjeto, i + 1)) as PasoPlanMesa;
+            if (paso && typeof paso === "object" && typeof paso.titulo === "string") pasos.push(paso);
+          } catch {
+            // Un objeto incompleto no invalida los pasos anteriores.
+          }
+          inicioObjeto = -1;
+        }
+      } else if (caracter === "]" && profundidad === 0) {
+        break;
+      }
+    }
+
+    if (pasos.length > 0) return { plan: pasos };
   }
   return null;
 }

@@ -45,6 +45,7 @@ import {
   useMesas,
   usePingMesa,
   normalizarPlan,
+  planDeIntervencion,
   recomendacionDeMesa,
   sintesisLegible,
   useRealtimeMesa,
@@ -424,8 +425,17 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
   }
 
   const equipo = leerParticipantes(mesa);
-  const recomendacion = recomendacionDeMesa(mesa);
-  const plan: PasoPlanMesa[] = normalizarPlan(recomendacion?.plan);
+  const recomendacionBase = recomendacionDeMesa(mesa);
+  const planSintesis: PasoPlanMesa[] = normalizarPlan(recomendacionBase?.plan);
+  const planesIntervenciones = intervenciones
+    .filter((intervencion) => intervencion.rol === "planificar")
+    .map((intervencion) => planDeIntervencion(intervencion.texto));
+  const planIntervencion = planesIntervenciones.reduce<PasoPlanMesa[]>(
+    (mejor, candidato) => (candidato.length > mejor.length ? candidato : mejor),
+    [],
+  );
+  const plan = planIntervencion.length > planSintesis.length ? planIntervencion : planSintesis;
+  const recomendacion = recomendacionBase ? { ...recomendacionBase, plan } : plan.length > 0 ? { plan } : null;
   const riesgos = Array.isArray(recomendacion?.riesgos) ? recomendacion.riesgos : [];
   const faltaPlanGuardado =
     plan.length > 0 && normalizarPlan(mesa.recomendacion?.plan).length === 0;

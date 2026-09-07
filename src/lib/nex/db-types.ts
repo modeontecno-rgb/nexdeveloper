@@ -2543,12 +2543,12 @@ export type Database = {
       presupuestos: Tabla<PresupuestoRow, Partial<SinUsuario<PresupuestoRow>> & { proyecto_id: string; concepto: string }>
       chats: Tabla<ChatRow, Partial<SinUsuario<ChatRow>> & { titulo: string }>
       mensajes: Tabla<MensajeRow, Partial<SinUsuario<MensajeRow>> & { chat_id: string; texto: string }>
-      ordenes: Tabla<OrdenRow, Partial<SinUsuario<OrdenRow>> & { texto: string }>
+      ordenes: Tabla<OrdenRow, Partial<OrdenRow> & { texto: string }>
       proyectian_sync: Tabla<ProyectianSyncRow>
-      tareas: Tabla<TareaRow, Partial<SinUsuario<TareaRow>> & { proyecto_id: string; titulo: string }>
-      estimaciones: Tabla<EstimacionRow>
-      actividad: Tabla<ActividadRow, Partial<SinUsuario<ActividadRow>> & { tipo: TipoActividad; texto: string }>
-      alertas: Tabla<AlertaRow, Partial<SinUsuario<AlertaRow>> & { texto: string }>
+      tareas: Tabla<TareaRow, Partial<TareaRow> & { proyecto_id: string; titulo: string }>
+      estimaciones: Tabla<EstimacionRow, Partial<EstimacionRow>>
+      actividad: Tabla<ActividadRow, Partial<ActividadRow> & { tipo: TipoActividad; texto: string }>
+      alertas: Tabla<AlertaRow, Partial<AlertaRow> & { texto: string }>
       integraciones: Tabla<IntegracionRow, Partial<SinUsuario<IntegracionRow>> & { codigo: string; nombre: string }>
       integracion_proyectos: Tabla<
         { user_id: string; integracion_id: string; proyecto_id: string; permisos: string[] },
