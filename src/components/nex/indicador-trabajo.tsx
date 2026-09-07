@@ -294,3 +294,21 @@ export function useConTrabajo() {
     [iniciarTrabajo],
   );
 }
+
+/** Sigue una mutación de react-query con el indicador global. */
+export function useSeguirTrabajo(titulo: string, pasos?: string[]) {
+  const { iniciarTrabajo } = useTrabajo();
+  const actual = React.useRef<ManejadorTrabajo | null>(null);
+
+  const empezar = React.useCallback(() => {
+    actual.current = iniciarTrabajo({ titulo, pasos: pasos ?? [] });
+  }, [iniciarTrabajo, titulo, pasos?.join("|")]);
+
+  const acabar = React.useCallback((_datos: unknown, error: unknown) => {
+    if (error) actual.current?.fallar(error instanceof Error ? error.message : "No se ha podido completar.");
+    else actual.current?.terminar();
+    actual.current = null;
+  }, []);
+
+  return { empezar, acabar };
+}

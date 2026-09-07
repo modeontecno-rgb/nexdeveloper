@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "sonner";
@@ -202,7 +203,10 @@ export function usePrepararRestauracion() {
 
 export function useRestaurar() {
   const qc = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Restaurando la copia');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (entrada: { copiaId: string; destino?: string; modo: ModoRestauracion; rama?: string }) =>
       llamar<{ restauracion?: RestauracionRow }>({
         accion: "restaurar",

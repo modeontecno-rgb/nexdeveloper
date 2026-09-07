@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { CopiaConfigRow, CopiaDestinoRow, CopiaOrigenRow, CopiaRow } from "../db-types";
@@ -132,7 +133,10 @@ export function useGuardarDestino() {
 
 export function useProbarDestino() {
   const qc = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Probando el destino de copias');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (destinoId: string) => llamar<{ mensaje?: string }>({ accion: "probar_destino", destino_id: destinoId }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: clavesCopias.destinos }),
   });
@@ -182,7 +186,10 @@ export function useFirmarDescarga() {
 
 export function useLanzarCopias() {
   const qc = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Lanzando la copia de seguridad');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: async (tipos: string[]) => {
       const { data, error } = await supabase.rpc("lanzar_mis_copias", { p_tipos: tipos });
       if (error) throw new Error(error.message);

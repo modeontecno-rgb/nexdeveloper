@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "sonner";
@@ -154,7 +155,10 @@ function useInvalidar() {
 /** Lanza la auditoría: de un proyecto concreto o de toda la cartera. */
 export function useAuditar() {
   const invalidar = useInvalidar();
+  const seguirTrabajo = useSeguirTrabajo('Auditoría mensual');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (v: { proyectoId?: string }) =>
       llamar<{ auditoria?: AuditoriaRow; lote?: string; total?: number }>({
         accion: "auditar",
@@ -167,7 +171,10 @@ export function useAuditar() {
 
 export function useReintentarAuditoria() {
   const invalidar = useInvalidar();
+  const seguirTrabajo = useSeguirTrabajo('Reintentando la auditoría');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (auditoriaId: string) => llamar({ accion: "reintentar", auditoria_id: auditoriaId }),
     onSuccess: () => {
       invalidar();

@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -64,7 +65,10 @@ async function llamarFuncion(cuerpo: Record<string, unknown>) {
 
 export function useLanzarCalidad() {
   const queryClient = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Control de calidad');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: ({ proyectoId, version }: { proyectoId: string; version: string }) =>
       llamarFuncion({ accion: "lanzar", proyecto_id: proyectoId, version }),
     onSuccess: () => {
@@ -77,7 +81,10 @@ export function useLanzarCalidad() {
 
 export function useSincronizarCalidad() {
   const queryClient = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Sincronizando la calidad');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: () => llamarFuncion({ accion: "sincronizar" }),
     onSuccess: () => {
       for (const clave of [claves.ejecucionesCalidad, claves.resultadosCalidad, claves.proyectos]) {

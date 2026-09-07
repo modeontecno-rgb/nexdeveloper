@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "sonner";
@@ -209,7 +210,10 @@ export function useDesconectarLovable() {
 }
 
 export function useProbarConexiones() {
+  const seguirTrabajo = useSeguirTrabajo('Probando las conexiones de ejecución');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: () => llamar<PruebaConexiones>({ accion: "probar" }),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -256,7 +260,10 @@ export type EntradaEjecutar = {
 
 export function useEjecutar() {
   const refrescar = useRefrescar();
+  const seguirTrabajo = useSeguirTrabajo('Ejecutando la orden');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (entrada: EntradaEjecutar) => {
       const cuerpo: Record<string, unknown> = { accion: "ejecutar" };
       if (entrada.ordenId) cuerpo["orden_id"] = entrada.ordenId;
@@ -277,7 +284,10 @@ export function useEjecutar() {
 
 export function useSondear() {
   const refrescar = useRefrescar();
+  const seguirTrabajo = useSeguirTrabajo('Consultando el estado de la ejecución');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (ejecucionId: string) =>
       llamar<{ ejecucion?: EjecucionOrdenRow }>({ accion: "sondear", ejecucion_id: ejecucionId }),
     onSuccess: () => refrescar(),
@@ -287,7 +297,10 @@ export function useSondear() {
 
 export function useAprobarPublicar() {
   const refrescar = useRefrescar();
+  const seguirTrabajo = useSeguirTrabajo('Aprobando y publicando');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (ejecucionId: string) =>
       llamar<{ ejecucion?: EjecucionOrdenRow }>({ accion: "aprobar_publicar", ejecucion_id: ejecucionId }),
     onSuccess: (r) => {
@@ -330,7 +343,10 @@ export function useCancelarEjecucion() {
 
 export function useReintentarEjecucion() {
   const refrescar = useRefrescar();
+  const seguirTrabajo = useSeguirTrabajo('Reintentando la ejecución');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (ejecucionId: string) => llamar({ accion: "reintentar", ejecucion_id: ejecucionId }),
     onSuccess: () => {
       refrescar();

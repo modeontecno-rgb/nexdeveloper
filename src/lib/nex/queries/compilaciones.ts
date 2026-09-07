@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 
@@ -123,7 +124,10 @@ export function useDetectar() {
 
 export function useLanzarCompilacion() {
   const qc = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Lanzando la compilación');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (input: {
       proyectoId: string;
       plantillaId: string;
@@ -150,7 +154,10 @@ export function useLanzarCompilacion() {
 
 export function useSincronizarCompilaciones() {
   const qc = useQueryClient();
+  const seguirTrabajo = useSeguirTrabajo('Sincronizando compilaciones');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: () => llamar({ accion: "sincronizar" }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: clavesCompilaciones.compilaciones });

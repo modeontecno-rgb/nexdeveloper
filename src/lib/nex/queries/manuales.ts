@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "sonner";
@@ -155,7 +156,10 @@ export type PeticionManual = {
 /** Arranca la generación del manual (sigue sola: se ve por Realtime). */
 export function useGenerarManual() {
   const invalidar = useInvalidar();
+  const seguirTrabajo = useSeguirTrabajo('Generando el manual');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (v: PeticionManual) =>
       llamar<{ manual?: ManualRow; manual_id?: string }>({
         accion: "generar",
@@ -171,7 +175,10 @@ export function useGenerarManual() {
 
 export function useReintentarManual() {
   const invalidar = useInvalidar();
+  const seguirTrabajo = useSeguirTrabajo('Reintentando el manual');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (manualId: string) => llamar({ accion: "reintentar", manual_id: manualId }),
     onSuccess: () => {
       invalidar();
@@ -184,7 +191,10 @@ export function useReintentarManual() {
 /** Lanza la revisión de redacción de un manual ya generado. */
 export function useRevisarManual() {
   const invalidar = useInvalidar();
+  const seguirTrabajo = useSeguirTrabajo('Revisando la redacción');
   return useMutation({
+    onMutate: seguirTrabajo.empezar,
+    onSettled: seguirTrabajo.acabar,
     mutationFn: (manualId: string) => llamar({ accion: "revisar", manual_id: manualId }),
     onSuccess: () => {
       invalidar();
