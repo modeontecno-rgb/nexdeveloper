@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   ExternalLink,
   Loader2,
+  MessagesSquare,
   Play,
   PlugZap,
   RefreshCw,
@@ -184,6 +185,7 @@ function PantallaEjecucion() {
 /* ------------------------------- Conexión -------------------------------- */
 
 function TarjetaConexion() {
+  const navegar = useNavigate();
   const { data: estado, isPending } = useEstadoEjecucion();
   const conectar = useConectarLovable();
   const desconectar = useDesconectarLovable();
@@ -217,6 +219,9 @@ function TarjetaConexion() {
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Boton variante="suave" onClick={() => void navegar({ to: "/mesa" })} className="px-3 py-1.5 text-xs">
+            <MessagesSquare className="size-3.5" /> Ir a Mesa de expertos
+          </Boton>
           <Boton onClick={() => conectar.mutate()} disabled={conectar.isPending} className="px-3 py-1.5 text-xs">
             <PlugZap className="size-3.5" /> Conectar con Lovable
           </Boton>

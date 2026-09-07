@@ -9,6 +9,25 @@ export const clavesConexiones = {
   lista: ["conexiones"] as const,
 };
 
+const LIMITE_COMPROBACION_MS = 60_000;
+
+/** Evita que una comprobación externa deje el indicador global trabajando para siempre. */
+export async function conLimiteDeTiempo<T>(promesa: PromiseLike<T>, ms = LIMITE_COMPROBACION_MS): Promise<T> {
+  let temporizador: ReturnType<typeof setTimeout> | undefined;
+  const limite = new Promise<never>((_, rechazar) => {
+    temporizador = setTimeout(
+      () => rechazar(new Error("La comprobación está tardando demasiado. Puedes seguir usando la aplicación e intentarlo de nuevo.")),
+      ms,
+    );
+  });
+
+  try {
+    return await Promise.race([Promise.resolve(promesa), limite]);
+  } finally {
+    if (temporizador) clearTimeout(temporizador);
+  }
+}
+
 /** Tipos de servicio que se pintan en la pantalla «Conexiones». */
 export const TIPOS_CONEXION: TipoServicioInfra[] = [
   "conexion",
@@ -112,9 +131,11 @@ export function useComprobarConexion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (servicioId?: string) => {
-      const { data, error } = await supabase.functions.invoke("infraestructura", {
-        body: { accion: "comprobar", ...(servicioId ? { servicio_id: servicioId } : {}) },
-      });
+      const { data, error } = await conLimiteDeTiempo(
+        supabase.functions.invoke("infraestructura", {
+          body: { accion: "comprobar", ...(servicioId ? { servicio_id: servicioId } : {}) },
+        }),
+      );
       const respuesta = (data ?? null) as { ok?: boolean; error?: string } | null;
       if (error) throw new Error((error as Error).message);
       if (!respuesta || respuesta.ok === false) {
