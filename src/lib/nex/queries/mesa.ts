@@ -47,7 +47,15 @@ export const COLOR_ROL_MESA: Record<string, string> = {
 };
 
 async function llamar<T = Record<string, unknown>>(cuerpo: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke("mesa", { body: cuerpo });
+  const { data: sesion, error: errorSesion } = await supabase.auth.getSession();
+  const token = sesion.session?.access_token;
+  if (errorSesion || !token) {
+    throw new Error("Tu sesión ha caducado. Vuelve a entrar para continuar.");
+  }
+  const { data, error } = await supabase.functions.invoke("mesa", {
+    body: cuerpo,
+    headers: { Authorization: `Bearer ${token}` },
+  });
   const respuesta = (data ?? null) as ({ ok?: boolean; error?: string } & T) | null;
   if (error) {
     let mensaje = (error as Error).message ?? "No se ha podido completar la operación.";
@@ -77,9 +85,7 @@ export function usePingMesa(habilitado = true) {
     enabled: habilitado,
     retry: false,
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("mesa", { body: {} });
-      if (error) throw new Error(error.message);
-      return (data ?? {}) as PingMesa;
+      return llamar<PingMesa>({});
     },
   });
 }
@@ -102,7 +108,8 @@ export function useMesa(mesaId: string | null) {
     queryKey: [...clavesMesa.mesas, "una", mesaId ?? ""],
     enabled: Boolean(mesaId),
     queryFn: async () => {
-      const { data, error } = await supabase.from("mesas").select("*").eq("id", mesaId!).limit(1);
+      if (!mesaId) return null;
+      const { data, error } = await supabase.from("mesas").select("*").eq("id", mesaId).limit(1);
       if (error) throw new Error(error.message);
       return ((data ?? [])[0] ?? null) as MesaRow | null;
     },
@@ -114,10 +121,11 @@ export function useIntervenciones(mesaId: string | null) {
     queryKey: [...clavesMesa.intervenciones, mesaId ?? ""],
     enabled: Boolean(mesaId),
     queryFn: async () => {
+      if (!mesaId) return [];
       const { data, error } = await supabase
         .from("mesa_intervenciones")
         .select("*")
-        .eq("mesa_id", mesaId!)
+        .eq("mesa_id", mesaId)
         .order("orden");
       if (error) throw new Error(error.message);
       return (data ?? []) as MesaIntervencionRow[];

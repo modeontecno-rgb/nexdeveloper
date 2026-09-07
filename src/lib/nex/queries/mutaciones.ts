@@ -35,8 +35,9 @@ export async function registrarActividad(
   tipo: TipoActividad,
   texto: string,
   extras: { referencia_tabla?: string; referencia_id?: string } = {},
+  userId?: string,
 ) {
-  await supabase.from("actividad").insert({ proyecto_id: proyectoId, tipo, texto, ...extras });
+  await supabase.from("actividad").insert({ proyecto_id: proyectoId, tipo, texto, ...extras, ...(userId ? { user_id: userId } : {}) });
 }
 
 export async function crearAlerta(
@@ -44,12 +45,14 @@ export async function crearAlerta(
   texto: string,
   nivel: NivelAlerta,
   requiereDecision = false,
+  userId?: string,
 ) {
   await supabase.from("alertas").insert({
     proyecto_id: proyectoId,
     texto,
     nivel,
     requiere_decision: requiereDecision,
+    ...(userId ? { user_id: userId } : {}),
   });
 }
 
