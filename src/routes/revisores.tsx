@@ -9,7 +9,7 @@ import { formatoFechaHora } from "@/lib/nex/labels";
 import { obtenerPanelRevisores } from "@/lib/nex/revisores.functions";
 
 const DESCRIPCION =
-  "Quién ha entrado a revisar, cuántos manuales lleva revisados cada uno y el historial de insignias de redacción.";
+  "Quién revisa manuales, cuántos lleva revisados cada uno y el historial de insignias de redacción.";
 
 export const Route = createFileRoute("/revisores")({
   head: () => ({
@@ -64,12 +64,13 @@ function PantallaRevisores() {
         <>
           {/* Tarjetas de totales */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <Tarjeta icono={<Users className="size-4" />} titulo="Cuentas creadas" valor={panel.totales.cuentas} />
+            <Tarjeta icono={<Users className="size-4" />} titulo="Revisores" valor={panel.totales.cuentas} />
             <Tarjeta
               icono={<UserCheck className="size-4" />}
-              titulo="Han iniciado sesión"
+              titulo="Con revisiones"
               valor={panel.totales.han_entrado}
             />
+
             <Tarjeta icono={<BadgeCheck className="size-4" />} titulo="Manuales" valor={panel.totales.manuales} />
             <Tarjeta icono={<BadgeCheck className="size-4" />} titulo="Revisados" valor={panel.totales.revisados} />
             <Tarjeta
@@ -87,7 +88,7 @@ function PantallaRevisores() {
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted-foreground">
                     <th className="px-4 py-2.5 font-medium">Revisor</th>
-                    <th className="px-4 py-2.5 font-medium">Último acceso</th>
+                    <th className="px-4 py-2.5 font-medium">Primera actividad</th>
                     <th className="px-4 py-2.5 text-right font-medium">Manuales</th>
                     <th className="px-4 py-2.5 text-right font-medium">Revisados</th>
                     <th className="px-4 py-2.5 text-right font-medium">Correcciones</th>
@@ -99,8 +100,9 @@ function PantallaRevisores() {
                     <tr key={r.id} className="border-b border-border/60 last:border-0">
                       <td className="px-4 py-2.5 font-medium">{r.email}</td>
                       <td className="px-4 py-2.5 text-muted-foreground">
-                        {r.ultimo_acceso ? formatoFechaHora(r.ultimo_acceso) : "Todavía no ha entrado"}
+                        {r.ultimo_acceso ? formatoFechaHora(r.ultimo_acceso) : "—"}
                       </td>
+
                       <td className="px-4 py-2.5 text-right">{r.manuales_totales}</td>
                       <td className="px-4 py-2.5 text-right">{r.manuales_revisados}</td>
                       <td className="px-4 py-2.5 text-right">{r.correcciones_totales}</td>
