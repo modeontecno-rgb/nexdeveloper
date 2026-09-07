@@ -412,7 +412,7 @@ function Burbuja({ mensaje }: { mensaje: AsistenteMensajeRow }) {
 }
 
 const RUTA_ACCION: Record<AccionAsistente["tipo"], string> = {
-  tarea: "/cola",
+  tarea: "/tareas",
   orden: "/aprobaciones",
   aviso: "/avisos",
 };
@@ -436,7 +436,7 @@ function ChipAccion({ accion }: { accion: AccionAsistente }) {
   }
   const destino = accion.url ?? RUTA_ACCION[accion.tipo] ?? "/";
   return (
-    <Link to={destino as "/cola"} className={clase}>
+    <Link to={destino as "/tareas"} className={clase}>
       {texto}
     </Link>
   );

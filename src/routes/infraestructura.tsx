@@ -1038,7 +1038,7 @@ function Incidencias({
             : "Sin proyectos asociados."}
       </p>
       {i.tarea_id ? (
-        <Link to="/cola" className="mt-2 inline-flex text-xs text-primary hover:underline">
+        <Link to="/tareas" className="mt-2 inline-flex text-xs text-primary hover:underline">
           Ver la tarea creada
         </Link>
       ) : null}

@@ -109,7 +109,7 @@ function Proyectos() {
 
       {sinClasificar > 0 ? (
         <Link
-          to="/cola"
+          to="/tareas"
           className="panel mb-4 flex items-center gap-3 p-4 text-sm transition hover:border-primary/40"
         >
           <Inbox className="size-4 text-warning" />

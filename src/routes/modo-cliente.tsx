@@ -591,7 +591,7 @@ function FilaPeticion({ peticion, portal }: { peticion: PortalPeticionRow; porta
           <Sparkles className="size-4" /> Convertir en orden para la IA
         </Boton>
         {peticion.tarea_id ? (
-          <Link to="/cola" className="text-xs text-primary underline-offset-2 hover:underline">
+          <Link to="/tareas" className="text-xs text-primary underline-offset-2 hover:underline">
             Ver la tarea
           </Link>
         ) : null}

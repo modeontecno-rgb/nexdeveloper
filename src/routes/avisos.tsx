@@ -21,6 +21,7 @@ import { AppShell, Encabezado } from "@/components/nex/app-shell";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import type { AvisoRow, TipoAviso } from "@/lib/nex/db-types";
 import { desde, formatoFechaHora } from "@/lib/nex/labels";
+import { normalizarDestinoInterno } from "@/lib/nex/navegacion";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import {
   ETIQUETA_TIPO_AVISO,
@@ -374,7 +375,8 @@ function BandejaAvisos({ avisos, cargando }: { avisos: AvisoRow[]; cargando: boo
 
   const abrir = (aviso: AvisoRow) => {
     if (!aviso.leido) marcar.mutate({ id: aviso.id });
-    if (aviso.url) void navegar({ to: aviso.url as never });
+    const destino = normalizarDestinoInterno(aviso.url);
+    if (destino) void navegar({ href: destino });
   };
 
   const estadoEnvio = (aviso: AvisoRow) =>

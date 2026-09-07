@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ClipboardCopy,
   ListChecks,
@@ -30,7 +30,7 @@ import type {
   RolMesa,
 } from "@/lib/nex/db-types";
 import { desde, formatoEuros } from "@/lib/nex/labels";
-import { useAjustes, useChats, useProyectos } from "@/lib/nex/queries/datos";
+import { useAjustes, useChats, useProyectos, useTareas } from "@/lib/nex/queries/datos";
 import { useExpertos } from "@/lib/nex/queries/expertos";
 import { markdownAHtml } from "@/lib/nex/queries/resumenes";
 import {
@@ -407,6 +407,7 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
   const { data: expertos = [] } = useExpertos();
   const { data: proyectos = [] } = useProyectos();
   const { data: chats = [] } = useChats();
+  const { data: tareas = [] } = useTareas();
   const { data: ajustes } = useAjustes();
   const actualizar = useActualizarMesa();
   const deliberar = useDeliberar();
@@ -448,8 +449,16 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
   const riesgos = Array.isArray(recomendacion?.riesgos) ? recomendacion.riesgos : [];
   const faltaPlanGuardado =
     plan.length > 0 && normalizarPlan(mesa.recomendacion?.plan).length === 0;
+  const tareasCreadas = tareas.filter(
+    (tarea) => tarea.proyecto_id === mesa.proyecto_id && tarea.descripcion?.includes(`Mesa: ${mesa.titulo}`),
+  );
+  const planYaCreado = plan.length > 0 && tareasCreadas.length >= plan.length;
 
   const crearTareasDelPlan = async () => {
+    if (planYaCreado) {
+      toast.info("Las tareas de esta Mesa ya están creadas. Ábrelas en Tareas.");
+      return;
+    }
     await conTrabajo(
       "Creando las tareas del plan",
       async (trabajo) => {
@@ -797,12 +806,30 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           <div className="mt-4 flex flex-wrap gap-2">
             <Boton
               type="button"
-              disabled={plan.length === 0 || crearTareas.isPending || actualizar.isPending}
-              title={plan.length === 0 ? "Esta mesa todavía no tiene plan de trabajo." : undefined}
+              disabled={plan.length === 0 || planYaCreado || crearTareas.isPending || actualizar.isPending}
+              title={
+                plan.length === 0
+                  ? "Esta mesa todavía no tiene plan de trabajo."
+                  : planYaCreado
+                    ? "Las tareas de esta Mesa ya están creadas."
+                    : undefined
+              }
               onClick={() => void crearTareasDelPlan()}
             >
-              <ListChecks className="size-4" /> Crear tareas del plan
+              <ListChecks className="size-4" /> {planYaCreado ? "Tareas ya creadas" : "Crear tareas del plan"}
             </Boton>
+            {tareasCreadas.length > 0 ? (
+              <Link
+                to="/tareas"
+                search={{
+                  proyecto: mesa.proyecto_id ?? undefined,
+                  mesa: mesa.titulo ?? undefined,
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3.5 py-2 text-sm font-medium text-primary transition hover:bg-primary/15"
+              >
+                Ver {tareasCreadas.length} tareas <ListChecks className="size-4" />
+              </Link>
+            ) : null}
             <Boton type="button" variante="suave" disabled={crearOrden.isPending} onClick={() => void enviarComoOrden()}>
               <Send className="size-4" /> Enviar como orden
             </Boton>

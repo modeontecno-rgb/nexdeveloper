@@ -17,7 +17,6 @@ import { Puerta } from "@/components/nex/puerta";
 import { TrabajoProvider } from "@/components/nex/indicador-trabajo";
 import { ProveedorAuth } from "@/lib/nex/auth";
 import { Toaster } from "@/components/ui/sonner";
-import { useAutoria } from "@/lib/nex/queries/datos";
 
 
 function NotFoundComponent() {
@@ -90,7 +89,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "description",
         content: "Gestiona todos tus proyectos de IA, agentes, tareas y costes desde un único lugar.",
       },
-      { name: "generator", content: "Powered by Modeontecno S.L." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#0f1116" },
@@ -141,16 +139,6 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-function ActualizarGenerator() {
-  const { data } = useAutoria();
-  useEffect(() => {
-    if (typeof document === "undefined" || !data?.powered_by) return;
-    const etiqueta = document.querySelector('meta[name="generator"]');
-    if (etiqueta) etiqueta.setAttribute("content", `Powered by ${data.powered_by}`);
-  }, [data?.powered_by]);
-  return null;
-}
-
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const ruta = useRouterState({ select: (s) => s.location.pathname });
@@ -167,7 +155,6 @@ function RootComponent() {
   if (esPortalCliente) {
     return (
       <QueryClientProvider client={queryClient}>
-        <ActualizarGenerator />
         <Outlet />
       </QueryClientProvider>
     );
@@ -175,7 +162,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ActualizarGenerator />
       <ProveedorAuth>
         <TrabajoProvider>
           {/* Puerta contiene el <Outlet /> donde se dibujan las rutas hijas. */}

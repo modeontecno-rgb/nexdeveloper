@@ -107,7 +107,7 @@ export const GRUPOS_MENU: GrupoMenu[] = [
     icono: CalendarCheck,
     pantallas: [
       {
-        to: "/cola",
+        to: "/tareas",
         etiqueta: "Tareas",
         icono: ListTodo,
         alias: ["cola", "pendientes", "trabajo", "to-do", "encargos"],
@@ -140,6 +140,13 @@ export const GRUPOS_MENU: GrupoMenu[] = [
         icono: Newspaper,
         alias: ["informes", "diario", "semanal", "parte", "qué ha pasado"],
         descripcion: "El parte del día y de la semana.",
+      },
+      {
+        to: "/guia",
+        etiqueta: "Cómo hacer un trabajo",
+        icono: BookOpen,
+        alias: ["guía", "ayuda", "empezar", "instrucciones", "paso a paso"],
+        descripcion: "El recorrido completo desde la petición hasta el resultado.",
       },
     ],
   },
@@ -473,7 +480,7 @@ export function buscarPantallas(consulta: string): ResultadoBusqueda[] {
 
 export const CLAVE_ACCESOS_MOVIL = "nexdeveloper-accesos-movil";
 
-export const ACCESOS_MOVIL_POR_DEFECTO: RutaMenu[] = ["/", "/pideme", "/cola", "/avisos"];
+export const ACCESOS_MOVIL_POR_DEFECTO: RutaMenu[] = ["/", "/pideme", "/tareas", "/avisos"];
 
 export function pantallaPorRuta(to: string): PantallaMenu | undefined {
   return TODAS_LAS_PANTALLAS.find((p) => p.to === to);

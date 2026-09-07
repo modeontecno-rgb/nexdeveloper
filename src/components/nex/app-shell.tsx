@@ -885,7 +885,7 @@ function BarraInferior({ ruta, onMenu }: { ruta: string; onMenu: () => void }) {
 
 /** Botón redondo para dictar con una mano, sobre la barra inferior. */
 function BotonPideme({ ruta }: { ruta: string }) {
-  const principales = ["/", "/cola", "/bandeja", "/avisos", "/proyectos"];
+  const principales = ["/", "/tareas", "/bandeja", "/avisos", "/proyectos"];
   if (!principales.includes(ruta)) return null;
 
   return (

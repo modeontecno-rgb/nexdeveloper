@@ -106,7 +106,7 @@ function NuevaOrdenPantalla() {
     if (creada?.id) await revisarOrden(creada.id).catch(() => undefined);
     setHallazgos(null);
     setTexto("");
-    void navegar({ to: necesitaAprobacion ? "/aprobaciones" : "/cola" });
+    void navegar({ to: necesitaAprobacion ? "/aprobaciones" : "/tareas" });
   };
 
   return (
