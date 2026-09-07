@@ -434,6 +434,11 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
     await conTrabajo(
       "Creando las tareas del plan",
       async (trabajo) => {
+        if (plan.length === 0) {
+          throw new Error(
+            "Esta mesa todavía no tiene un plan de trabajo. Pulsa «Deliberar» o «Recomendar» para que los expertos lo generen.",
+          );
+        }
         if (faltaPlanGuardado && recomendacion) {
           trabajo.avanzar("Guardando el plan", 25);
           await actualizar.mutateAsync({ id: mesa.id, cambios: { recomendacion } });
@@ -755,7 +760,12 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Boton type="button" disabled={crearTareas.isPending || actualizar.isPending} onClick={() => void crearTareasDelPlan()}>
+            <Boton
+              type="button"
+              disabled={plan.length === 0 || crearTareas.isPending || actualizar.isPending}
+              title={plan.length === 0 ? "Esta mesa todavía no tiene plan de trabajo." : undefined}
+              onClick={() => void crearTareasDelPlan()}
+            >
               <ListChecks className="size-4" /> Crear tareas del plan
             </Boton>
             <Boton type="button" variante="suave" disabled={crearOrden.isPending} onClick={() => void enviarComoOrden()}>
