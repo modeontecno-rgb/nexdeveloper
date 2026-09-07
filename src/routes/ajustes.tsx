@@ -9,6 +9,7 @@ import { TarjetaPlaudConexion } from "@/routes/pideme";
 import { Cargando } from "@/components/nex/badges";
 import { Boton, Campo, claseCampo } from "@/components/nex/campos";
 import { guardarSonidos, sonidosActivos } from "@/lib/nex/sonidos";
+import { guardarParametrosCoste, useParametrosCoste } from "@/lib/nex/costes";
 import { useAuth } from "@/lib/nex/auth";
 import { borrarDatosDemostracion, cargarDatosDemostracion } from "@/lib/nex/demo";
 import { useAjustes, usePerfil } from "@/lib/nex/queries/datos";
@@ -117,6 +118,9 @@ function Ajustes() {
         </div>
 
         <Sonidos />
+
+        <CostesMercado />
+
 
         <AcercaDe />
 
@@ -389,6 +393,71 @@ function AcercaDe() {
           </p>
         )
       ) : null}
+    </section>
+  );
+}
+
+/** Precio del crédito y tarifas para comparar con el mercado. */
+function CostesMercado() {
+  const guardados = useParametrosCoste();
+  const [valores, setValores] = React.useState(guardados);
+
+  React.useEffect(() => {
+    setValores(guardados);
+  }, [guardados]);
+
+  const cambiar = (campo: keyof typeof valores, texto: string) =>
+    setValores((v) => ({ ...v, [campo]: Number(texto.replace(",", ".")) }));
+
+  return (
+    <section className="panel p-5">
+      <h2 className="font-display text-sm font-semibold">Costes y comparativa de mercado</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Con estos valores se traduce el gasto real de la IA a créditos y se estima lo que costaría y tardaría el mismo
+        trabajo con programadores humanos. Las cifras medidas se marcan como «Real» y las calculadas como «Estimado».
+      </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <Campo etiqueta="Euros por crédito">
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            value={valores.eurosPorCredito}
+            onChange={(e) => cambiar("eurosPorCredito", e.target.value)}
+            className={claseCampo}
+          />
+        </Campo>
+        <Campo etiqueta="Tarifa de mercado (€/hora)">
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={valores.tarifaMercadoEurHora}
+            onChange={(e) => cambiar("tarifaMercadoEurHora", e.target.value)}
+            className={claseCampo}
+          />
+        </Campo>
+        <Campo etiqueta="Horas humanas por hora de IA">
+          <input
+            type="number"
+            step="0.5"
+            min="1"
+            value={valores.factorHumano}
+            onChange={(e) => cambiar("factorHumano", e.target.value)}
+            className={claseCampo}
+          />
+        </Campo>
+      </div>
+      <div className="mt-4">
+        <Boton
+          onClick={() => {
+            guardarParametrosCoste(valores);
+            toast.success("Parámetros de coste guardados.");
+          }}
+        >
+          Guardar parámetros de coste
+        </Boton>
+      </div>
     </section>
   );
 }

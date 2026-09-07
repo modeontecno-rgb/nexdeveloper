@@ -14,6 +14,7 @@ import { TarjetaPortalProyecto } from "@/routes/modo-cliente";
 import { TarjetaFacturacionProyecto } from "@/routes/facturacion";
 import { BloqueUsuariosProyecto, ChipUsuariosProyecto } from "@/routes/usuarios-clientes";
 import { BloqueVersionProyecto } from "@/routes/proyectian";
+import { PanelCostesProyecto } from "@/components/nex/costes";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, ExternalLink, MonitorPlay, Send } from "lucide-react";
@@ -180,6 +181,15 @@ function DetalleProyecto() {
         <Dato titulo="Coste estimado" valor={formatoDinero(Number(resumen?.coste_estimado ?? 0), moneda)} />
         <Dato titulo="Consumido" valor={formatoDinero(Number(resumen?.coste_consumido ?? 0), moneda)} />
       </section>
+
+      <div className="mt-6">
+        <PanelCostesProyecto
+          proyectoId={proyectoId}
+          horasEstimadas={Number(resumen?.esfuerzo_restante ?? 0) || null}
+          costeEstimado={Number(resumen?.coste_estimado ?? 0) || null}
+        />
+      </div>
+
 
       <div className="mt-6">
         <TareasEnBloques tareas={tareasAtencion} />
