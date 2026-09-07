@@ -669,22 +669,40 @@ function BloquePropuesta({ peticion }: { peticion: PeticionDirectaRow }) {
   );
 }
 
+/** Convierte cualquier elemento (texto, número o ficha de paso) en una línea legible. */
+export function textoElementoPropuesta(elemento: unknown): string {
+  if (elemento == null) return "";
+  if (typeof elemento === "string") return elemento;
+  if (typeof elemento === "number" || typeof elemento === "boolean") return String(elemento);
+  if (Array.isArray(elemento)) return elemento.map(textoElementoPropuesta).filter(Boolean).join(" · ");
+  const o = elemento as Record<string, unknown>;
+  const principal = [o["titulo"], o["descripcion"], o["texto"], o["nombre"], o["paso"], o["detalle"]]
+    .filter((v) => typeof v === "string" && v.trim())
+    .join(" — ");
+  const extras: string[] = [];
+  if (typeof o["responsable"] === "string" && o["responsable"].trim()) extras.push(String(o["responsable"]));
+  if (o["horas"] != null && o["horas"] !== "") extras.push(`${String(o["horas"])} h`);
+  const linea = [principal, extras.join(" · ")].filter(Boolean).join(" · ");
+  return linea || JSON.stringify(elemento);
+}
+
 function ListaPropuesta({
   titulo,
   elementos,
   numerada,
 }: {
   titulo: string;
-  elementos?: string[] | undefined;
+  elementos?: unknown;
   numerada?: boolean;
 }) {
-  if (!elementos?.length) return null;
+  const lista = Array.isArray(elementos) ? elementos.map(textoElementoPropuesta).filter(Boolean) : [];
+  if (!lista.length) return null;
   const Lista = numerada ? "ol" : "ul";
   return (
     <div className="mt-3">
       <p className="text-xs font-medium text-muted-foreground">{titulo}</p>
       <Lista className={cn("mt-1 space-y-1 pl-5 text-sm", numerada ? "list-decimal" : "list-disc")}>
-        {elementos.map((t, i) => (
+        {lista.map((t, i) => (
           <li key={`${titulo}-${i}`}>{t}</li>
         ))}
       </Lista>
