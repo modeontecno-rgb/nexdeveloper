@@ -282,6 +282,35 @@ export function participantes(mesa: MesaRow | null | undefined): ParticipanteMes
 }
 
 /**
+ * Normaliza el campo "plan" para que siempre sea un array de pasos,
+ * venga como array, como texto JSON, como objeto suelto o como cualquier
+ * otra cosa. Nunca devuelve null: en el peor caso, un array vacío.
+ */
+export function normalizarPlan(plan: unknown): PasoPlanMesa[] {
+  let dato = plan;
+  if (typeof dato === "string") {
+    try {
+      dato = JSON.parse(dato);
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(dato)) return dato as PasoPlanMesa[];
+  if (dato && typeof dato === "object") {
+    // Objeto indexado por claves ("0", "1", …) o un paso suelto.
+    const objeto = dato as Record<string, unknown>;
+    const claves = Object.keys(objeto);
+    if (claves.length > 0 && claves.every((k) => /^\d+$/.test(k))) {
+      return claves
+        .sort((a, b) => Number(a) - Number(b))
+        .map((k) => objeto[k] as PasoPlanMesa);
+    }
+    return [dato as PasoPlanMesa];
+  }
+  return [];
+}
+
+/**
  * Algunos coordinadores devuelven el plan dentro del texto de la conclusión
  * (en un bloque JSON) en lugar de en el campo estructurado. Esto lo rescata.
  */
@@ -297,8 +326,9 @@ export function planDeSintesis(sintesis: string | null | undefined): Recomendaci
   for (const bruto of candidatos) {
     try {
       const dato = JSON.parse(bruto.trim()) as RecomendacionMesa;
-      if (dato && typeof dato === "object" && Array.isArray(dato.plan) && dato.plan.length > 0) {
-        return dato;
+      const plan = normalizarPlan(dato?.plan);
+      if (dato && typeof dato === "object" && plan.length > 0) {
+        return { ...dato, plan };
       }
     } catch {
       /* seguimos probando */
