@@ -302,10 +302,17 @@ export function DialogoNuevaMesa({
             placeholder="Por ejemplo: cómo montar la facturación con descarga en PDF y avisos por correo."
             className={claseCampo}
           />
+          <div className="mt-2 flex justify-end">
+            <BotonDictado onTexto={(t) => setPregunta((p) => unirDictado(p, t))} etiqueta="Dictar" />
+          </div>
         </Campo>
         <Campo etiqueta="Contexto adicional" pista="Opcional: restricciones, plazos, decisiones ya tomadas.">
           <textarea rows={3} value={contexto} onChange={(e) => setContexto(e.target.value)} className={claseCampo} />
+          <div className="mt-2 flex justify-end">
+            <BotonDictado onTexto={(t) => setContexto((c) => unirDictado(c, t))} etiqueta="Dictar" />
+          </div>
         </Campo>
+
 
         <div>
           <p className="text-xs font-medium text-muted-foreground">Modo</p>
