@@ -1,3 +1,4 @@
+import {MemoriaPersonal} from '@/components/nex/memoria-personal';
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ChevronDown,
@@ -27,7 +28,7 @@ import type {
 import { desde, formatoEuros, marcaTiempo } from "@/lib/nex/labels";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import { markdownAHtml } from "@/lib/nex/queries/resumenes";
-import { useDictado } from "@/routes/pideme";
+import { useDictado } from "@/components/nex/dictado";
 import {
   ETIQUETA_MODO_PERSONAL,
   ETIQUETA_MODO_REESCRITURA,
@@ -138,7 +139,7 @@ function PanelChat({ conversacionInicial }: { conversacionInicial: string | null
   const [busqueda, setBusqueda] = React.useState("");
   const [creandoDoc, setCreandoDoc] = React.useState(false);
   const finRef = React.useRef<HTMLDivElement | null>(null);
-  const { escuchando, soportado, alternar } = useDictado((d) => setTexto((t) => (t ? `${t} ${d}` : d)));
+  const { escuchando, soportado, alternar, lienzoOnda } = useDictado((d) => setTexto((t) => (t ? `${t} ${d}` : d)));
 
   const numIa = Math.max(1, Number(estado.data?.config?.max_proveedores ?? estado.data?.proveedores?.length ?? 1));
 
@@ -251,6 +252,7 @@ function PanelChat({ conversacionInicial }: { conversacionInicial: string | null
           }}
           className="mt-4 border-t border-border pt-4"
         >
+          {escuchando && <canvas ref={lienzoOnda} aria-label="Onda del micrófono en directo" className="h-12 w-full text-primary" />}
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
@@ -528,7 +530,7 @@ function PanelEstilo() {
   const [muestras, setMuestras] = React.useState<string[]>(["", "", ""]);
   const [perfil, setPerfil] = React.useState("");
   const [texto, setTexto] = React.useState("");
-  const [modo, setModo] = React.useState<ModoReescritura>("mi_voz");
+  const [modo, setModo] = React.useState<ModoReescritura>("desactivado");
   const [proyectoId, setProyectoId] = React.useState("");
   const [tono, setTono] = React.useState("");
 
@@ -633,7 +635,7 @@ function PanelEstilo() {
               disabled={!texto.trim() || reescribir.isPending || (modo === "marca" && !proyectoId)}
             >
               {reescribir.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-              {modo === "tutor" ? "Ayúdame a mejorarlo" : "Reescribir"}
+              {modo === "desactivado" ? "Conservar original" : modo === "tutor" ? "Ayúdame a mejorarlo" : "Reescribir"}
             </Boton>
             {modo === "tutor" ? (
               <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
@@ -674,6 +676,8 @@ function PanelEstilo() {
             ) : resultado?.texto_resultado ? (
               <div className="space-y-3">
                 <p className="whitespace-pre-wrap text-sm">{resultado.texto_resultado}</p>
+                <p className="text-xs text-muted-foreground">Revisa el sentido y los hechos. Este editor no garantiza resultados frente a detectores de IA. El original permanece en el editor.</p>
+                <Boton variante="suave" onClick={()=>reescribir.reset()}>Volver al original</Boton>
                 <Boton
                   variante="suave"
                   className="px-2.5 py-1 text-xs"
@@ -738,7 +742,7 @@ function PanelConfiguracion() {
   const [proveedores, setProveedores] = React.useState<string[]>([]);
   const [maximo, setMaximo] = React.useState(3);
   const [juez, setJuez] = React.useState("");
-  const [modo, setModo] = React.useState<ModoPersonal>("fusion");
+  const [modo, setModo] = React.useState<ModoPersonal>("rapido");
   const [guardar, setGuardar] = React.useState(true);
   const [carpetaAlmacen, setCarpetaAlmacen] = React.useState("PERSONAL");
   const [carpetaMac, setCarpetaMac] = React.useState("PERSONAL");
@@ -750,7 +754,7 @@ function PanelConfiguracion() {
     setProveedores(c.proveedores ?? []);
     setMaximo(Number(c.max_proveedores ?? 3));
     setJuez(c.juez ?? "");
-    setModo(c.modo ?? "fusion");
+    setModo(c.modo ?? "rapido");
     setGuardar(Boolean(c.guardar_en_almacen));
     setCarpetaAlmacen(c.carpeta_almacen ?? "PERSONAL");
     setCarpetaMac(c.carpeta_mac ?? "PERSONAL");
@@ -831,6 +835,7 @@ function PanelConfiguracion() {
       </Campo>
       <Campo etiqueta="Instrucciones de tono" pista="Cómo quieres que te hable en el apartado personal.">
         <textarea value={instrucciones} onChange={(e) => setInstrucciones(e.target.value)} rows={4} className={claseCampo} />
+        <MemoriaPersonal/>
       </Campo>
 
       <Boton

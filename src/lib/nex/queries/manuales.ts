@@ -245,7 +245,7 @@ export function useEditarCapitulo() {
 
 export function useEnlaceManual() {
   return useMutation({
-    mutationFn: (v: { manualId: string; formato?: "html" | "md" }) =>
+    mutationFn: (v: { manualId: string; formato?: "html" | "md" | "pdf" }) =>
       llamar<{ url?: string }>({
         accion: "enlace",
         manual_id: v.manualId,

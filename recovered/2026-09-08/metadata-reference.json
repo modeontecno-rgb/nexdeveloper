@@ -1,0 +1,2399 @@
+[
+  {
+    "metadata_snapshot": {
+      "roles": [
+        {
+          "name": "pg_database_owner",
+          "inherit": true,
+          "superuser": false,
+          "bypass_rls": false
+        },
+        {
+          "name": "authenticated",
+          "inherit": true,
+          "superuser": false,
+          "bypass_rls": false
+        },
+        {
+          "name": "anon",
+          "inherit": true,
+          "superuser": false,
+          "bypass_rls": false
+        },
+        {
+          "name": "service_role",
+          "inherit": true,
+          "superuser": false,
+          "bypass_rls": true
+        },
+        {
+          "name": "supabase_admin",
+          "inherit": true,
+          "superuser": true,
+          "bypass_rls": true
+        },
+        {
+          "name": "postgres",
+          "inherit": true,
+          "superuser": false,
+          "bypass_rls": true
+        }
+      ],
+      "schemas": [
+        {
+          "acl": "{pg_database_owner=UC/pg_database_owner,=U/pg_database_owner,postgres=U/pg_database_owner,anon=U/pg_database_owner,authenticated=U/pg_database_owner,service_role=U/pg_database_owner}",
+          "name": "public",
+          "owner": "pg_database_owner"
+        },
+        {
+          "acl": "{postgres=UC/postgres}",
+          "name": "private",
+          "owner": "postgres"
+        },
+        {
+          "acl": "{supabase_admin=UC/supabase_admin,postgres=U*/supabase_admin,anon=U/supabase_admin,authenticated=U/supabase_admin,service_role=U/supabase_admin,supabase_storage_admin=U*C*/supabase_admin,dashboard_user=UC/supabase_admin}",
+          "name": "storage",
+          "owner": "supabase_admin"
+        }
+      ],
+      "functions": [
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_pideme_descartar",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "probar_proveedor",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_proveedor_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "sembrar_proveedores_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "avisos_tras_insertar",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "crear_aviso",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user uuid, p_tipo text, p_titulo text, p_cuerpo text, p_url text, p_proyecto uuid, p_referencia text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "comprobar_cron_token",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_token text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_barrido_expertos",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "set_actualizado_el",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "sugerir_proyecto",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_texto text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "tarea_completada",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gin_trgm_consistent",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal, smallint, text, integer, internal, internal, internal, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gin_trgm_triconsistent",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal, smallint, text, integer, internal, internal, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "strict_word_similarity",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{postgres=X/postgres}",
+          "name": "clave_cifrado",
+          "owner": "postgres",
+          "schema": "private",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "strict_word_similarity_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_picksplit",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_union",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_same",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "gtrgm, gtrgm, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gin_extract_value_trgm",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gin_extract_query_trgm",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, internal, smallint, internal, internal, internal, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "strict_word_similarity_commutator_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "strict_word_similarity_dist_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "strict_word_similarity_dist_commutator_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "actualizar_semaforo_proyecto",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_options",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_sincronizacion_calidad",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "guardar_secreto_lovable",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid, p_refresh text, p_acceso text, p_expira timestamp with time zone",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "guardar_claves_vapid",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_publica text, p_privada text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "sincronizar_repositorio_proyecto",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "set_limit",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "real",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "show_limit",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "show_trgm",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "similarity",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "similarity_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "word_similarity",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "word_similarity_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "word_similarity_commutator_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "similarity_dist",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "word_similarity_dist_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "word_similarity_dist_commutator_op",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "text, text",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_in",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "cstring",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_out",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "gtrgm",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_consistent",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal, text, smallint, oid, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_distance",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal, text, smallint, oid, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_compress",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_decompress",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{=X/supabase_admin,supabase_admin=X/supabase_admin,postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "name": "gtrgm_penalty",
+          "owner": "supabase_admin",
+          "schema": "public",
+          "arguments": "internal, internal, internal",
+          "extension": "pg_trgm"
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "leer_destino_copias",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_destino_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "handle_new_user",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "sembrar_catalogos",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_mis_copias",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_tipos text[]",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "copias_auto_dispatch",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_periodicidad text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_bandeja_sincronizar",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "sembrar_plantillas_accion",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_gasto_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "guardar_clave_proveedor",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_proveedor_id uuid, p_clave text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "descifrar_clave_proveedor",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_proveedor_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "sembrar_expertos",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "revisar_orden",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_orden_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "guardar_secreto_copias",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_destino_id uuid, p_secreto text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_sincronizacion_compilaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "solo_altas_autorizadas",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_copias",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid, p_origen text, p_tipos text[]",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_vigilancia",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_tipo text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_comprobacion_dominios_continuar",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_comprobacion_dominios",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_resumen",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_tipo text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "gasto_ia_permitido",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid, p_proveedor text, p_proyecto_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "agregar_consumos_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid, p_desde date",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "guardar_secreto_copias_servicio",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_destino_id uuid, p_secreto text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "guardar_secreto_bandeja",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_fuente_id uuid, p_secreto text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "leer_secreto_bandeja",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_fuente_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_barrido_habilidades",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "leer_secretos_lovable",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_ejecucion_ordenes",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_avisos",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_salud",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text, p_informe uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "leer_claves_vapid",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_restauracion",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text, p_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "avisos_desde_tareas",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "avisos_desde_compilaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "avisos_desde_dominios",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "avisos_desde_presupuestos",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "asistente_consulta",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user uuid, p_sql text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "incrementar_conversacion",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_id uuid, p_te integer, p_ts integer, p_coste numeric",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_manuales",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text, p_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_auditoria",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text, p_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_usuarios_clientes",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "horas_desde_tarea",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "horas_desde_ejecucion",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_facturacion",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_infraestructura",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "guardar_secreto_conexion",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid, p_proveedor text, p_refresh text, p_acceso text, p_expira timestamp with time zone",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "leer_secretos_conexion",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid, p_proveedor text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_plaud",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "incrementar_conversacion_personal",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_id uuid, p_coste numeric",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "leer_cron_token",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "lanzar_sincronizacion_proyectian",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_accion text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_corregir_nombres",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid, p_texto text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_pideme_guardar_borrador",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_id uuid, p_texto text, p_aclaraciones text, p_proyecto_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_sembrar_diccionario",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_user_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_pideme_borrador",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_texto text, p_origen text, p_grabacion_id uuid, p_proyecto_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_pideme_mensaje",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_id uuid, p_texto text, p_rol text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_pideme_vincular",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_borrador_id uuid, p_peticion_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_pideme_aprender",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_id uuid, p_de text, p_a text",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "name": "nex_pideme_lanzar",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "p_id uuid",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "tg_sincronizar_powered_by",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres,anon=X/postgres}",
+          "name": "autoria",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        },
+        {
+          "acl": "{postgres=X/postgres,service_role=X/postgres}",
+          "name": "fn_tareas_fechas_estado",
+          "owner": "postgres",
+          "schema": "public",
+          "arguments": "",
+          "extension": null
+        }
+      ],
+      "relations": [
+        {
+          "acl": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_proveedores_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_rendimiento_modelos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "vigilancia_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "vigilancia_lotes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "expertos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": null,
+          "kind": "r",
+          "name": "migrations",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "vigilancia_hallazgos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{supabase_storage_admin=a*r*w*d*D*x*t*m*/supabase_storage_admin,service_role=arwdDxtm/supabase_storage_admin,authenticated=arwdDxtm/supabase_storage_admin,anon=arwdDxtm/supabase_storage_admin,postgres=a*r*w*d*D*x*t*m*/supabase_storage_admin}",
+          "kind": "r",
+          "name": "buckets",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{supabase_storage_admin=a*r*w*d*D*x*t*m*/supabase_storage_admin,service_role=arwdDxtm/supabase_storage_admin,authenticated=arwdDxtm/supabase_storage_admin,anon=arwdDxtm/supabase_storage_admin,postgres=a*r*w*d*D*x*t*m*/supabase_storage_admin}",
+          "kind": "r",
+          "name": "objects",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{supabase_storage_admin=arwdDxtm/supabase_storage_admin,service_role=arwdDxtm/supabase_storage_admin,authenticated=r/supabase_storage_admin,anon=r/supabase_storage_admin}",
+          "kind": "r",
+          "name": "s3_multipart_uploads",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{supabase_storage_admin=arwdDxtm/supabase_storage_admin,service_role=arwdDxtm/supabase_storage_admin,authenticated=r/supabase_storage_admin,anon=r/supabase_storage_admin}",
+          "kind": "r",
+          "name": "s3_multipart_uploads_parts",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "ejecuciones_calidad",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{supabase_storage_admin=arwdDxtm/supabase_storage_admin,service_role=r/supabase_storage_admin,authenticated=r/supabase_storage_admin,anon=r/supabase_storage_admin}",
+          "kind": "r",
+          "name": "buckets_vectors",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{supabase_storage_admin=arwdDxtm/supabase_storage_admin,service_role=r/supabase_storage_admin,authenticated=r/supabase_storage_admin,anon=r/supabase_storage_admin}",
+          "kind": "r",
+          "name": "vector_indexes",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{supabase_storage_admin=arwdDxtm/supabase_storage_admin,service_role=arwdDxtm/supabase_storage_admin,authenticated=arwdDxtm/supabase_storage_admin,anon=arwdDxtm/supabase_storage_admin}",
+          "kind": "r",
+          "name": "buckets_analytics",
+          "owner": "supabase_storage_admin",
+          "schema": "storage",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "agentes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "perfiles",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "controles_calidad",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "ajustes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "resultados_calidad",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "competidores",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "proyecto_agentes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "presupuestos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "chats",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "revisiones_orden",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "bandeja_entradas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "mensajes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_vigilancia_resumen",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "gasto_ia_diario",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "ordenes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "estimaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "actividad",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "repositorios",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "tareas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "alertas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "repositorio_subidas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "integraciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "integracion_proyectos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "dominios",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "credenciales_ref",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "archivos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_resumen_proyecto",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_carga_agentes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "configuracion_app",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_copias_destinos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "previews",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "dominios_historial",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "copias_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "copias",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "copias_destinos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "copias_origenes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "resumenes_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_dominios_resumen",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "resumenes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "presupuestos_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "gastos_ia_manuales",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "acciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "plantillas_accion",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_tareas_atencion",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "claves_sistema",
+          "owner": "postgres",
+          "schema": "private",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "infra_dependencias",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}",
+          "kind": "S",
+          "name": "infra_comprobaciones_id_seq",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "plantillas_compilacion",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "compilaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "modelos_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "politica_enrutado",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "firmas_compilacion",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "consumos_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_bandeja_fuentes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "bandeja_fuentes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_compilaciones_ultimas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "gasto_ia_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "cierres_version",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "documentos_nex",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "habilidades",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_gasto_ia_estado",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "habilidades_usos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "personal_documentos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_gasto_ia_mes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_gasto_ia_proyecto_mes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "habilidades_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "guiones_demo",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "locuciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "mesa_intervenciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "voz_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "v",
+          "name": "v_habilidades_resumen",
+          "owner": "postgres",
+          "schema": "public",
+          "options": [
+            "security_invoker=true"
+          ]
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "mesas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "lovable_conexion",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "mesa_valoraciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "oauth_estados",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "ejecucion_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "salud_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "salud_informes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "ejecuciones_orden",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "restauracion_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "salud_proyectos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "restauraciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "avisos_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "avisos_suscripciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "avisos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "asistente_conversaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "asistente_mensajes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "manuales",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "usuarios_acciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "auditoria_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "auditorias",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "portales_cliente",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "usuarios_clientes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "portal_peticiones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "facturacion_clientes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "facturas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "infra_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "infra_servicios",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "horas_registro",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "infra_comprobaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "personal_conversaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "infra_incidencias",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "infra_sincronizacion",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "personal_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "personal_mensajes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "conexiones_externas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "facturacion_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "plaud_grabaciones",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "plaud_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "estilo_reescrituras",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "facturacion_empresas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "proyectos",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "proyectian_sync",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "facturas_evoluteia",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "manuales_config",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=ard/postgres}",
+          "kind": "r",
+          "name": "proveedores_ia",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "peticiones_directas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "peticiones_mensajes",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "altas_permitidas",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "kind": "r",
+          "name": "diccionario_nombres",
+          "owner": "postgres",
+          "schema": "public",
+          "options": null
+        }
+      ],
+      "sequences": [
+        {
+          "max": "9223372036854775807",
+          "min": "1",
+          "name": "infra_comprobaciones_id_seq",
+          "type": "bigint",
+          "cache": "1",
+          "cycle": false,
+          "start": "1",
+          "schema": "public",
+          "increment": "1"
+        }
+      ],
+      "captured_at": "2026-09-07T23:19:40.748079+00:00",
+      "custom_types": [
+        {
+          "kind": "e",
+          "name": "estado_proyecto",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_tarea",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "prioridad",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "modo_ejecucion",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_orden",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "nivel_alerta",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "tipo_actividad",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "autor_mensaje",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "rol_agente",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "entorno",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "tipo_accion",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_accion",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "tipo_proveedor_ia",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "velocidad_modelo",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estrategia_enrutado",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "resultado_ia",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "origen_experto",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_experto",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "momento_control",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "origen_ejecucion_calidad",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_ejecucion_calidad",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "resultado_control",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "semaforo_calidad",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_repositorio",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "origen_codigo_repositorio",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_subida_repositorio",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "estado_ejecucion",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "kind": "e",
+          "name": "semaforo",
+          "owner": "postgres",
+          "schema": "public"
+        }
+      ],
+      "default_grants": [
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "type": "r",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "acl": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}",
+          "type": "S",
+          "owner": "postgres",
+          "schema": "public"
+        },
+        {
+          "acl": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}",
+          "type": "S",
+          "owner": "supabase_admin",
+          "schema": "public"
+        },
+        {
+          "acl": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}",
+          "type": "r",
+          "owner": "supabase_admin",
+          "schema": "public"
+        },
+        {
+          "acl": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}",
+          "type": "f",
+          "owner": "supabase_admin",
+          "schema": "public"
+        },
+        {
+          "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+          "type": "r",
+          "owner": "postgres",
+          "schema": "storage"
+        },
+        {
+          "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "type": "f",
+          "owner": "postgres",
+          "schema": "storage"
+        },
+        {
+          "acl": "{postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}",
+          "type": "S",
+          "owner": "postgres",
+          "schema": "storage"
+        },
+        {
+          "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "type": "f",
+          "owner": "postgres",
+          "schema": "public"
+        }
+      ],
+      "sequence_owners": [
+        {
+          "name": "infra_comprobaciones_id_seq",
+          "schema": "public",
+          "dependency": "i",
+          "table_name": "infra_comprobaciones",
+          "column_name": "id",
+          "table_schema": "public"
+        }
+      ],
+      "edge_settings": {
+        "ordenes-ejecutar": {
+          "verify_jwt": false
+        },
+        "asistente": {
+          "verify_jwt": false
+        },
+        "auditar": {
+          "verify_jwt": false
+        },
+        "avisos": {
+          "verify_jwt": false
+        },
+        "bandeja": {
+          "verify_jwt": false
+        },
+        "barrer-expertos": {
+          "verify_jwt": false
+        },
+        "calidad-github": {
+          "verify_jwt": false
+        },
+        "canva-oauth": {
+          "verify_jwt": true
+        },
+        "compilar-app": {
+          "verify_jwt": false
+        },
+        "comprobar-secretos": {
+          "verify_jwt": false
+        },
+        "copias-generar": {
+          "verify_jwt": false
+        },
+        "copias-restaurar": {
+          "verify_jwt": false
+        },
+        "desplegar-funcion": {
+          "verify_jwt": false
+        },
+        "documentar": {
+          "verify_jwt": false
+        },
+        "dominios-comprobar": {
+          "verify_jwt": false
+        },
+        "ejecutar-accion": {
+          "verify_jwt": true
+        },
+        "facturacion": {
+          "verify_jwt": false
+        },
+        "gasto-ia": {
+          "verify_jwt": false
+        },
+        "github-repos": {
+          "verify_jwt": true
+        },
+        "habilidades": {
+          "verify_jwt": false
+        },
+        "infraestructura": {
+          "verify_jwt": false
+        },
+        "manuales": {
+          "verify_jwt": false
+        },
+        "mesa": {
+          "verify_jwt": false
+        },
+        "personal": {
+          "verify_jwt": false
+        },
+        "pideme": {
+          "verify_jwt": false
+        },
+        "portal-cliente": {
+          "verify_jwt": false
+        },
+        "probar-proveedor": {
+          "verify_jwt": true
+        },
+        "publicar-experto": {
+          "verify_jwt": true
+        },
+        "resumenes": {
+          "verify_jwt": false
+        },
+        "salud": {
+          "verify_jwt": false
+        },
+        "sincronizar-proyectian": {
+          "verify_jwt": false
+        },
+        "usuarios-clientes": {
+          "verify_jwt": false
+        },
+        "vigilar": {
+          "verify_jwt": false
+        },
+        "voz": {
+          "verify_jwt": false
+        }
+      }
+    }
+  }
+]

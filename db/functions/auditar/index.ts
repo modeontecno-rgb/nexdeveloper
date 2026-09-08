@@ -3,6 +3,8 @@
 // repositorio, dependencias, rutas, resultado de salud, controles de calidad, errores) y pasa el auditor (accesibilidad,
 // rendimiento, seguridad, textos, código, datos) con las instrucciones del experto «Auditor jefe y orquestador».
 // Devuelve puntuación, semáforo, hallazgos con solución y abre tareas para que la IA lo arregle. Por tandas reanudable.
+// 0.36.0: el selector de proveedor prueba primero Abacus (RouteLLM), incluido sin coste extra en la suscripción.
+import { fetchIADeUsuario } from "../_shared/presupuesto.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
@@ -61,16 +63,16 @@ async function proveedor(sb: SB, userId: string) {
     const { data: clave } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: prov.id }); if (!clave) continue;
     const { data: ms } = await sb.from("modelos_ia").select("id, identificador, coste_entrada, coste_salida").eq("proveedor_id", prov.id).eq("activo", true).order("calidad", { ascending: false }).limit(3);
     const mo = (ms ?? []).find((x) => !/image|tts|whisper|embed/i.test(x.identificador)) ?? null;
-    return { slug, clave: String(clave), modelo: mo?.identificador ?? (slug === "anthropic" ? "claude-sonnet-4-5" : slug === "google" ? "gemini-2.5-flash" : slug === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini"), modelo_id: mo?.id ?? null, ce: Number(mo?.coste_entrada ?? 3), cs: Number(mo?.coste_salida ?? 15) };
+    return { slug, clave: String(clave), modelo: mo?.identificador ?? (slug === "abacus" ? "route-llm" : slug === "anthropic" ? "claude-sonnet-4-5" : slug === "google" ? "gemini-2.5-flash" : slug === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini"), modelo_id: mo?.id ?? null, ce: Number(mo?.coste_entrada ?? 3), cs: Number(mo?.coste_salida ?? 15) };
   }
   return null;
 }
-async function preguntar(p: any, sistema: string, pregunta: string) {
-  if (p.slug === "anthropic") { const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: 5000, system: sistema, messages: [{ role: "user", content: pregunta }] }) }); const j = await r.json(); if (!r.ok) throw new Error(`Anthropic ${r.status}: ${String(j?.error?.message ?? "").slice(0, 160)}`); return { texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 }; }
-  if (p.slug === "google") { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: 5000, responseMimeType: "application/json" } }) }); const j = await r.json(); if (!r.ok) throw new Error(`Google ${r.status}`); return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 }; }
-  const base = p.slug === "groq" ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1";
-  const r = await fetch(`${base}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: 5000, temperature: 0.2, response_format: { type: "json_object" }, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
-  const j = await r.json(); if (!r.ok) throw new Error(`${p.slug} ${r.status}`); return { texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
+async function preguntar(sb: SB, userId: string, proyectoId: string | null, p: any, sistema: string, pregunta: string) {
+  if (p.slug === "anthropic") { const r = await fetchIADeUsuario(sb, userId, proyectoId, "auditar", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: 5000, system: sistema, messages: [{ role: "user", content: pregunta }] }) }); const j = await r.json(); if (!r.ok) throw new Error(`Anthropic ${r.status}: ${String(j?.error?.message ?? "").slice(0, 160)}`); return { coste: Number(j._nex_coste_eur), texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 }; }
+  if (p.slug === "google") { const r = await fetchIADeUsuario(sb, userId, proyectoId, "auditar", `https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: 5000, responseMimeType: "application/json" } }) }); const j = await r.json(); if (!r.ok) throw new Error(`Google ${r.status}`); return { coste: Number(j._nex_coste_eur), texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 }; }
+  const base = p.slug === "groq" ? "https://api.groq.com/openai/v1" : p.slug === "abacus" ? "https://routellm.abacus.ai/v1" : "https://api.openai.com/v1";
+  const r = await fetchIADeUsuario(sb, userId, proyectoId, "auditar", `${base}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: 5000, temperature: 0.2, response_format: { type: "json_object" }, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+  const j = await r.json(); if (!r.ok) throw new Error(`${p.slug} ${r.status}`); return { coste: Number(j._nex_coste_eur), texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
 }
 const extraerJson = (t: string) => { const m = t.match(/```json\s*([\s\S]*?)```/) ?? t.match(/(\{[\s\S]*\})/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } };
 async function config(sb: SB, userId: string) {
@@ -93,9 +95,9 @@ async function auditar(sb: SB, a: any) {
     const areas = Object.entries(cfg.areas ?? {}).filter(([, v]) => v).map(([k]) => k);
     const sistema = `${await instruccionesAuditor(sb, a.user_id)}\n\nAuditas para Javier (Soluciones EvoluteIA S.L.). Respondes SIEMPRE en español de España y SOLO con JSON válido. Sé concreto: cada hallazgo debe decir dónde está (archivo, pantalla o tabla) y cómo arreglarlo en 1-3 frases que un desarrollador o la IA puedan ejecutar. No inventes archivos que no aparezcan en el material.`;
     const pregunta = `PROYECTO: ${JSON.stringify(material.proyecto)}\nESTRUCTURA: ${JSON.stringify(material.estructura)}\nRUTAS: ${JSON.stringify(material.rutas)}\nDEPENDENCIAS: ${JSON.stringify(material.dependencias)}\nSALUD (Supabase): ${JSON.stringify(material.salud)}\nCONTROLES DE CALIDAD: ${JSON.stringify(material.calidad)}\nARCHIVOS CLAVE (recortados):\n${Object.entries(material.archivos).map(([f, t]) => `--- ${f}\n${t}`).join("\n").slice(0, 60000)}\n\nÁreas a auditar: ${areas.join(", ")}. Devuelve JSON: {"puntuacion": 0-100, "semaforo": "verde|ambar|rojo", "resumen": "3-4 frases para Javier", "puntuaciones": {${areas.map((x) => `"${x}": 0-100`).join(", ")}}, "hallazgos": [{"area": "${areas.join("|")}", "severidad": "critica|alta|media|baja", "titulo": "…", "detalle": "…", "donde": "archivo/pantalla/tabla", "solucion": "…"}]} (máximo ${cfg.max_hallazgos_por_proyecto ?? 12} hallazgos, ordenados por severidad).`;
-    const r = await preguntar(prov, sistema, pregunta);
-    const c = (r.te * prov.ce + r.ts * prov.cs) / 1_000_000;
-    await sb.from("consumos_ia").insert({ user_id: a.user_id, proyecto_id: a.proyecto_id, modelo_id: prov.modelo_id, tokens_entrada: r.te, tokens_salida: r.ts, coste: c, resultado: "ok" }).then(() => {}, () => {});
+    const r = await preguntar(sb, a.user_id, a.proyecto_id, prov, sistema, pregunta);
+    const c = r.coste;
+
     const j = extraerJson(r.texto); if (!j) throw new Error("El auditor no devolvió un resultado válido");
     const hallazgos: any[] = (j.hallazgos ?? []).slice(0, Number(cfg.max_hallazgos_por_proyecto ?? 12));
     let tareas = 0;

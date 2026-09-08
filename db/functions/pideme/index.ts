@@ -9,6 +9,7 @@
 // Plaud: conexión OAuth (PKCE, registro dinámico) con el servidor MCP de Plaud, importación de grabaciones (manual y cada 30 min)
 // y procesado por el mismo clasificador. Nada personal se guarda en los proyectos ni en Proyectian.
 // 0.36.1: la prueba de conexión con Plaud pedía list_files con page_size 5 y la API exige un mínimo de 10 → salía en rojo estando bien.
+import { fetchIADeUsuario } from "../_shared/presupuesto.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
@@ -30,7 +31,7 @@ const quedaTiempo = (ms = 95_000) => Date.now() - INICIO < ms;
 // ---------- IA ----------
 type Prov = { slug: string; nombre: string; clave: string; modelo: string; modelo_id: string | null; ce: number; cs: number; calidad: number };
 async function proveedoresDisponibles(sb: SB, userId: string): Promise<Prov[]> {
-  const { data: provs } = await sb.from("proveedores_ia").select("id, nombre, clave_slug, clave_cifrada").eq("user_id", userId).eq("activo", true).not("clave_cifrada", "is", null).in("clave_slug", ["abacus", "anthropic", "openai", "google", "groq", "mistral", "deepseek", "xai", "openrouter"]);
+  const { data: provs } = await sb.from("proveedores_ia").select("id, nombre, clave_slug, clave_cifrada").eq("user_id", userId).eq("activo", true).not("clave_cifrada", "is", null).in("clave_slug", ["anthropic", "openai", "google", "groq", "mistral", "deepseek", "xai", "openrouter"]);
   const out: Prov[] = [];
   for (const p of provs ?? []) {
     const { data: clave } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: p.id }); if (!clave) continue;
@@ -38,24 +39,24 @@ async function proveedoresDisponibles(sb: SB, userId: string): Promise<Prov[]> {
     const m = (modelos ?? []).find((x) => !/image|imagen|tts|whisper|embed/i.test(x.identificador)); if (!m) continue;
     out.push({ slug: p.clave_slug, nombre: p.nombre, clave: String(clave), modelo: m.identificador, modelo_id: m.id, ce: Number(m.coste_entrada ?? 0), cs: Number(m.coste_salida ?? 0), calidad: Number(m.calidad ?? 3) });
   }
-  return out.sort((a, b) => (a.slug === "abacus" ? -1 : b.slug === "abacus" ? 1 : a.slug === "anthropic" ? -1 : b.slug === "anthropic" ? 1 : b.calidad - a.calidad));
+  return out.sort((a, b) => (a.slug === "anthropic" ? -1 : b.slug === "anthropic" ? 1 : b.calidad - a.calidad));
 }
 const coste = (p: Prov, te: number, ts: number) => Number(((te * p.ce + ts * p.cs) / 1_000_000).toFixed(4));
-async function llamar(p: Prov, sistema: string, pregunta: string, maxTokens = 2500, jsonMode = false) {
+async function llamar(sb: SB, userId: string, proyectoId: string | null, p: Prov, sistema: string, pregunta: string, maxTokens = 2500, jsonMode = false) {
   if (p.slug === "anthropic") {
-    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
+    const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
     if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
-    return { texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 };
+    return { coste: Number(j._nex_coste_eur), texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 };
   }
   if (p.slug === "google") {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2, ...(jsonMode ? { responseMimeType: "application/json" } : {}) } }) });
+    const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", `https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2, ...(jsonMode ? { responseMimeType: "application/json" } : {}) } }) });
     if (!r.ok) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
-    return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 };
+    return { coste: Number(j._nex_coste_eur), texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 };
   }
   const bases: Record<string, string> = { abacus: "https://routellm.abacus.ai/v1", openai: "https://api.openai.com/v1", groq: "https://api.groq.com/openai/v1", mistral: "https://api.mistral.ai/v1", deepseek: "https://api.deepseek.com/v1", xai: "https://api.x.ai/v1", openrouter: "https://openrouter.ai/api/v1" };
-  const r = await fetch(`${bases[p.slug]}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.2, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+  const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", `${bases[p.slug]}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.2, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
   if (!r.ok) throw new Error(`${p.slug} ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
-  return { texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
+  return { coste: Number(j._nex_coste_eur), texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
 }
 const extraerJson = (t: string) => {
   const m = t.match(/```json\s*([\s\S]*?)```/) ?? t.match(/```\s*([\s\S]*?)```/) ?? t.match(/(\{[\s\S]*\})/);
@@ -72,7 +73,6 @@ const extraerJson = (t: string) => {
   }
   return null;
 };
-async function anotar(sb: SB, userId: string, p: Prov, te: number, ts: number, proyectoId: string | null) { if (p.modelo_id) await sb.from("consumos_ia").insert({ user_id: userId, proyecto_id: proyectoId, modelo_id: p.modelo_id, tokens_entrada: te, tokens_salida: ts, coste: coste(p, te, ts), resultado: "ok" }).then(() => {}, () => {}); return coste(p, te, ts); }
 
 // ---------- Clasificación ----------
 const normalizar = (s: string) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -92,7 +92,7 @@ async function clasificar(sb: SB, userId: string, texto: string, provs: Prov[], 
     const lista = (ps ?? []).map((p) => `- ${p.nombre} (id ${p.id}): ${(p.descripcion ?? "").slice(0, 120)}${p.alias?.length ? ` · alias: ${p.alias.join(", ")}` : ""}`).join("\n");
     const sistema = `Eres el clasificador de peticiones de NexDeveloper (centro de control de los proyectos de software de Javier). Devuelves SOLO JSON.`;
     const preg = `Proyectos de Javier:\n${lista}\n\nPetición (puede venir de una grabación de voz, con muletillas):\n"""${texto.slice(0, 6000)}"""\n\nReglas: si Javier dice «a nivel personal», «es personal» o la petición no tiene nada que ver con ningún proyecto (salud, viajes, compras, familia, cultura, dudas generales…), destino = "personal". Si nombra o alude claramente a un proyecto, destino = "proyecto" con su id. tipo: "consulta" (pregunta o quiere información/opinión), "modificacion" (pide cambiar, añadir, quitar, mejorar, arreglar algo de la app), "tareas" (dicta cosas por hacer). Devuelve JSON: {"destino":"proyecto|personal","proyecto_id":"uuid o null","proyecto_nombre":"…","confianza":0-1,"tipo":"consulta|modificacion|tareas|personal","titulo":"título corto (3-8 palabras) para el chat","motivo":"una frase","tareas":[{"titulo":"…","descripcion":"…","prioridad":"baja|media|alta"}] (solo si tipo=tareas),"resumen":"resumen limpio de lo pedido en 2-4 frases"}`;
-    try { const r = await llamar(p0, sistema, preg, 900, true); await anotar(sb, userId, p0, r.te, r.ts, null); clasificacion = extraerJson(r.texto) ?? JSON.parse(r.texto); } catch { clasificacion = null; }
+    try { const r = await llamar(sb, userId, null, p0, sistema, preg, 900, true); r.coste; clasificacion = extraerJson(r.texto) ?? JSON.parse(r.texto); } catch { clasificacion = null; }
   }
   if (!clasificacion) {
     clasificacion = candidatos.length && !personalExplicito ? { destino: "proyecto", proyecto_id: candidatos[0].p.id, proyecto_nombre: candidatos[0].p.nombre, confianza: 0.6, tipo: /\b(cambia|anade|añade|quita|mejora|arregla|modifica|pon|crea|implementa)\b/.test(t) ? "modificacion" : "consulta", titulo: texto.slice(0, 60), motivo: "Coincidencia por nombre", resumen: texto.slice(0, 400) } : { destino: "personal", proyecto_id: null, confianza: 0.5, tipo: "personal", titulo: texto.slice(0, 60), motivo: "Sin proyecto reconocido", resumen: texto.slice(0, 400) };
@@ -145,30 +145,28 @@ async function proponer(sb: SB, userId: string, provs: Prov[], proyectoId: strin
     const ex = (expertos ?? []).find((e) => a.slugs.includes(e.slug));
     const sistema = `${ex?.instrucciones ? ex.instrucciones.slice(0, 5000) : `Eres ${a.persona}.`}\n\nRevisas una modificación pedida para un proyecto de software desde el punto de vista de tu área («${a.area}»). Español de España, concreto, máximo 250 palabras. Devuelve SOLO JSON: {"observaciones":["…"],"riesgos":["…"],"requisitos":["qué debe cumplir la implementación"],"veredicto":"adelante|adelante con cambios|no recomendable","cambios_sugeridos":"texto breve o vacío"}`;
     const p = a.area.startsWith("Programación") || a.area.startsWith("Seguridad") ? mejor : barato;
-    try { const r = await llamar(p, sistema, base, 900, true); costeTotal += await anotar(sb, userId, p, r.te, r.ts, proyectoId); const j = extraerJson(r.texto) ?? { observaciones: [r.texto.slice(0, 500)], riesgos: [], requisitos: [], veredicto: "adelante" }; revisiones.push({ area: a.area, experto: ex?.nombre ?? a.persona, proveedor: p.slug, modelo: p.modelo, ...j }); }
+    try { const r = await llamar(sb, userId, proyectoId, p, sistema, base, 900, true); costeTotal += r.coste; const j = extraerJson(r.texto) ?? { observaciones: [r.texto.slice(0, 500)], riesgos: [], requisitos: [], veredicto: "adelante" }; revisiones.push({ area: a.area, experto: ex?.nombre ?? a.persona, proveedor: p.slug, modelo: p.modelo, ...j }); }
     catch (e) { revisiones.push({ area: a.area, experto: ex?.nombre ?? a.persona, error: String(e?.message ?? e).slice(0, 150), observaciones: [], riesgos: [], requisitos: [], veredicto: "sin revisar" }); }
   }
   // Auditor jefe: síntesis y plan
   const jefe = (expertos ?? []).find((e) => e.slug === "auditor-jefe-orquestador");
   const sistemaS = `${jefe?.instrucciones ? jefe.instrucciones.slice(0, 5000) : "Eres el Auditor jefe y orquestador: director de QA y Tech Lead."}\n\nRecibes la petición de Javier y las revisiones de cada área. Redacta la PROPUESTA final para que Javier la apruebe o la rechace. Español de España. Sé conciso: la respuesta completa debe caber en 1500 palabras. Devuelve SOLO JSON (sin texto antes ni después): {"sintesis":"5-8 frases: qué se va a hacer, qué cambia para el usuario y qué han dicho las áreas","funcionalidades":[{"titulo":"…","descripcion":"una frase","prioridad":"alta|media|baja"}],"plan":[{"orden":1,"titulo":"…","descripcion":"…","responsable":"Lovable|Claude|Javier","horas":1}],"requisitos_obligatorios":["lo que las áreas exigen"],"riesgos":["…"],"decisiones_para_javier":["preguntas que solo él puede responder, si las hay"],"horas_estimadas":0,"coste_estimado_eur":0,"riesgo":"bajo|medio|alto","recomendacion":"aprobar|aprobar con cambios|no hacer","orden_para_la_ia":"texto completo y preciso de la orden que se enviará a la IA constructora si Javier aprueba, con todos los requisitos de las áreas incorporados"}`;
   const pregS = `${base}\n\nREVISIONES POR ÁREA:\n${revisiones.map((r) => `[${r.area} · ${r.experto}] veredicto: ${r.veredicto}\n- Observaciones: ${(r.observaciones ?? []).join(" | ")}\n- Riesgos: ${(r.riesgos ?? []).join(" | ")}\n- Requisitos: ${(r.requisitos ?? []).join(" | ")}${r.cambios_sugeridos ? `\n- Cambios sugeridos: ${r.cambios_sugeridos}` : ""}`).join("\n\n")}`;
-  const s = await llamar(mejor, sistemaS, pregS, 7000, true); costeTotal += await anotar(sb, userId, mejor, s.te, s.ts, proyectoId);
+  const s = await llamar(sb, userId, proyectoId, mejor, sistemaS, pregS, 7000, true); costeTotal += s.coste;
   const j = extraerJson(s.texto) ?? { sintesis: s.texto.slice(0, 1500), plan: [], riesgos: [], recomendacion: "aprobar con cambios", orden_para_la_ia: peticion };
   return { ...j, revisiones, coste: Number(costeTotal.toFixed(4)), areas: areas.map((a) => a.area) };
 }
 
 // ---------- Enrutado ----------
 async function procesarPeticion(sb: SB, userId: string, peticionId: string) {
-  const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", peticionId).single();
+  const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", peticionId).eq("user_id", userId).single();
   if (!pet) throw new Error("Petición no encontrada");
   const provs = await proveedoresDisponibles(sb, userId);
-  let forzar: string | null = pet.proyecto_id ?? null;
-  if (!forzar) {
-    // Si viene de un borrador revisado en el que Javier eligió proyecto, respetarlo (el borrador se lanzó hace un momento y su texto es el inicio de esta petición)
-    const { data: bor } = await sb.from("peticiones_directas").select("id, texto, proyecto_id").eq("user_id", userId).eq("estado", "lanzada").not("proyecto_id", "is", null).gte("lanzada_el", new Date(Date.now() - 10 * 60_000).toISOString()).order("lanzada_el", { ascending: false }).limit(5);
-    const b = (bor ?? []).find((x: any) => x.texto && String(pet.texto).startsWith(String(x.texto).slice(0, 200)));
-    if (b) forzar = b.proyecto_id;
-  }
+  // No keyword classifier may transfer professional content to Personal.
+  const forzar: string | null = pet.proyecto_id ?? null;
+  if (!forzar) throw new Error("Elige un proyecto antes de procesar. Personal se abre por separado.");
+  const {data: autorizado,error: errorProyecto}=await sb.from("proyectos").select("id").eq("id",forzar).eq("user_id",userId).single();
+  if(errorProyecto || !autorizado) throw new Error("Proyecto no autorizado");
   const c = await clasificar(sb, userId, pet.texto, provs, forzar);
   await sb.from("peticiones_directas").update({ clasificacion: c, destino: c.destino, proyecto_id: c.destino === "proyecto" ? c.proyecto_id : null, estado: "clasificada", actualizado_el: ahora() }).eq("id", pet.id);
   const salida: any = { clasificacion: c };
@@ -205,9 +203,9 @@ async function procesarPeticion(sb: SB, userId: string, peticionId: string) {
         // Consulta: respuesta con contexto del proyecto
         if (!provs.length) throw new Error("No hay proveedor de IA con clave");
         const p = provs[0]; const ctx = await contextoProyecto(sb, userId, proyectoId);
-        const r = await llamar(p, `Eres el asistente de NexDeveloper para el proyecto ${c.proyecto_nombre}. Respondes a Javier en español de España, con datos del contexto; si no sabes algo, dilo y propón cómo averiguarlo.\n\nCONTEXTO:\n${ctx}`, pet.texto, 1800);
-        await anotar(sb, userId, p, r.te, r.ts, proyectoId);
-        await sb.from("mensajes").insert({ user_id: userId, chat_id: chat!.id, proyecto_id: proyectoId, autor: "agente", texto: r.texto, tokens_entrada: r.te, tokens_salida: r.ts, coste: coste(p, r.te, r.ts) });
+        const r = await llamar(sb, userId, proyectoId, p, `Eres el asistente de NexDeveloper para el proyecto ${c.proyecto_nombre}. Respondes a Javier en español de España, con datos del contexto; si no sabes algo, dilo y propón cómo averiguarlo.\n\nCONTEXTO:\n${ctx}`, pet.texto, 1800);
+        r.coste;
+        await sb.from("mensajes").insert({ user_id: userId, chat_id: chat!.id, proyecto_id: proyectoId, autor: "agente", texto: r.texto, tokens_entrada: r.te, tokens_salida: r.ts, coste: r.coste });
         await sb.from("peticiones_directas").update({ chat_id: chat!.id, respuesta: r.texto, estado: "respondida", actualizado_el: ahora() }).eq("id", pet.id);
         salida.respuesta = r.texto;
       }
@@ -349,12 +347,15 @@ Deno.serve(async (req) => {
       case "estado": {
         const { data: con } = await sb.from("conexiones_externas").select("estado, cuenta, ultimo_error, ultima_comprobacion").eq("user_id", userId).eq("proveedor", "plaud").maybeSingle();
         const cfg = await plaudConfig(sb, userId);
-        const { data: pets } = await sb.from("peticiones_directas").select("id, texto, origen, destino, proyecto_id, chat_id, conversacion_id, estado, clasificacion, respuesta, propuesta, error, creado_el, proyectos(nombre, color)").eq("user_id", userId).order("creado_el", { ascending: false }).limit(60);
+        const { data: pets } = await sb.from("peticiones_directas").select("id, texto, origen, destino, proyecto_id, chat_id, conversacion_id, estado, clasificacion, respuesta, propuesta, error, creado_el, proyectos!peticiones_directas_proyecto_id_fkey(nombre, color)").eq("user_id", userId).order("creado_el", { ascending: false }).limit(60);
         const { data: grabs } = await sb.from("plaud_grabaciones").select("id, plaud_id, nombre, fecha, duracion_seg, resumen, estado, destino, proyecto_id, tareas_creadas, error, importada_el, peticion_id").eq("user_id", userId).order("fecha", { ascending: false }).limit(60);
         const provs = await proveedoresDisponibles(sb, userId);
         return json({ ok: true, plaud: con ?? { estado: "desconectada" }, plaud_config: cfg, peticiones: pets ?? [], grabaciones: grabs ?? [], ia: provs.map((p) => p.slug), propuestas_pendientes: (pets ?? []).filter((p) => p.estado === "propuesta").length });
       }
       case "pedir": {
+        if (!cuerpo.proyecto_id) return json({ok:false,error:"Selecciona un proyecto. Para asuntos personales, abre Personal."},400);
+        const {data: destinoAutorizado,error: errorDestino}=await sb.from("proyectos").select("id").eq("id",String(cuerpo.proyecto_id)).eq("user_id",userId).single();
+        if(errorDestino || !destinoAutorizado) return json({ok:false,error:"Proyecto no autorizado"},403);
         const texto = String(cuerpo.texto ?? "").trim(); if (texto.length < 3) return json({ ok: false, error: "Dime qué quieres" }, 400);
         const { data: pet } = await sb.from("peticiones_directas").insert({ user_id: userId, texto, origen: cuerpo.origen === "voz" ? "voz" : "texto", proyecto_id: cuerpo.proyecto_id ? String(cuerpo.proyecto_id) : null }).select("id").single();
         const r = await procesarPeticion(sb, userId, pet!.id);
@@ -362,6 +363,9 @@ Deno.serve(async (req) => {
         return json({ ok: true, peticion: fin, ...r });
       }
       case "reclasificar": {
+        if (cuerpo.destino !== "proyecto" || !cuerpo.proyecto_id) return json({ok:false,error:"Abre Personal para iniciar una conversación allí; no se trasladan automáticamente textos profesionales."},400);
+        const {data: proyectoDestino,error: errorDestino}=await sb.from("proyectos").select("id").eq("id",String(cuerpo.proyecto_id)).eq("user_id",userId).single();
+        if(errorDestino || !proyectoDestino) return json({ok:false,error:"Proyecto no autorizado"},403);
         // Javier corrige el destino: {peticion_id, destino: 'proyecto'|'personal', proyecto_id?}
         const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", String(cuerpo.peticion_id)).eq("user_id", userId).single();
         if (!pet) return json({ ok: false, error: "Petición no encontrada" }, 404);
@@ -374,14 +378,13 @@ Deno.serve(async (req) => {
         return json({ ok: true, peticion_id: nueva!.id, ...r });
       }
       case "aprobar_propuesta": {
-        const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", String(cuerpo.peticion_id)).eq("user_id", userId).single();
-        if (!pet || pet.estado !== "propuesta") return json({ ok: false, error: "No hay propuesta pendiente" }, 400);
-        const prop = pet.propuesta ?? {}; const textoOrden = String(cuerpo.orden ?? prop.orden_para_la_ia ?? pet.texto);
-        const { data: o } = await sb.from("ordenes").insert({ user_id: userId, proyecto_id: pet.proyecto_id, chat_id: pet.chat_id, texto: textoOrden, modo: "equilibrado", prioridad: "media", estado: "aprobada", ejecutar_con: cuerpo.ejecutar_con ?? "auto", horas_estimadas: prop.horas_estimadas ?? null, coste_estimado: prop.coste_estimado_eur ?? null, riesgo: prop.riesgo ?? null, requiere_aprobacion: false, comentario: `Propuesta aprobada por Javier desde «Pídeme qué quieres» (${(prop.areas ?? []).length} áreas revisadas)`, resuelta_el: ahora(), resuelta_por: "Javier" }).select("id").single();
-        await sb.from("peticiones_directas").update({ orden_id: o?.id ?? null, estado: "aprobada", actualizado_el: ahora() }).eq("id", pet.id);
-        await sb.from("tareas").update({ estado: "completada", completada_el: ahora(), requiere_atencion: false }).eq("user_id", userId).ilike("titulo", `Aprobar propuesta: ${String(pet.clasificacion?.titulo ?? "—").slice(0, 40)}%`).in("estado", ["pendiente", "esperando_revision"]).then(() => {}, () => {});
-        if (pet.chat_id) await sb.from("mensajes").insert({ user_id: userId, chat_id: pet.chat_id, proyecto_id: pet.proyecto_id, autor: "sistema", texto: `Propuesta aprobada. Orden creada para la IA (${o?.id}).` });
-        return json({ ok: true, orden_id: o?.id });
+        const { data: ordenId, error } = await sb.rpc("aprobar_propuesta_atomica", {
+          p_user_id: userId, p_peticion_id: String(cuerpo.peticion_id),
+          p_texto: cuerpo.orden == null ? null : String(cuerpo.orden),
+          p_motor: String(cuerpo.ejecutar_con ?? "auto"),
+        });
+        if (error || !ordenId) return json({ ok: false, error: "No se ha aprobado la propuesta. Comprueba el proyecto y vuelve a intentarlo." }, 409);
+        return json({ ok: true, orden_id: ordenId });
       }
       case "rechazar_propuesta": {
         await sb.from("peticiones_directas").update({ estado: "descartada", respuesta: cuerpo.motivo ? `Rechazada: ${cuerpo.motivo}` : "Rechazada", actualizado_el: ahora() }).eq("id", String(cuerpo.peticion_id)).eq("user_id", userId);
@@ -445,7 +448,7 @@ Deno.serve(async (req) => {
 // Procesar con clasificación forzada (corrección de Javier)
 async function procesarForzada(sb: SB, userId: string, peticionId: string, c: any) {
   // Reutiliza procesarPeticion parcheando el clasificador: guardamos la clasificación y llamamos a la rama correspondiente
-  const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", peticionId).single();
+  const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", peticionId).eq("user_id", userId).single();
   const provs = await proveedoresDisponibles(sb, userId);
   await sb.from("peticiones_directas").update({ clasificacion: c, destino: c.destino, proyecto_id: c.destino === "proyecto" ? c.proyecto_id : null, estado: "clasificada" }).eq("id", peticionId);
   const salida: any = { clasificacion: c };
@@ -465,8 +468,8 @@ async function procesarForzada(sb: SB, userId: string, peticionId: string, c: an
     return { ...salida, chat_id: chat!.id, propuesta: prop, url: `/proyectos/${proyectoId}?chat=${chat!.id}` };
   }
   const p = provs[0]; if (!p) throw new Error("Sin proveedor de IA");
-  const r = await llamar(p, `Eres el asistente de NexDeveloper para el proyecto ${c.proyecto_nombre}. Español de España.\n\nCONTEXTO:\n${await contextoProyecto(sb, userId, proyectoId)}`, pet!.texto, 1800);
-  await anotar(sb, userId, p, r.te, r.ts, proyectoId);
+  const r = await llamar(sb, userId, proyectoId, p, `Eres el asistente de NexDeveloper para el proyecto ${c.proyecto_nombre}. Español de España.\n\nCONTEXTO:\n${await contextoProyecto(sb, userId, proyectoId)}`, pet!.texto, 1800);
+  r.coste;
   await sb.from("mensajes").insert({ user_id: userId, chat_id: chat!.id, proyecto_id: proyectoId, autor: "agente", texto: r.texto });
   await sb.from("peticiones_directas").update({ chat_id: chat!.id, respuesta: r.texto, estado: "respondida", actualizado_el: ahora() }).eq("id", peticionId);
   return { ...salida, chat_id: chat!.id, respuesta: r.texto, url: `/proyectos/${proyectoId}?chat=${chat!.id}` };

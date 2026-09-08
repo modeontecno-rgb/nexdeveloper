@@ -1,3 +1,4 @@
+import {EntregasOrden} from '@/components/nex/entregas-orden';
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   CheckCircle2,
@@ -171,6 +172,7 @@ function PantallaEjecucion() {
                 ejecucion={e}
                 proyecto={nombreProyecto(e.proyecto_id)}
                 onDetalle={() => abrir(e.id)}
+                onReintentada={abrir}
               />
             ))}
           </div>
@@ -551,10 +553,12 @@ function TarjetaEjecucion({
   ejecucion,
   proyecto,
   onDetalle,
+  onReintentada,
 }: {
   ejecucion: EjecucionOrdenRow;
   proyecto: string;
   onDetalle: () => void;
+  onReintentada:(id:string)=>void;
 }) {
   const sondear = useSondear();
   const aprobar = useAprobarPublicar();
@@ -592,6 +596,7 @@ function TarjetaEjecucion({
 
       <div className="mt-3">
         <LineaPasos estado={ejecucion.estado} />
+        {ejecucion.orden_id&&ejecucion.proyecto_id?<EntregasOrden ordenId={ejecucion.orden_id} proyectoId={ejecucion.proyecto_id} />:null}
       </div>
 
       {ejecucion.error ? <p className="mt-2 text-xs text-destructive">{ejecucion.error}</p> : null}
@@ -620,7 +625,7 @@ function TarjetaEjecucion({
           </>
         ) : null}
         {ejecucion.estado === "error" ? (
-          <Boton variante="suave" onClick={() => reintentar.mutate(ejecucion.id)} className="px-2.5 py-1 text-xs">
+          <Boton variante="suave" onClick={() => reintentar.mutate(ejecucion.id,{onSuccess:r=>onReintentada(r.ejecucion.id)})} className="px-2.5 py-1 text-xs">
             <RotateCcw className="size-3.5" /> Reintentar
           </Boton>
         ) : null}
@@ -629,15 +634,15 @@ function TarjetaEjecucion({
       {ejecucion.estado === "esperando_aprobacion" ? (
         <div className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3">
           <p className="text-xs text-warning">
-            El trabajo está listo. Revísalo en la vista previa y decide si se publica.
+            {ejecucion.resultado_pendiente?"El resultado está conservado. Adjunta las entregas pendientes y comprueba de nuevo; no se repite la construcción ni la publicación.":"El trabajo está listo. Revísalo en la vista previa y decide si se publica."}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Boton
-              onClick={() => aprobar.mutate(ejecucion.id)}
-              disabled={aprobar.isPending}
+              onClick={() => ejecucion.resultado_pendiente?sondear.mutate(ejecucion.id):aprobar.mutate(ejecucion.id)}
+              disabled={aprobar.isPending||sondear.isPending}
               className="bg-success text-white hover:opacity-90"
             >
-              <CheckCircle2 className="size-4" /> Aprobar y publicar
+              <CheckCircle2 className="size-4" /> {ejecucion.resultado_pendiente?"Comprobar entregas y finalizar":"Aprobar y publicar"}
             </Boton>
             <Boton variante="peligro" onClick={() => setRechazando(true)}>
               <ThumbsDown className="size-4" /> Rechazar
@@ -712,6 +717,7 @@ function DetalleEjecucion({
     >
       <div className="space-y-4 text-sm">
         <LineaPasos estado={ejecucion.estado} />
+        {ejecucion.orden_id&&ejecucion.proyecto_id?<EntregasOrden ordenId={ejecucion.orden_id} proyectoId={ejecucion.proyecto_id} />:null}
 
         {ejecucion.resumen ? (
           <div

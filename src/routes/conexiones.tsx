@@ -1,3 +1,4 @@
+import {IntercambioProyectian} from '@/components/nex/intercambio-proyectian';
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Lock, RefreshCw } from "lucide-react";
 import * as React from "react";
@@ -166,7 +167,7 @@ function Conexiones() {
     <>
       <Encabezado
         titulo="Conexiones"
-        descripcion="Todo lo de fuera que usa NexDeveloper, comprobado de verdad cada 10 minutos"
+        descripcion="Conexiones externas y fecha de su última comprobación"
         acciones={
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted-foreground">
@@ -189,6 +190,7 @@ function Conexiones() {
           </div>
         }
       />
+      <IntercambioProyectian/>
 
       <div className="panel mb-6 flex items-start gap-3 p-4 text-sm">
         <Lock className="mt-0.5 size-4 shrink-0 text-primary" />

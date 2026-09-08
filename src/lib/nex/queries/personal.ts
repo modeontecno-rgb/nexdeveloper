@@ -31,6 +31,8 @@ export const ETIQUETA_MODO_PERSONAL: Record<ModoPersonal, string> = {
 };
 
 export const ETIQUETA_MODO_REESCRITURA: Record<ModoReescritura, string> = {
+  desactivado: "Desactivado - conservar original",
+  natural: "Natural y claro",
   mi_voz: "Mi voz",
   marca: "Guía de un proyecto",
   tutor: "Tutor de redacción",
@@ -180,6 +182,7 @@ function useInvalidar() {
     void queryClient.invalidateQueries({ queryKey: ["personal_mensajes"] });
     void queryClient.invalidateQueries({ queryKey: clavesPersonal.documentos });
     void queryClient.invalidateQueries({ queryKey: clavesPersonal.estado });
+    void queryClient.invalidateQueries({queryKey:['personal_memoria_historial']});
   };
 }
 

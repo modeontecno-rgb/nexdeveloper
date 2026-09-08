@@ -44,7 +44,6 @@ import {
   useCierresVersion,
   useDocumentosProyecto,
   useEnlaceDescarga,
-  usePingDocumentar,
   usePrepararCierre,
   useSubirDocumento,
   type DatosCierre,
@@ -52,7 +51,8 @@ import {
 } from "@/lib/nex/queries/documentacion";
 
 export const Route = createFileRoute("/documentacion")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): {proyecto?:string|undefined;pestana?:"documentos"|undefined} => ({
+    pestana: search["pestana"] === "documentos" ? "documentos" as const : undefined,
     proyecto: typeof search["proyecto"] === "string" ? (search["proyecto"] as string) : undefined,
   }),
   head: () => ({
@@ -151,22 +151,15 @@ ${lista("Detalle técnico", datos.tecnico)}
 }
 
 function PantallaDocumentacion() {
-  const { proyecto: proyectoBuscado } = Route.useSearch();
-  const [pestana, setPestana] = React.useState<"cerrar" | "historial" | "documentos">("cerrar");
-  const { data: ping } = usePingDocumentar();
+  const { proyecto: proyectoBuscado,pestana:pestanaBuscada } = Route.useSearch();
+  const [pestana, setPestana] = React.useState<"cerrar" | "historial" | "documentos">(pestanaBuscada??"cerrar");
 
   return (
     <>
       <Encabezado
         titulo="Documentación"
         descripcion="Cierra cada versión con su hoja de cambios y guarda los documentos de tus proyectos en el almacén propio."
-        acciones={
-          <div className="flex flex-wrap gap-2 text-xs">
-            <Semaforito activo={Boolean(ping?.almacen)} texto="Almacén" />
-            <Semaforito activo={Boolean(ping?.proyectian)} texto="Proyectian" />
-            <Semaforito activo={Boolean(ping?.github)} texto="GitHub" />
-          </div>
-        }
+
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -199,23 +192,11 @@ function PantallaDocumentacion() {
   );
 }
 
-function Semaforito({ activo, texto }: { activo: boolean; texto: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
-        activo ? "border-success/40 bg-success/10 text-success" : "border-warning/40 bg-warning/10 text-warning"
-      }`}
-    >
-      <span className="size-1.5 rounded-full bg-current" />
-      {texto}
-    </span>
-  );
-}
-
 function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefined }) {
   const { data: proyectos = [] } = useProyectos();
   const preparar = usePrepararCierre();
   const cerrar = useCerrarVersion();
+  const descargarPDF = useEnlaceDescarga();
   const generarManual = useGenerarManual();
   const { data: cierres = [] } = useCierresVersion();
 
@@ -230,7 +211,7 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
     como_probar: [],
     pendiente_usuario: [],
   });
-  const [conGithub, setConGithub] = React.useState(true);
+  const conGithub = false;
   const [regenerarManual, setRegenerarManual] = React.useState(false);
   const [confirmando, setConfirmando] = React.useState(false);
   const [resultado, setResultado] = React.useState<ResultadoCierre | null>(null);
@@ -280,7 +261,7 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
     try {
       const r = await cerrar.mutateAsync({ cierre_id: borrador.id, datos, github: conGithub });
       setResultado(r);
-      toast.success("Versión cerrada.");
+      toast.success("Cierre documental guardado.");
       if (regenerarManual && proyectoId) {
         try {
           await generarManual.mutateAsync({
@@ -370,10 +351,7 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
                 onCambiar={(v) => setDatos({ ...datos, tecnico: v })}
               />
 
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" checked={conGithub} onChange={(e) => setConGithub(e.target.checked)} />
-                Actualizar CHANGELOG y crear la etiqueta en GitHub
-              </label>
+              <p className="text-sm text-muted-foreground">Este cierre guarda un PDF real. Publicar el producto es un proceso independiente.</p>
 
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input
@@ -397,7 +375,7 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
                   }}
                 >
                   <Printer className="size-4" />
-                  Descargar PDF
+                  Imprimir vista previa
                 </Boton>
               </div>
             </div>
@@ -416,9 +394,8 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
             <div className="panel space-y-2 p-4">
               <h2 className="font-display text-sm font-semibold">Resultado del cierre</h2>
               <div className="flex flex-wrap gap-2 text-xs">
-                <Paso ok={Boolean(resultado.ruta_remota_html)} texto="Almacén propio" />
-                <Paso ok={Boolean(resultado.proyectian_ok)} texto="Proyectian" />
-                <Paso ok={Boolean(resultado.github_tag)} texto={resultado.github_tag ? `GitHub ${resultado.github_tag}` : "GitHub"} />
+                <Paso ok={Boolean(resultado.documento_pdf_id)} texto="PDF guardado" />
+                {resultado.documento_pdf_id?<Boton variante="suave" disabled={descargarPDF.isPending} onClick={async()=>{if(!resultado.documento_pdf_id)return;try{const r=await descargarPDF.mutateAsync({documento_id:resultado.documento_pdf_id});if(r.url)window.open(r.url,'_blank','noopener,noreferrer');}catch(e){toast.error((e as Error).message);}}}>Descargar PDF</Boton>:null}
               </div>
               {(resultado.avisos ?? []).length > 0 ? (
                 <ul className="list-disc pl-5 text-sm text-warning">
@@ -444,13 +421,13 @@ function PestanaCerrar({ proyectoInicial }: { proyectoInicial?: string | undefin
           <Dialogo
             abierto={confirmando}
             titulo="Cerrar la versión"
-            descripcion="Se registrará en Proyectian y se subirá al almacén propio."
+            descripcion="Se guardará un PDF en el almacén privado de NexDeveloper y quedará registrado el cierre documental."
             onCerrar={() => setConfirmando(false)}
             ancho="max-w-md"
           >
             <p className="text-sm text-muted-foreground">
               Se generará la hoja de cambios de la versión {borrador.version}
-              {conGithub ? ", se actualizará el CHANGELOG y se creará la etiqueta en GitHub" : ""}.
+              y quedará disponible en Documentos.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Boton variante="suave" onClick={() => setConfirmando(false)}>
@@ -707,7 +684,7 @@ function PestanaDocumentos({ proyectoInicial }: { proyectoInicial?: string | und
     if (!proyectoId && proyectos.length > 0) setProyectoId(proyectoInicial ?? proyectos[0]!.id);
   }, [proyectos, proyectoId, proyectoInicial]);
 
-  const { data: documentos = [], isPending } = useDocumentosProyecto(proyectoId || null);
+  const { data: documentos = [], isPending,error:errorDocumentos } = useDocumentosProyecto(proyectoId || null);
   const enlace = useEnlaceDescarga();
   const [subiendo, setSubiendo] = React.useState(false);
 
@@ -722,6 +699,7 @@ function PestanaDocumentos({ proyectoInicial }: { proyectoInicial?: string | und
 
   return (
     <section className="space-y-4">
+      {errorDocumentos?<p role="alert" className="panel p-4 text-destructive">No se pudieron consultar los documentos. Vuelve a intentarlo.</p>:null}
       <div className="panel flex flex-wrap items-end justify-between gap-3 p-4">
         <Campo etiqueta="Proyecto">
           <select className={claseCampo} value={proyectoId} onChange={(e) => setProyectoId(e.target.value)}>
@@ -747,7 +725,7 @@ function PestanaDocumentos({ proyectoInicial }: { proyectoInicial?: string | und
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{d.titulo}</p>
                 <p className="text-xs text-muted-foreground">
-                  {ETIQUETA_TIPO_DOC[d.tipo as TipoDocumentoNex] ?? d.tipo}
+                  {d.origen==='proyectian'?'Proyectian · ':'Nex · '}{ETIQUETA_TIPO_DOC[d.tipo as TipoDocumentoNex] ?? d.tipo}
                   {d.version ? ` · ${d.version}` : ""}
                   {d.fecha ? ` · ${formatoFechaHora(d.fecha)}` : ""} · {tamanoLegible(d.bytes)}
                 </p>
@@ -820,7 +798,7 @@ function DialogoSubida({
   const lanzar = async () => {
     if (!archivo || !proyectoId) return;
     if (archivo.size > LIMITE_SUBIDA_BYTES) {
-      toast.error("El archivo supera el límite de 45 MB.");
+      toast.error("El archivo supera el límite de 20 MB.");
       return;
     }
     try {
@@ -849,7 +827,7 @@ function DialogoSubida({
     <Dialogo
       abierto={abierto}
       titulo="Subir documento"
-      descripcion="Se guarda en el almacén propio, en la carpeta que le corresponde, y queda registrado en Proyectian. Máximo 45 MB."
+      descripcion="Se guarda como archivo privado verificado en Nex. Formatos: PDF, WebM, MP3 y Markdown. El registro se envía a Proyectian mediante el intercambio. Máximo 20 MB."
       onCerrar={onCerrar}
       ancho="max-w-xl"
     >
@@ -869,7 +847,7 @@ function DialogoSubida({
         <Campo etiqueta="Título">
           <input className={claseCampo} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
         </Campo>
-        <Campo etiqueta="Archivo" pista={archivo ? tamanoLegible(archivo.size) : "Máximo 45 MB"}>
+        <Campo etiqueta="Archivo" pista={archivo ? tamanoLegible(archivo.size) : "Máximo 20 MB"}>
           <input type="file" className={claseCampo} onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
         </Campo>
       </div>

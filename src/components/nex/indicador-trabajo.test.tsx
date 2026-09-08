@@ -27,9 +27,10 @@ describe("indicador de trabajo", () => {
     expect(textoPaso(fin)).toBe("Tarea lanzada.");
   });
 
-  it("sin porcentaje real la barra no pasa del 90 %", () => {
+  it("sin porcentaje medido no inventa progreso", () => {
     const trabajo = crearTrabajo("Importar de Plaud");
-    expect(porcentajeVisible(trabajo, 200)).toBe(90);
+    expect(porcentajeVisible(trabajo)).toBeNull();
+    expect(porcentajeVisible(avanzarTrabajo(trabajo, "Esperando al proveedor", Number.NaN))).toBeNull();
   });
 
   it("fallar muestra el error", () => {

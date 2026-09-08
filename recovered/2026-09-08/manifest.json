@@ -1,0 +1,396 @@
+{
+  "captured_at": "2026-09-07T22:39:15.186551+00:00",
+  "counts": {
+    "tables": 112,
+    "views": 14,
+    "functions_in_catalog": 109,
+    "columns": 1716,
+    "constraints": 368,
+    "indexes": 325,
+    "policies": 115,
+    "triggers": 24,
+    "migration_history_rows": 57,
+    "edge_functions": 34,
+    "buckets": 1,
+    "active_cron": 29
+  },
+  "frontend_rpc": {
+    "total": 16,
+    "missing_in_public_catalog": []
+  },
+  "edge_comparison": {
+    "different": 26,
+    "identical": 6,
+    "absent": 2
+  },
+  "edge_files": [
+    {
+      "file": "asistente/index.ts",
+      "comparison": "different",
+      "sha256": "6595dfc38c2103ab4022170b38202f0ee47b24a02a3675d2464c3667fd01534b",
+      "bytes": 23156
+    },
+    {
+      "file": "auditar/index.ts",
+      "comparison": "different",
+      "sha256": "0954c9602a40d125537fc468d9f39b2074ccdb7b2de3b7eb81ecfc8364aeb6f3",
+      "bytes": 22050
+    },
+    {
+      "file": "avisos/index.ts",
+      "comparison": "different",
+      "sha256": "de50994136ea15e8033ca9d32f7380dc8ec795bc8dc0f67f842a07a10d4a1b71",
+      "bytes": 9190
+    },
+    {
+      "file": "bandeja/index.ts",
+      "comparison": "different",
+      "sha256": "eae1ed1bb01c8f18319728769d67d050e986fd56b60d3a265937960044bc9daf",
+      "bytes": 24782
+    },
+    {
+      "file": "barrer-expertos/index.ts",
+      "comparison": "different",
+      "sha256": "bd2f2f5e281273bc695df3cecae0a0ec9cde3bb20986576ce9d3c3350cad92d8",
+      "bytes": 5126
+    },
+    {
+      "file": "calidad-github/index.ts",
+      "comparison": "different",
+      "sha256": "496050ad4d5c61917991db0621da63b58c03dc679ac4b313cbdea9808530f524",
+      "bytes": 13014
+    },
+    {
+      "file": "canva-oauth/index.ts",
+      "comparison": "different",
+      "sha256": "1988989aaea57f940f856de8be1f24d264ff1681f011faaf591a573fe95a6981",
+      "bytes": 4521
+    },
+    {
+      "file": "compilar-app/index.ts",
+      "comparison": "different",
+      "sha256": "af1b58f3c518dc91041e4d1c0306bd38e3baf1582e0f7e477fa041a1a977bc02",
+      "bytes": 24941
+    },
+    {
+      "file": "comprobar-secretos/index.ts",
+      "comparison": "identical",
+      "sha256": "0dc0c0eda295971a06ac7c83be853d1a8d8c96c6f02c3ded324bade642844687",
+      "bytes": 2349
+    },
+    {
+      "file": "copias-generar/index.ts",
+      "comparison": "different",
+      "sha256": "16575ede65f89be25ee55f648027e1fd97438bc7311c41c6d22dde67e2574f6e",
+      "bytes": 21488
+    },
+    {
+      "file": "copias-restaurar/index.ts",
+      "comparison": "different",
+      "sha256": "29e0bc9ec1ce7da16f16babb5d1a09871ffc07d6d8211b32e24367cf93cb803b",
+      "bytes": 29786
+    },
+    {
+      "file": "desplegar-funcion/index.ts",
+      "comparison": "absent",
+      "sha256": "f5d5bf24cfba1833d221e0ae9b55e86ea8afd49744bd30e42bc92f4cbdb6d5c2",
+      "bytes": 4102
+    },
+    {
+      "file": "documentar/index.ts",
+      "comparison": "different",
+      "sha256": "aec42c914db01c16b30d559e2306ad4d8a30a6f22023a1be778b52ab752262c2",
+      "bytes": 32385
+    },
+    {
+      "file": "dominios-comprobar/index.ts",
+      "comparison": "different",
+      "sha256": "e1f306069139a216adc9a98bd8d056c02c8872c2728903843418f1db124266ce",
+      "bytes": 10972
+    },
+    {
+      "file": "ejecutar-accion/index.ts",
+      "comparison": "identical",
+      "sha256": "8083f4025a51c0fd91e6655dfcec6f6f27a58c446c455cc961442aa442641429",
+      "bytes": 8262
+    },
+    {
+      "file": "facturacion/index.ts",
+      "comparison": "identical",
+      "sha256": "1fb18b110e1fe6f51095d2b16aeab517935e9b4d4fce233f4001e3a9bfa419d2",
+      "bytes": 54724
+    },
+    {
+      "file": "gasto-ia/index.ts",
+      "comparison": "different",
+      "sha256": "206884ae2f09aaa6c5a6c5bb6058f6544c5216557158badd17be5c5ea8f474da",
+      "bytes": 8638
+    },
+    {
+      "file": "github-repos/index.ts",
+      "comparison": "different",
+      "sha256": "ed4bc526451ce45e7e1ff84a287cc4fdcc75436f3fd8301128c3f13c6d8883e0",
+      "bytes": 12950
+    },
+    {
+      "file": "habilidades/index.ts",
+      "comparison": "different",
+      "sha256": "2bc92897fbaddf66a40e71bfc465294bb11379058bd357b6f25885d46074db3c",
+      "bytes": 17181
+    },
+    {
+      "file": "infraestructura/index.ts",
+      "comparison": "identical",
+      "sha256": "69c8afeed2b5c20cd7dd1e0b8d944855d83a7e2a444b26f4dc9b3a618ef7169e",
+      "bytes": 57102
+    },
+    {
+      "file": "manuales/index.ts",
+      "comparison": "different",
+      "sha256": "9f45c40c7e3421c4f7ea505ddb2bf6b894d6762ef6b03a9ee8d198e601475250",
+      "bytes": 42010
+    },
+    {
+      "file": "mesa/index.ts",
+      "comparison": "different",
+      "sha256": "65fa08e693b11a67355da61994acc847fa5cfdf90e805b5b838389ec39f8e68b",
+      "bytes": 17439
+    },
+    {
+      "file": "ordenes-ejecutar/index.ts",
+      "comparison": "identical",
+      "sha256": "345608d34f433cad3530e16531c5c47752dc56628de7acf2ebc70d33c1793b60",
+      "bytes": 56062
+    },
+    {
+      "file": "personal/index.ts",
+      "comparison": "different",
+      "sha256": "06ba1352b15d7d2c40276e53685bbd43baec7511c81d7471e7cb328800e39349",
+      "bytes": 34007
+    },
+    {
+      "file": "pideme/index.ts",
+      "comparison": "identical",
+      "sha256": "22890d2249086fd60bc24342b1e7c2ef4140864a4263914368c1358216ea8d2e",
+      "bytes": 57104
+    },
+    {
+      "file": "portal-cliente/index.ts",
+      "comparison": "different",
+      "sha256": "1b3350615a1d9993f453cd4482dcac243b5bca1f0e33c6ee05fd262194b35000",
+      "bytes": 15506
+    },
+    {
+      "file": "probar-proveedor/index.ts",
+      "comparison": "different",
+      "sha256": "5813f0b843fcca5fe15d3c4db8651b084cd25c92bdafbe82a3d72961802e7c1d",
+      "bytes": 6348
+    },
+    {
+      "file": "publicar-experto/index.ts",
+      "comparison": "different",
+      "sha256": "0120bc44a015bf344fc1693bc87084bcbb035aa251c613ad99faf3b43c06d1d5",
+      "bytes": 4791
+    },
+    {
+      "file": "resumenes/index.ts",
+      "comparison": "different",
+      "sha256": "4ef057e332fef505cac72796b31cc4a4d8922832179c89b14197a3fc0a03dfd8",
+      "bytes": 24666
+    },
+    {
+      "file": "salud/index.ts",
+      "comparison": "different",
+      "sha256": "feca1840f35fb1dca1f1206dd7cb2622e67a038ebd15a6993dc3d7b43c58c27f",
+      "bytes": 19988
+    },
+    {
+      "file": "sincronizar-proyectian/index.ts",
+      "comparison": "absent",
+      "sha256": "da081cb0d1c14ff151a9d4c80da7f638990cc6f35f579e3ccf09a860fca3e339",
+      "bytes": 39778
+    },
+    {
+      "file": "usuarios-clientes/index.ts",
+      "comparison": "different",
+      "sha256": "2b9cf7da6aff238f84c35212d6167e320acb493063997d4dcede2b6f8b3a29e6",
+      "bytes": 18519
+    },
+    {
+      "file": "vigilar/index.ts",
+      "comparison": "different",
+      "sha256": "db7a839d267b51eba7b22af8e60d897c198423dc4d94282bee4c5a965b6ae3a6",
+      "bytes": 18864
+    },
+    {
+      "file": "voz/index.ts",
+      "comparison": "different",
+      "sha256": "add72718e79abe1f1c029336d5348befee5fbeeeef171c216b6a8def42173116",
+      "bytes": 18538
+    }
+  ],
+  "cron": [
+    {
+      "name": "barrido-expertos",
+      "schedule": "0 5 * * 1",
+      "active": true
+    },
+    {
+      "name": "sincronizar-calidad",
+      "schedule": "*/2 * * * *",
+      "active": true
+    },
+    {
+      "name": "copias-diaria",
+      "schedule": "0 1 * * 1-6",
+      "active": true
+    },
+    {
+      "name": "copias-semanal",
+      "schedule": "0 1 * * 0",
+      "active": true
+    },
+    {
+      "name": "compilaciones-sincronizar",
+      "schedule": "*/2 * * * *",
+      "active": true
+    },
+    {
+      "name": "vigilancia-novedades",
+      "schedule": "30 5 * * 1",
+      "active": true
+    },
+    {
+      "name": "vigilancia-competencia",
+      "schedule": "0 6 1 * *",
+      "active": true
+    },
+    {
+      "name": "dominios-diario",
+      "schedule": "0 6 * * *",
+      "active": true
+    },
+    {
+      "name": "bandeja-gmail",
+      "schedule": "*/10 * * * *",
+      "active": true
+    },
+    {
+      "name": "resumen-diario",
+      "schedule": "0 6 * * *",
+      "active": true
+    },
+    {
+      "name": "resumen-semanal",
+      "schedule": "10 6 * * 1",
+      "active": true
+    },
+    {
+      "name": "gasto-ia-diario",
+      "schedule": "30 5 * * *",
+      "active": true
+    },
+    {
+      "name": "habilidades-barrido",
+      "schedule": "0 5 * * 3",
+      "active": true
+    },
+    {
+      "name": "ordenes-ejecutar",
+      "schedule": "*/2 * * * *",
+      "active": true
+    },
+    {
+      "name": "salud-diario",
+      "schedule": "0 5 * * *",
+      "active": true
+    },
+    {
+      "name": "copias-prueba-mensual",
+      "schedule": "0 3 1 * *",
+      "active": true
+    },
+    {
+      "name": "avisos-pendientes",
+      "schedule": "*/5 * * * *",
+      "active": true
+    },
+    {
+      "name": "manuales-semanal",
+      "schedule": "0 4 * * 0",
+      "active": true
+    },
+    {
+      "name": "auditoria-mensual",
+      "schedule": "0 4 2 * *",
+      "active": true
+    },
+    {
+      "name": "usuarios-clientes-diario",
+      "schedule": "15 5 * * *",
+      "active": true
+    },
+    {
+      "name": "facturacion-mensual",
+      "schedule": "0 6 1 * *",
+      "active": true
+    },
+    {
+      "name": "facturacion-vencidas",
+      "schedule": "30 6 * * *",
+      "active": true
+    },
+    {
+      "name": "infra-comprobar",
+      "schedule": "*/10 * * * *",
+      "active": true
+    },
+    {
+      "name": "infra-sincronizar",
+      "schedule": "20 * * * *",
+      "active": true
+    },
+    {
+      "name": "infra-limpiar",
+      "schedule": "45 3 * * *",
+      "active": true
+    },
+    {
+      "name": "plaud-importar",
+      "schedule": "*/30 * * * *",
+      "active": true
+    },
+    {
+      "name": "proyectian-pantallas",
+      "schedule": "50 4 * * *",
+      "active": true
+    },
+    {
+      "name": "proyectian-pendientes",
+      "schedule": "*/5 * * * *",
+      "active": true
+    },
+    {
+      "name": "proyectian-versiones-salud",
+      "schedule": "40 * * * *",
+      "active": true
+    }
+  ],
+  "source_hashes": {
+    "nexdeveloper-schema.json": "0d360d1b85c475da5a07fd6aac63ada41db18d7f1d972463c9521a16529ca56d",
+    "nexdeveloper-ops.json": "0cdae6ebe0af8ac8d01f4d7731c0365cacb46a8a6de64131ea9ca729816434ef",
+    "nexdeveloper-sync-code.json": "1a2f8faed653d17bbe5dd7485b0de15279074a5bbfbda5a9f34bf22a383f3379"
+  },
+  "rehearsal": {
+    "structural_ddl_passed": true,
+    "transaction_rolled_back": true,
+    "local_cron_jobs": 0,
+    "not_verified": [
+      "ACL and ownership equivalence",
+      "exact sequence bounds",
+      "function bodies at runtime",
+      "synthetic end-to-end workflows",
+      "Edge settings and deployment configuration"
+    ]
+  }
+}

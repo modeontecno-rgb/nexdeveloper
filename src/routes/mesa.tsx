@@ -1,3 +1,4 @@
+import {datosOrdenMesa,textoOrdenMesa,numeroEstimado} from "@/lib/nex/orden-desde-mesa";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ClipboardCopy,
@@ -468,10 +469,10 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           );
         }
         if (faltaPlanGuardado && recomendacion) {
-          trabajo.avanzar("Guardando el plan", 25);
+          trabajo.avanzar("Guardando el plan");
           await actualizar.mutateAsync({ id: mesa.id, cambios: { recomendacion } });
         }
-        trabajo.avanzar("Creando las tareas", 65);
+        trabajo.avanzar("Creando las tareas");
         const resultado = await crearTareas.mutateAsync(mesa.id);
         const cuantas = Array.isArray(resultado.tareas) ? resultado.tareas.length : Number(resultado.tareas ?? 0);
         return cuantas ? `${cuantas} tareas creadas.` : "Plan enviado al proyecto.";
@@ -507,10 +508,11 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
     await conTrabajo(
       "Enviando la conclusión como orden",
       async (trabajo) => {
-        trabajo.avanzar("Preparando la orden", 25);
-        const texto = mesa.sintesis?.trim() || mesa.pregunta;
+        trabajo.avanzar("Preparando la orden");
+        const texto = textoOrdenMesa(mesa.sintesis ?? "",mesa.pregunta,recomendacion);
+        const estimacion = datosOrdenMesa(recomendacion);
         const chat = chats.find((c) => c.proyecto_id === mesa.proyecto_id && c.es_principal);
-        trabajo.avanzar("Guardando la orden", 60);
+        trabajo.avanzar("Guardando la orden");
         await crearOrden.mutateAsync({
           entrada: {
             proyectoId: mesa.proyecto_id,
@@ -520,10 +522,8 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
             prioridad: "media",
             agenteId: null,
             equipo: [],
-            costeEstimado: Number(recomendacion?.coste_estimado ?? 0),
-            horasEstimadas: Number(recomendacion?.horas_estimadas ?? 0),
-            riesgo: (recomendacion?.riesgo as "Bajo" | "Medio" | "Alto") ?? "Medio",
-            calidadPrevista: Number(recomendacion?.calidad_prevista ?? 80),
+            ...estimacion,
+            origenMesaId: mesa.id,
           },
           ajustes: ajustes ?? null,
         });
@@ -788,7 +788,7 @@ function VistaDeliberacion({ mesaId, onVolver }: { mesaId: string; onVolver: () 
           <dl className="mt-4 grid gap-3 sm:grid-cols-4">
             <Dato titulo="Coste estimado" valor={formatoEuros(Number(recomendacion?.coste_estimado ?? 0))} />
             <Dato titulo="Horas estimadas" valor={`${Number(recomendacion?.horas_estimadas ?? 0).toFixed(1)} h`} />
-            <Dato titulo="Calidad prevista" valor={`${Number(recomendacion?.calidad_prevista ?? 0)}%`} />
+            <Dato titulo="Calidad prevista" valor={numeroEstimado(recomendacion?.calidad_prevista) === null ? String(recomendacion?.calidad_prevista ?? "Sin estimación") : `${recomendacion?.calidad_prevista}%`} />
             <Dato titulo="Riesgo" valor={String(recomendacion?.riesgo ?? "—")} />
           </dl>
 

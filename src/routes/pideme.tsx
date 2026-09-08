@@ -1,3 +1,4 @@
+import {useDictado} from "@/components/nex/dictado";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ChevronDown,
@@ -68,12 +69,12 @@ export const Route = createFileRoute("/pideme")({
       { title: "Pídeme qué quieres · NexDeveloper" },
       {
         name: "description",
-        content: "Escribe o dicta lo que necesitas y NexDeveloper decide si es de un proyecto o personal y actúa.",
+        content: "Escribe o dicta lo que necesitas y elige el proyecto antes de enviarlo.",
       },
       { property: "og:title", content: "Pídeme qué quieres · NexDeveloper" },
       {
         property: "og:description",
-        content: "Escribe o dicta lo que necesitas y NexDeveloper decide si es de un proyecto o personal y actúa.",
+        content: "Escribe o dicta lo que necesitas y elige el proyecto antes de enviarlo.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -166,7 +167,8 @@ function PidemePantalla() {
 export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
   const pedir = usePedir();
   const [texto, setTexto] = React.useState("");
-  const [paso, setPaso] = React.useState(0);
+  const [proyectoElegido, setProyectoElegido] = React.useState("");
+  const {data: proyectosDisponibles=[]} = useProyectos();
   const [resultado, setResultado] = React.useState<{ peticionId: string } | null>(null);
   const [borradorId, setBorradorId] = React.useState<string | null>(null);
   const [usoVoz, setUsoVoz] = React.useState(false);
@@ -174,12 +176,11 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
   const { data: borradores = [] } = useBorradores();
   const { lanzarBorrador, enCurso } = useLanzarBorradorCompleto();
   const areaRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const { escuchando, soportado, alternar } = useDictado((dicho) => {
+  const { escuchando, soportado, alternar, lienzoOnda } = useDictado((dicho) => {
     setUsoVoz(true);
     setTexto((t) => (t ? `${t} ${dicho}` : dicho));
   });
   const borradorAbierto = borradores.find((b) => b.id === borradorId) ?? null;
-  const lienzoOnda = useOndaMicrofono(escuchando);
 
   React.useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
@@ -192,21 +193,11 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
     return () => window.removeEventListener("keydown", alPulsar);
   }, []);
 
-  React.useEffect(() => {
-    if (!pedir.isPending) {
-      setPaso(0);
-      return;
-    }
-    setPaso(1);
-    const t = window.setTimeout(() => setPaso(2), 6000);
-    return () => window.clearTimeout(t);
-  }, [pedir.isPending]);
-
   const revisar = (origen: "texto" | "voz") => {
     const limpio = texto.trim();
     if (!limpio || crearBorrador.isPending) return;
     crearBorrador.mutate(
-      { texto: limpio, origen },
+      { texto: limpio, origen, proyectoId: proyectoElegido || null },
       {
         onSuccess: (b) => {
           setTexto("");
@@ -220,13 +211,14 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
   const enviar = (origen: "texto" | "voz") => {
     const limpio = texto.trim();
     if (!limpio || pedir.isPending) return;
+    if (!proyectoElegido) { toast.error("Elige el proyecto. Para uso personal, abre Personal."); return; }
     // Lo dictado se revisa antes de lanzarse.
     if (origen === "voz") {
       revisar("voz");
       return;
     }
     pedir.mutate(
-      { texto: limpio, origen },
+      { texto: limpio, origen, proyecto_id: proyectoElegido },
       {
         onSuccess: (r) => {
           setTexto("");
@@ -242,8 +234,12 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
         <Sparkles className="size-5 text-primary" /> Pídeme qué quieres
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Escríbelo o dícelo con el micrófono. Yo decido si es de un proyecto o personal.
+        Elige el proyecto antes de enviar. Puedes dictar y revisar el texto. El espacio Personal se abre por separado.
       </p>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <Campo etiqueta="Proyecto de este trabajo"><select className={claseCampo} value={proyectoElegido} onChange={e=>setProyectoElegido(e.target.value)}><option value="">Selecciona un proyecto</option>{proyectosDisponibles.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></Campo>
+        <Link to="/personal" className="text-sm text-primary underline">Abrir mi espacio Personal</Link>
+      </div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -310,7 +306,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
       {pedir.isPending ? (
         <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          {paso < 2 ? "Entendiendo lo que pides…" : "Preparando la propuesta con los expertos…"}
+          Procesando tu petición. Esperando la respuesta del servidor…
         </p>
       ) : null}
 
@@ -375,79 +371,6 @@ function TarjetaResultado({ peticionId }: { peticionId: string }) {
       <TarjetaPeticion peticion={peticion} abiertaPorDefecto />
     </div>
   );
-}
-
-/** Dibuja la onda del micrófono en directo mientras se dicta. */
-export function useOndaMicrofono(activo: boolean) {
-  const lienzo = React.useRef<HTMLCanvasElement | null>(null);
-
-  React.useEffect(() => {
-    if (!activo || typeof window === "undefined") return;
-    let parado = false;
-    let pista: MediaStream | null = null;
-    let ctxAudio: AudioContext | null = null;
-    let animacion = 0;
-
-    const arrancar = async () => {
-      try {
-        pista = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch {
-        return;
-      }
-      if (parado) {
-        pista.getTracks().forEach((t) => t.stop());
-        return;
-      }
-      const Ctor = (window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as
-        | typeof AudioContext
-        | undefined;
-      if (!Ctor) return;
-      ctxAudio = new Ctor();
-      const fuente = ctxAudio.createMediaStreamSource(pista);
-      const analizador = ctxAudio.createAnalyser();
-      analizador.fftSize = 2048;
-      fuente.connect(analizador);
-      const datos = new Uint8Array(analizador.frequencyBinCount);
-
-      const pintar = () => {
-        animacion = window.requestAnimationFrame(pintar);
-        const canvas = lienzo.current;
-        const ctx2d = canvas?.getContext("2d");
-        if (!canvas || !ctx2d) return;
-        const ancho = (canvas.width = canvas.clientWidth || 300);
-        const alto = (canvas.height = 72);
-        analizador.getByteTimeDomainData(datos);
-        ctx2d.clearRect(0, 0, ancho, alto);
-        ctx2d.lineWidth = 2;
-        ctx2d.strokeStyle = getComputedStyle(canvas).color || "#6366f1";
-        ctx2d.beginPath();
-        const paso = ancho / datos.length;
-        for (let i = 0; i < datos.length; i += 1) {
-          const v = (datos[i]! - 128) / 128;
-          const y = alto / 2 + v * (alto / 2 - 4);
-          if (i === 0) ctx2d.moveTo(0, y);
-          else ctx2d.lineTo(i * paso, y);
-        }
-        ctx2d.stroke();
-      };
-      pintar();
-    };
-
-    void arrancar();
-
-    return () => {
-      parado = true;
-      if (animacion) window.cancelAnimationFrame(animacion);
-      pista?.getTracks().forEach((t) => t.stop());
-      void ctxAudio?.close();
-      const canvas = lienzo.current;
-      const ctx2d = canvas?.getContext("2d");
-      if (canvas && ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-    };
-  }, [activo]);
-
-  return lienzo;
 }
 
 /* ------------------------------- Peticiones ------------------------------- */
@@ -1229,66 +1152,6 @@ function DialogoTranscripcion({ grabacionId, onCerrar }: { grabacionId: string |
 }
 
 /* -------------------------------- Dictado -------------------------------- */
-
-/** Dictado por voz del navegador (es-ES), si está disponible. */
-export function useDictado(alTexto: (t: string) => void) {
-  const [escuchando, setEscuchando] = React.useState(false);
-  const [soportado, setSoportado] = React.useState(false);
-  const refReconocimiento = React.useRef<{ start: () => void; stop: () => void } | null>(null);
-  const refTexto = React.useRef(alTexto);
-  refTexto.current = alTexto;
-
-  React.useEffect(() => {
-    const ventana = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
-    const Constructor = (ventana.SpeechRecognition ?? ventana.webkitSpeechRecognition) as
-      | (new () => Record<string, unknown>)
-      | undefined;
-    if (!Constructor) return;
-    setSoportado(true);
-    const reconocimiento = new Constructor() as Record<string, unknown> & { start: () => void; stop: () => void };
-    reconocimiento["lang"] = "es-ES";
-    reconocimiento["interimResults"] = false;
-    reconocimiento["continuous"] = false;
-    reconocimiento["onresult"] = (evento: unknown) => {
-      const resultados = (evento as { results?: Array<Array<{ transcript?: string }>> }).results;
-      const dicho = resultados?.[0]?.[0]?.transcript ?? "";
-      if (dicho) refTexto.current(dicho);
-    };
-    reconocimiento["onend"] = () => setEscuchando(false);
-    reconocimiento["onerror"] = () => {
-      setEscuchando(false);
-      toast.error("No se ha podido usar el micrófono.");
-    };
-    refReconocimiento.current = reconocimiento;
-    return () => {
-      try {
-        reconocimiento.stop();
-      } catch {
-        /* ya parado */
-      }
-    };
-  }, []);
-
-  const alternar = () => {
-    const reconocimiento = refReconocimiento.current;
-    if (!reconocimiento) return;
-    if (escuchando) {
-      reconocimiento.stop();
-      setEscuchando(false);
-      sonidoTic();
-      return;
-    }
-    try {
-      reconocimiento.start();
-      setEscuchando(true);
-      sonidoTic();
-    } catch {
-      setEscuchando(false);
-    }
-  };
-
-  return { escuchando, soportado, alternar };
-}
 
 /** Contador de propuestas pendientes para el menú. */
 export function usePropuestasPendientes() {

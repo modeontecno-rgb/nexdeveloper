@@ -1,0 +1,2 @@
+// The former account-wide SQL/slug synchronization is retired. No secrets or network calls.
+Deno.serve(req=>new Response(req.method==='OPTIONS'?null:JSON.stringify({ok:false,error:'Sincronización antigua retirada. Configura una pareja explícita en Intercambio con Proyectian.'}),{status:req.method==='OPTIONS'?204:410,headers:{'access-control-allow-origin':'*','access-control-allow-headers':'authorization,apikey,content-type,x-client-info,x-cron-token','content-type':'application/json'}}));

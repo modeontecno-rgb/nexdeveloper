@@ -48,7 +48,7 @@ export function Campo({
   return (
     <div>
       <p className="text-xs font-medium text-muted-foreground">{etiqueta}</p>
-      <div className="mt-1.5">{children}</div>
+      <div className="mt-1.5">{React.Children.map(children,child=>React.isValidElement<{"aria-label"?:string}>(child)&&typeof child.type==='string'&&['input','select','textarea'].includes(child.type)?React.cloneElement(child,{'aria-label':child.props['aria-label']??etiqueta}):child)}</div>
       {pista ? <p className="mt-1 text-xs text-muted-foreground">{pista}</p> : null}
     </div>
   );

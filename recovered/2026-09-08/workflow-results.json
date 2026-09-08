@@ -1,0 +1,122 @@
+{
+  "project": "nexdeveloper",
+  "exit_code": 0,
+  "tests": [
+    {
+      "name": "M01 Relation owners, ACLs and view options match captured metadata",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "M02 Application function owners and ACLs match captured metadata",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "M03 Default grants match captured metadata",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "M04 RLS flags match captured metadata",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "M05 Exact sequence bounds match captured metadata",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "M06 No cron jobs activated",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N16 Unlisted registration is blocked",
+      "detail": "SQLSTATE=P0001",
+      "passed": true
+    },
+    {
+      "name": "N17 Authorized registration creates profile and settings",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N01 Personal conversation exists without project",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N02 Personal document stored separately",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N03 Review blocks project without repository",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N04 Invalid risk value rejected",
+      "detail": "SQLSTATE=23514",
+      "passed": true
+    },
+    {
+      "name": "N05 Zero budget blocks IA",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N06 Stranger cannot read projects",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N07 Stranger cannot read personal conversations",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N08 Stranger cannot read personal messages",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N09 Stranger cannot read personal documents",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N10 Stranger cannot impersonate owner",
+      "detail": "SQLSTATE=42501",
+      "passed": true
+    },
+    {
+      "name": "N11 Personal message cannot reference another owner conversation",
+      "detail": "Statement was accepted",
+      "passed": false
+    },
+    {
+      "name": "N12 Order cannot reference another owner project",
+      "detail": "Statement was accepted",
+      "passed": false
+    },
+    {
+      "name": "N13 Stranger cannot review another owner order",
+      "detail": "SQLSTATE=P0001",
+      "passed": true
+    },
+    {
+      "name": "N14 Owner personal messages exclude foreign user",
+      "detail": null,
+      "passed": true
+    },
+    {
+      "name": "N15 Anonymous cannot create personal conversation",
+      "detail": "SQLSTATE=42501",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

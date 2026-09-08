@@ -1,3 +1,4 @@
+import {guardarPDF} from '../_shared/entregas.ts';
 // NexDeveloper · Edge Function «manuales» (0.35.0)
 // Generador de manuales de usuario: recorre las pantallas del proyecto (rutas del repositorio en GitHub), captura cada una,
 // redacta el manual con IA por capítulos (público: usuario, administrador o comercial), pasa el REVISOR DE REDACCIÓN
@@ -5,6 +6,8 @@
 // imprimible y Markdown, lo guarda en el almacén propio (proyectos/<slug>/03-MANUALES) y lo registra en Proyectian.
 // Barrido semanal: regenera el manual cuando cambia la versión del proyecto. Trabajo por tandas reanudable.
 // 0.35.0: estado «revisando» entre «redactando» y «publicando»; acción «revisar» para repasar un manual ya publicado.
+// 0.36.0: el selector de proveedor prueba primero Abacus (RouteLLM), incluido sin coste extra en la suscripción, antes que Anthropic.
+import { fetchIADeUsuario } from "../_shared/presupuesto.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
@@ -17,22 +20,16 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const servicio = () => createClient(URL_SUPABASE, CLAVE_SERVICIO, { auth: { persistSession: false } });
 type SB = ReturnType<typeof servicio>;
 const ahora = () => new Date().toISOString();
-const INICIO = Date.now();
+
 const PRESUPUESTO_MS = 95_000;
 const sqlLit = (s: unknown) => s === null || s === undefined ? "null" : `'${String(s).replace(/'/g, "''")}'`;
 const esc = (s: string) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // ---------- Proyectian, S3 ----------
-async function proyectianSql(sql: string, readOnly = false) {
-  if (!TOKEN_CUENTA) throw new Error("Falta CUENTA_SUPABASE_TOKEN");
-  const r = await fetch(`https://api.supabase.com/v1/projects/${REF_PROYECTIAN}/database/query`, { method: "POST", headers: { Authorization: `Bearer ${TOKEN_CUENTA}`, "Content-Type": "application/json" }, body: JSON.stringify({ query: sql, read_only: readOnly }) });
-  if (!r.ok) throw new Error(`Proyectian ${r.status}: ${(await r.text()).slice(0, 300)}`);
-  return await r.json();
-}
 const enc = new TextEncoder();
 const hex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-const sha256 = async (s: string | Uint8Array) => hex(await crypto.subtle.digest("SHA-256", typeof s === "string" ? enc.encode(s) : s));
-async function hmac(key: ArrayBuffer | Uint8Array, msg: string) { const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]); return crypto.subtle.sign("HMAC", k, enc.encode(msg)); }
+const sha256 = async (s: string | Uint8Array) => hex(await crypto.subtle.digest("SHA-256", typeof s === "string" ? enc.encode(s) : new Uint8Array(s)));
+async function hmac(key: ArrayBuffer | Uint8Array, msg: string) { const k = await crypto.subtle.importKey("raw", new Uint8Array(key instanceof Uint8Array ? key : new Uint8Array(key)), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]); return crypto.subtle.sign("HMAC", k, enc.encode(msg)); }
 const codificar = (s: string) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
 const codClave = (k: string) => k.split("/").map(codificar).join("/");
 const fechaAmz = () => { const iso = new Date().toISOString().replace(/[:-]|\.\d{3}/g, ""); return { larga: iso, corta: iso.slice(0, 8) }; };
@@ -48,7 +45,7 @@ async function s3put(d: Destino, clave: string, cuerpo: Uint8Array, tipo: string
   const firma = hex(await hmac(await claveFirma(d, corta), aFirmar));
   const headers: Record<string, string> = { ...cabs, Authorization: `AWS4-HMAC-SHA256 Credential=${d.access}/${corta}/${d.region}/s3/aws4_request, SignedHeaders=${firmadas.join(";")}, Signature=${firma}` };
   delete headers.host;
-  const r = await fetch(`${u.protocol}//${host}${ruta}`, { method: "PUT", headers, body: cuerpo });
+  const r = await fetch(`${u.protocol}//${host}${ruta}`, { method: "PUT", headers, body: new Uint8Array(cuerpo) });
   if (!r.ok) throw new Error(`Almacén ${r.status}: ${(await r.text()).slice(0, 200)}`);
 }
 async function presignar(d: Destino, clave: string, nombre: string, seg = 3600, inline = false) {
@@ -104,16 +101,16 @@ async function proveedor(sb: SB, userId: string) {
     const { data: clave } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: prov.id }); if (!clave) continue;
     const { data: m } = await sb.from("modelos_ia").select("id, identificador, coste_entrada, coste_salida").eq("proveedor_id", prov.id).eq("activo", true).order("calidad", { ascending: false }).limit(3);
     const modelo = (m ?? []).find((x) => !/image|tts|whisper|embed/i.test(x.identificador)) ?? null;
-    return { slug, clave: String(clave), modelo: modelo?.identificador ?? (slug === "anthropic" ? "claude-sonnet-4-5" : slug === "google" ? "gemini-2.5-flash" : slug === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini"), modelo_id: modelo?.id ?? null, ce: Number(modelo?.coste_entrada ?? 3), cs: Number(modelo?.coste_salida ?? 15) };
+    return { slug, clave: String(clave), modelo: modelo?.identificador ?? (slug === "abacus" ? "route-llm" : slug === "anthropic" ? "claude-sonnet-4-5" : slug === "google" ? "gemini-2.5-flash" : slug === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini"), modelo_id: modelo?.id ?? null, ce: Number(modelo?.coste_entrada ?? 3), cs: Number(modelo?.coste_salida ?? 15) };
   }
   return null;
 }
-async function preguntar(p: any, sistema: string, pregunta: string, maxTokens = 3000, jsonMode = false) {
-  if (p.slug === "anthropic") { const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: pregunta }] }) }); const j = await r.json(); if (!r.ok) throw new Error(`Anthropic ${r.status}: ${String(j?.error?.message ?? "").slice(0, 160)}`); return { texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 }; }
-  if (p.slug === "google") { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens, ...(jsonMode ? { responseMimeType: "application/json" } : {}) } }) }); const j = await r.json(); if (!r.ok) throw new Error(`Google ${r.status}`); return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 }; }
-  const base = p.slug === "groq" ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1";
-  const r = await fetch(`${base}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.3, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
-  const j = await r.json(); if (!r.ok) throw new Error(`${p.slug} ${r.status}`); return { texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
+async function preguntar(sb: SB, userId: string, proyectoId: string | null, p: any, sistema: string, pregunta: string, maxTokens = 3000, jsonMode = false) {
+  if (p.slug === "anthropic") { const r = await fetchIADeUsuario(sb, userId, proyectoId, "manuales", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: pregunta }] }) }); const j = await r.json(); if (!r.ok) throw new Error(`Anthropic ${r.status}: ${String(j?.error?.message ?? "").slice(0, 160)}`); return { coste: Number(j._nex_coste_eur), texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 }; }
+  if (p.slug === "google") { const r = await fetchIADeUsuario(sb, userId, proyectoId, "manuales", `https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens, ...(jsonMode ? { responseMimeType: "application/json" } : {}) } }) }); const j = await r.json(); if (!r.ok) throw new Error(`Google ${r.status}`); return { coste: Number(j._nex_coste_eur), texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 }; }
+  const base = p.slug === "groq" ? "https://api.groq.com/openai/v1" : p.slug === "abacus" ? "https://routellm.abacus.ai/v1" : "https://api.openai.com/v1";
+  const r = await fetchIADeUsuario(sb, userId, proyectoId, "manuales", `${base}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.3, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+  const j = await r.json(); if (!r.ok) throw new Error(`${p.slug} ${r.status}`); return { coste: Number(j._nex_coste_eur), texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
 }
 const extraerJson = (t: string) => { const m = t.match(/```json\s*([\s\S]*?)```/) ?? t.match(/(\{[\s\S]*\})/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } };
 const PUBLICOS: Record<string, string> = { usuario: "el usuario final que usa la aplicación cada día (no técnico)", administrador: "el administrador o responsable que configura la aplicación y gestiona usuarios", comercial: "un cliente potencial o distribuidor: destaca beneficios y casos de uso, sin detalles técnicos" };
@@ -142,11 +139,11 @@ function sistemaRevisor(cfg: any, glosario: string[], perfil: string) {
     'Devuelve SOLO JSON con esta forma: {"texto_md":"capítulo revisado completo en Markdown","correcciones":número de cambios realizados,"ejemplos":["antes → después", … máximo 3 ejemplos cortos y representativos]}',
   ].filter(Boolean).join("\n");
 }
-async function revisarTexto(prov: any, sistema: string, texto: string) {
-  const r = await preguntar(prov, sistema, `Texto a revisar:\n\n${texto}`, Math.min(4000, Math.max(1200, Math.ceil(texto.length / 2))), true);
+async function revisarTexto(sb: SB, userId: string, proyectoId: string | null, prov: any, sistema: string, texto: string) {
+  const r = await preguntar(sb, userId, proyectoId, prov, sistema, `Texto a revisar:\n\n${texto}`, Math.min(4000, Math.max(1200, Math.ceil(texto.length / 2))), true);
   const j = extraerJson(r.texto);
   const revisado = typeof j?.texto_md === "string" && j.texto_md.trim().length > texto.length * 0.5 ? j.texto_md.trim() : null;
-  return { texto: revisado ?? texto, correcciones: revisado ? Math.max(0, Number(j?.correcciones ?? 0) || 0) : 0, ejemplos: revisado && Array.isArray(j?.ejemplos) ? j.ejemplos.filter((e: unknown) => typeof e === "string").slice(0, 3) : [], aplicado: !!revisado, te: r.te, ts: r.ts };
+  return { coste: r.coste, texto: revisado ?? texto, correcciones: revisado ? Math.max(0, Number(j?.correcciones ?? 0) || 0) : 0, ejemplos: revisado && Array.isArray(j?.ejemplos) ? j.ejemplos.filter((e: unknown) => typeof e === "string").slice(0, 3) : [], aplicado: !!revisado, te: r.te, ts: r.ts };
 }
 
 // ---------- Composición ----------
@@ -199,18 +196,30 @@ async function config(sb: SB, userId: string) {
   if (data) return data;
   const { data: n } = await sb.from("manuales_config").insert({ user_id: userId }).select("*").single(); return n!;
 }
+async function publicarManual(sb:SB,m:any,p:any,cfg:any,guardar:(v:Record<string,unknown>)=>PromiseLike<unknown>){
+      const { data: cfgApp } = await sb.from("configuracion_app").select("valor").eq("clave", "powered_by").maybeSingle();
+      const marca = cfgApp?.valor ?? "Modeontecno S.L.";
+      const html = componerHtml({ ...m, incluir_capturas: cfg.incluir_capturas }, p, marca); const md = componerMd(m, p);
+      const v=m.version_proyecto??p.version_actual??null;
+      const contenido=[m.introduccion_md??'',...(m.capitulos??[]).flatMap((c:any)=>[`# ${c.titulo??''}`,c.texto_md??''])].join('\n\n');
+      const doc=await guardarPDF(sb,m.user_id,p.id,'manual',m.titulo,contenido,`manual-${m.publico}.pdf`,v);
+      await guardar({estado:'listo',paso:'Manual PDF guardado. Puedes adjuntar capturas existentes desde el editor.',html,markdown:md,documento_id:doc.id,tokens_entrada:m.tokens_entrada,tokens_salida:m.tokens_salida,coste:m.coste,error:null});
+
+}
 async function procesar(sb: SB, id: string) {
+  const INICIO=Date.now();
   const { data: m } = await sb.from("manuales").select("*").eq("id", id).maybeSingle();
   if (!m || ["listo", "error"].includes(m.estado)) return;
-  const guardar = async (cambios: Record<string, unknown>) => sb.from("manuales").update({ ...cambios, actualizado_el: ahora() }).eq("id", id);
+  const guardar = async (cambios: Record<string, unknown>) => {const {error}=await sb.from("manuales").update({ ...cambios, actualizado_el: ahora() }).eq("id", id);if(error)throw new Error("No se pudo guardar el estado del manual");};
   try {
     const { data: p } = await sb.from("proyectos").select("*").eq("id", m.proyecto_id).single();
     const cfg = await config(sb, m.user_id);
+    if(m.estado==='publicando'){await publicarManual(sb,m,p,cfg,guardar);return;}
     const prov = await proveedor(sb, m.user_id); if (!prov) throw new Error("No hay proveedor de IA con clave (Anthropic recomendado). Ponla en Ajustes → Proveedores.");
     const { data: permitido } = await sb.rpc("gasto_ia_permitido", { p_user_id: m.user_id, p_proveedor: null, p_proyecto_id: m.proyecto_id });
     if (permitido === false) throw new Error("Presupuesto de IA superado con acción «bloquear».");
     let te = m.tokens_entrada ?? 0, ts = m.tokens_salida ?? 0;
-    const apuntar = async (r: { te: number; ts: number }) => { te += r.te; ts += r.ts; const c = (r.te * prov.ce + r.ts * prov.cs) / 1_000_000; await sb.from("consumos_ia").insert({ user_id: m.user_id, proyecto_id: m.proyecto_id, modelo_id: prov.modelo_id, tokens_entrada: r.te, tokens_salida: r.ts, coste: c, resultado: "ok" }).then(() => {}, () => {}); return c; };
+    const apuntar = async (r: { te: number; ts: number; coste: number }) => { te += r.te; ts += r.ts; const c = r.coste;  return c; };
     let coste = Number(m.coste ?? 0);
     const trato = cfg.tratamiento === "tu" ? "tutea al lector (tú)" : "trata al lector de usted";
     const sistemaBase = `Escribes manuales en español de España para ${PUBLICOS[m.publico] ?? PUBLICOS.usuario}. Estilo ${cfg.estilo === "tecnico" ? "preciso y técnico" : "claro, cercano y sin tecnicismos"}; ${trato} en todo el texto; frases cortas; pasos numerados cuando hay que hacer algo; consejos prácticos en notas. Nunca menciones que el texto lo ha escrito una IA ni cites archivos de código.`;
@@ -221,10 +230,10 @@ async function procesar(sb: SB, id: string) {
       const base = cfg.servicio_capturas ?? "https://image.thum.io/get/width/1280/crop/800/noanimate/";
       const urlApp = (p.espacio_trabajo_url ?? "").replace(/\/+$/, "");
       await guardar({ paso: "Proponiendo el índice del manual" });
-      const r = await preguntar(prov, sistemaBase + " Devuelves SOLO JSON.", `Proyecto «${p.nombre}»: ${p.descripcion ?? ""}. Objetivo: ${p.objetivo ?? ""}. Tecnologías: ${p.tecnologias ?? ""}.\nPantallas detectadas (ruta → textos visibles):\n${pantallas.map((x) => `- ${x.ruta}: ${x.extracto || "(sin textos)"}`).join("\n").slice(0, 14000)}\n\nPropón el índice de un manual para ${PUBLICOS[m.publico] ?? PUBLICOS.usuario}: máximo ${cfg.max_capitulos ?? 25} capítulos, uno por pantalla o flujo importante (agrupa las pantallas menores; omite login/errores salvo que aporten). Devuelve JSON: {"titulo":"…","introduccion":"3-5 frases de bienvenida y para qué sirve la aplicación","capitulos":[{"orden":1,"titulo":"…","ruta":"/ruta o null","objetivo":"qué consigue el usuario aquí","elementos":["botón X","campo Y"]}]}`, 3500, true);
+      const r = await preguntar(sb, m.user_id, m.proyecto_id, prov, sistemaBase + " Devuelves SOLO JSON.", `Proyecto «${p.nombre}»: ${p.descripcion ?? ""}. Objetivo: ${p.objetivo ?? ""}. Tecnologías: ${p.tecnologias ?? ""}.\nPantallas detectadas (ruta → textos visibles):\n${pantallas.map((x) => `- ${x.ruta}: ${x.extracto || "(sin textos)"}`).join("\n").slice(0, 14000)}\n\nPropón el índice de un manual para ${PUBLICOS[m.publico] ?? PUBLICOS.usuario}: máximo ${cfg.max_capitulos ?? 25} capítulos, uno por pantalla o flujo importante (agrupa las pantallas menores; omite login/errores salvo que aporten). Devuelve JSON: {"titulo":"…","introduccion":"3-5 frases de bienvenida y para qué sirve la aplicación","capitulos":[{"orden":1,"titulo":"…","ruta":"/ruta o null","objetivo":"qué consigue el usuario aquí","elementos":["botón X","campo Y"]}]}`, 3500, true);
       coste += await apuntar(r);
       const esquema = extraerJson(r.texto); if (!esquema?.capitulos?.length) throw new Error("La IA no devolvió un índice válido");
-      const capitulos = esquema.capitulos.slice(0, Number(cfg.max_capitulos ?? 25)).map((c: any, i: number) => ({ orden: i + 1, titulo: c.titulo, ruta: c.ruta ?? null, objetivo: c.objetivo ?? "", elementos: c.elementos ?? [], captura_url: cfg.incluir_capturas && urlApp && c.ruta && !/:/.test(c.ruta) ? `${base}${urlApp}${c.ruta}` : null, texto_md: null, revisado: false }));
+      const capitulos = esquema.capitulos.slice(0, Number(cfg.max_capitulos ?? 25)).map((c: any, i: number) => ({ orden: i + 1, titulo: c.titulo, ruta: c.ruta ?? null, objetivo: c.objetivo ?? "", elementos: c.elementos ?? [], captura_url: null, texto_md: null, revisado: false }));
       await guardar({ estado: "redactando", esquema, capitulos, titulo: m.titulo || esquema.titulo || `Manual de ${p.nombre}`, introduccion_md: esquema.introduccion ?? "", revision: null, revisado_el: null, tokens_entrada: te, tokens_salida: ts, coste, paso: `Redactando 0 de ${capitulos.length} capítulos` });
       m.capitulos = capitulos; m.esquema = esquema; m.estado = "redactando"; m.revision = null; m.introduccion_md = esquema.introduccion ?? "";
     }
@@ -234,7 +243,7 @@ async function procesar(sb: SB, id: string) {
         if (caps[i].texto_md) continue;
         if (Date.now() - INICIO > PRESUPUESTO_MS - 20_000) { await guardar({ capitulos: caps, tokens_entrada: te, tokens_salida: ts, coste }); await sb.rpc("lanzar_manuales", { p_accion: "continuar", p_id: id }); return; }
         const c = caps[i];
-        const r = await preguntar(prov, sistemaBase, `Manual «${m.titulo}» del proyecto «${p.nombre}» (${p.descripcion ?? ""}). Índice completo: ${caps.map((x) => x.titulo).join(" · ")}.\nEscribe el capítulo ${i + 1}: «${c.titulo}»${c.ruta ? ` (pantalla ${c.ruta})` : ""}. Objetivo: ${c.objetivo}. Elementos visibles: ${(c.elementos ?? []).join(", ")}.\nFormato Markdown: empieza con un párrafo de qué es y para qué sirve; luego subapartados «### Qué ves», «### Paso a paso» (lista numerada) y «### Consejos» (2-3 viñetas). Entre 180 y 350 palabras. No repitas el título del capítulo.`, 1400);
+        const r = await preguntar(sb, m.user_id, m.proyecto_id, prov, sistemaBase, `Manual «${m.titulo}» del proyecto «${p.nombre}» (${p.descripcion ?? ""}). Índice completo: ${caps.map((x) => x.titulo).join(" · ")}.\nEscribe el capítulo ${i + 1}: «${c.titulo}»${c.ruta ? ` (pantalla ${c.ruta})` : ""}. Objetivo: ${c.objetivo}. Elementos visibles: ${(c.elementos ?? []).join(", ")}.\nFormato Markdown: empieza con un párrafo de qué es y para qué sirve; luego subapartados «### Qué ves», «### Paso a paso» (lista numerada) y «### Consejos» (2-3 viñetas). Entre 180 y 350 palabras. No repitas el título del capítulo.`, 1400);
         coste += await apuntar(r);
         caps[i] = { ...c, texto_md: r.texto.trim(), revisado: false };
         await guardar({ capitulos: caps, tokens_entrada: te, tokens_salida: ts, coste, paso: `Redactando ${caps.filter((x) => x.texto_md).length} de ${caps.length} capítulos` });
@@ -252,13 +261,13 @@ async function procesar(sb: SB, id: string) {
       const acumular = (r: { correcciones: number; ejemplos: string[]; aplicado: boolean }) => { rev.correcciones += r.correcciones; if (!r.aplicado) rev.no_aplicados = (rev.no_aplicados ?? 0) + 1; rev.ejemplos = [...(rev.ejemplos ?? []), ...r.ejemplos].slice(0, 8); };
       let introMd = m.introduccion_md ?? "";
       if (!rev.intro && introMd.trim()) {
-        const r = await revisarTexto(prov, sistema, introMd); coste += await apuntar(r); acumular(r); introMd = r.texto; rev.intro = true;
+        const r = await revisarTexto(sb, m.user_id, m.proyecto_id, prov, sistema, introMd); coste += await apuntar(r); acumular(r); introMd = r.texto; rev.intro = true;
         await guardar({ introduccion_md: introMd, revision: rev, tokens_entrada: te, tokens_salida: ts, coste });
       }
       for (let i = 0; i < caps.length; i++) {
         if (!caps[i].texto_md || caps[i].revisado) continue;
         if (Date.now() - INICIO > PRESUPUESTO_MS - 20_000) { await guardar({ capitulos: caps, revision: rev, tokens_entrada: te, tokens_salida: ts, coste }); await sb.rpc("lanzar_manuales", { p_accion: "continuar", p_id: id }); return; }
-        const r = await revisarTexto(prov, sistema, caps[i].texto_md); coste += await apuntar(r); acumular(r);
+        const r = await revisarTexto(sb, m.user_id, m.proyecto_id, prov, sistema, caps[i].texto_md); coste += await apuntar(r); acumular(r);
         caps[i] = { ...caps[i], texto_md: r.texto, revisado: true }; rev.capitulos = caps.filter((x) => x.revisado).length;
         await guardar({ capitulos: caps, revision: rev, tokens_entrada: te, tokens_salida: ts, coste, paso: `Revisando la redacción: ${rev.capitulos} de ${caps.length} capítulos` });
       }
@@ -266,26 +275,7 @@ async function procesar(sb: SB, id: string) {
       m.capitulos = caps; m.introduccion_md = introMd; m.revision = rev; m.estado = "publicando";
       await guardar({ estado: "publicando", revision: rev, revisado_el: ahora(), paso: "Componiendo el documento" });
     }
-    if (m.estado === "publicando") {
-      const { data: cfgApp } = await sb.from("configuracion_app").select("valor").eq("clave", "powered_by").maybeSingle();
-      const marca = cfgApp?.valor ?? "Modeontecno S.L.";
-      const html = componerHtml({ ...m, incluir_capturas: cfg.incluir_capturas }, p, marca); const md = componerMd(m, p);
-      const d = await destinoDocumentos(sb, m.user_id);
-      const slug = p.proyectian_slug ?? p.slug; const v = m.version_proyecto ?? p.version_actual ?? "";
-      const baseNombre = `${slug}-manual-${m.publico}${v ? `-v${v}` : ""}`;
-      let rutaHtml: string | null = null, rutaMd: string | null = null;
-      if (d) {
-        rutaHtml = `proyectos/${slug}/03-MANUALES/${baseNombre}.html`; rutaMd = `proyectos/${slug}/03-MANUALES/${baseNombre}.md`;
-        await s3put(d, rutaHtml, enc.encode(html), "text/html; charset=utf-8"); await s3put(d, rutaMd, enc.encode(md), "text/markdown; charset=utf-8");
-      }
-      const rutaMac = `NUEVOS DESARROLLOS/${p.nombre.toUpperCase()}/03-MANUALES/${baseNombre}.pdf`;
-      const { data: doc } = await sb.from("documentos_nex").insert({ user_id: m.user_id, proyecto_id: p.id, tipo: "manual", titulo: m.titulo, version: v || null, nombre_archivo: `${baseNombre}.html`, mime: "text/html", bytes: html.length, ruta_remota: rutaHtml, origen: "generado", ruta_mac: rutaMac }).select("id").single();
-      let avisoP: string | null = null;
-      try { await proyectianSql(`insert into public.documentos (user_id, proyecto_id, tipo, titulo, version, descripcion, fecha, ruta_mac, destino_id, ruta_remota, bytes) select p.user_id, p.id, 'manual', ${sqlLit(m.titulo)}, ${sqlLit(v || null)}, ${sqlLit(`Manual de ${m.publico} generado por NexDeveloper${m.revision ? " (redacción revisada)" : ""}`)}, current_date, ${sqlLit(rutaMac)}, (select id from public.destinos_almacenamiento where tipo='s3' and activo order by usar_para_documentos desc limit 1), ${sqlLit(rutaHtml)}, ${html.length} from public.proyectos p where p.slug = ${sqlLit(slug)}`); }
-      catch (e) { avisoP = `Proyectian no respondió: ${String(e?.message ?? e).slice(0, 150)}`; }
-      await sb.from("tareas").insert({ user_id: m.user_id, proyecto_id: p.id, titulo: `Repaso final y copia en el Mac: ${baseNombre}.pdf`, descripcion: `Descarga el PDF del manual desde Manuales → ${m.titulo}, dale el repaso final en Grammarly si lo ves necesario y guárdalo en ${rutaMac}`, estado: "pendiente", prioridad: "baja", requiere_atencion: true, motivo_atencion: "Repaso final y copia local en el Mac", instrucciones: `Manuales → abre «${m.titulo}» → «Descargar PDF» → (opcional) repaso final en Grammarly → guarda el archivo en ${rutaMac}` }).then(() => {}, () => {});
-      await guardar({ estado: "listo", paso: avisoP ?? (m.revision ? `Manual publicado · redacción revisada (${m.revision.correcciones ?? 0} correcciones)` : "Manual publicado"), html, markdown: md, ruta_remota_html: rutaHtml, ruta_remota_md: rutaMd, documento_id: doc?.id ?? null, tokens_entrada: te, tokens_salida: ts, coste, error: null });
-    }
+    if(m.estado==='publicando'){m.tokens_entrada=te;m.tokens_salida=ts;m.coste=coste;await publicarManual(sb,m,p,cfg,guardar);}
   } catch (e) { await guardar({ estado: "error", error: String(e?.message ?? e).slice(0, 500) }); }
 }
 
@@ -311,7 +301,7 @@ Deno.serve(async (req) => {
         const { data: cfgs } = await sb.from("manuales_config").select("user_id, regenerar_al_cambiar_version").eq("regenerar_al_cambiar_version", true);
         const res: unknown[] = [];
         for (const c of cfgs ?? []) {
-          const { data: ultimos } = await sb.from("manuales").select("id, proyecto_id, publico, version_proyecto, titulo, proyectos(version_actual)").eq("user_id", c.user_id).eq("estado", "listo").order("creado_el", { ascending: false });
+          const { data: ultimos } = await sb.from("manuales").select("id, proyecto_id, publico, version_proyecto, titulo, proyectos!manuales_proyecto_id_fkey(version_actual)").eq("user_id", c.user_id).eq("estado", "listo").order("creado_el", { ascending: false });
           const vistos = new Set<string>();
           for (const u of ultimos ?? []) {
             const k = `${u.proyecto_id}:${u.publico}`; if (vistos.has(k)) continue; vistos.add(k);
@@ -326,7 +316,8 @@ Deno.serve(async (req) => {
         const cfg = await config(sb, userId!);
         const prov = await proveedor(sb, userId!);
         const perfil = await perfilEstilo(sb, userId!);
-        return json({ ok: true, config: cfg, ia: prov ? `${prov.slug} · ${prov.modelo}` : null, github: !!TOKEN_GITHUB, proyectian: !!TOKEN_CUENTA, almacen: !!(await destinoDocumentos(sb, userId!)), perfil_estilo: !!perfil, revisor: !!prov });
+        const {data:bucket,error:be}=await sb.storage.getBucket('entregas');const {count:enlaces,error:ee}=await sb.from('proyectian_enlaces').select('id',{count:'exact',head:true}).eq('user_id',userId).eq('activo',true);
+        return json({ ok: true, config: cfg, ia: prov ? `${prov.slug} · ${prov.modelo}` : null, github: !!TOKEN_GITHUB, proyectian: !ee&&Number(enlaces)>0, almacen: !be&&!!bucket, perfil_estilo: !!perfil, revisor: !!prov });
       }
       case "configurar": {
         const permitidos = ["regenerar_al_cambiar_version", "estilo", "incluir_capturas", "servicio_capturas", "max_capitulos", "revisar_redaccion", "tratamiento", "nivel_revision", "usar_perfil_estilo", "glosario"];
@@ -386,6 +377,13 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
       case "enlace": {
+        if(cuerpo.formato==='pdf'){
+          const {data:m,error:me}=await sb.from('manuales').select('*').eq('id',String(cuerpo.manual_id)).eq('user_id',userId!).single();if(me||!m||m.estado!=='listo')throw new Error('Manual no disponible');
+          const texto=[m.introduccion_md??'',...(m.capitulos??[]).flatMap((c:any)=>[`# ${c.titulo??''}`,c.texto_md??''])].join('\n\n');
+          const doc=await guardarPDF(sb,userId!,m.proyecto_id,'manual',m.titulo,texto,`manual-${m.publico}.pdf`,m.version_proyecto??null);
+          const {error:ue}=await sb.from('manuales').update({documento_id:doc.id}).eq('id',m.id).eq('user_id',userId!);if(ue)throw new Error('PDF guardado; referencia pendiente');
+          const {data,error}=await sb.storage.from('entregas').createSignedUrl(doc.ruta_remota,300,{download:true});if(error||!data)throw new Error('No se puede descargar el PDF');return json({ok:true,url:data.signedUrl});
+        }
         const { data: m } = await sb.from("manuales").select("ruta_remota_html, ruta_remota_md, titulo").eq("id", String(cuerpo.manual_id)).eq("user_id", userId!).maybeSingle();
         if (!m?.ruta_remota_html) return json({ ok: false, error: "El manual no está en el almacén" });
         const d = await destinoDocumentos(sb, userId!); if (!d) return json({ ok: false, error: "Sin almacén configurado" });

@@ -304,7 +304,7 @@ export type OrdenRow = {
   coste_estimado: number
   horas_estimadas: number
   riesgo: Riesgo
-  calidad_prevista: number
+  calidad_prevista: number | null
   requiere_aprobacion: boolean
   revision_id: string | null
   bloqueada_por_revision: boolean
@@ -318,8 +318,9 @@ export type OrdenRow = {
   pendiente_confirmar_proyecto: boolean
   requiere_atencion: boolean
   ejecucion_id: string | null
-  ejecutar_con: "lovable" | "manual"
+  ejecutar_con: "lovable" | "manual" | "claude" | "auto"
   creado_el: string
+  origen_mesa_id?: string | null
 }
 
 
@@ -388,7 +389,7 @@ export type EstimacionRow = {
   modo: ModoEjecucion
   horas_estimadas: number
   coste_estimado: number
-  calidad_prevista: number
+  calidad_prevista: number | null
   riesgo: Riesgo
   horas_reales: number | null
   coste_real: number | null
@@ -1426,6 +1427,8 @@ export type TipoDocumentoNex =
   | "otro"
 
 export type DocumentoNexRow = {
+  bucket: string|null;
+  sha256: string|null;
   id: string
   user_id: string
   proyecto_id: string
@@ -2003,6 +2006,7 @@ export type ModoTrabajoEjecucion = "construir" | "planificar"
 export type EstadoConexionLovable = "desconectada" | "conectada" | "error"
 
 export type EjecucionOrdenRow = {
+  resultado_pendiente: Json|null;
   id: string
   user_id: string
   orden_id: string | null
@@ -2435,7 +2439,7 @@ export type PlaudGrabacionRow = {
 
 export type ModoPersonal = "fusion" | "rapido" | "comparar"
 export type RolMensajePersonal = "usuario" | "asistente"
-export type ModoReescritura = "mi_voz" | "marca" | "tutor"
+export type ModoReescritura = "desactivado" | "natural" | "mi_voz" | "marca" | "tutor"
 
 export type RespuestaProveedorPersonal = {
   proveedor?: string
@@ -2521,6 +2525,12 @@ export type NotasTutor = {
   siguiente_paso?: string
 }
 
+export type IaControlRow = {
+ user_id: string; habilitado: boolean; limite_dia: number; limite_mes: number;
+ limite_personal_mes: number; maximo_llamada: number; actualizado_el: string;
+}
+export type IaResumen = {config: IaControlRow | null; calculado_mes: number; reservado: number; inciertas: number; actualizado_el: string}
+
 export type Database = {
 
 
@@ -2531,6 +2541,11 @@ export type Database = {
   __InternalSupabase: { PostgrestVersion: "14.5" }
   public: {
     Tables: {
+      proyectian_objetos: Tabla<{enlace_id:string;entidad:string;id:string;user_id:string;proyecto_id:string;datos:Json;revision:number}>
+      personal_memoria_historial: Tabla<{id:number;user_id:string;instrucciones:string|null;perfil_estilo:string|null;creada_el:string}>
+      proyectian_enlaces: Tabla<{id:string;user_id:string;proyecto_id:string;origen_usuario:string;origen_proyecto:string;activo:boolean;revision:number;ultimo_error:string|null;sincronizado_el:string|null}>
+      ia_tarifas: Tabla<{modelo_id:string;user_id:string;entrada_eur_millon:number;salida_eur_millon:number;fuente:string;verificada_hasta:string;max_entrada:number;max_salida:number}>
+      ia_control: Tabla<IaControlRow, Partial<IaControlRow> & {user_id:string}, Partial<IaControlRow>>
       perfiles: Tabla<PerfilRow, Partial<PerfilRow> & { id: string }, Partial<PerfilRow>>
       ajustes: Tabla<AjustesRow>
       agentes: Tabla<AgenteRow>
@@ -2649,6 +2664,7 @@ export type Database = {
         Partial<SinUsuario<CierreVersionRow>> & { proyecto_id: string; version: string },
         Partial<SinUsuario<CierreVersionRow>>
       >
+      entregas_requeridas: Tabla<{id:string;user_id:string;proyecto_id:string;orden_id:string;titulo:string;documento_id:string|null;creado_el:string}>
       documentos_nex: Tabla<DocumentoNexRow>
       manuales: Tabla<ManualRow, Partial<SinUsuario<ManualRow>> & { proyecto_id: string; titulo: string }, Partial<SinUsuario<ManualRow>>>
       manuales_config: Tabla<ManualesConfigRow, Partial<SinUsuario<ManualesConfigRow>>, Partial<SinUsuario<ManualesConfigRow>>>
@@ -2776,6 +2792,14 @@ export type Database = {
     }
 
     Functions: {
+      cancelar_orden_completa: {Args:{p_orden:string};Returns:undefined};
+      crear_orden_completa: {Args:{p_solicitud:string;p_datos:Json};Returns:Json};
+      resolver_orden_completa: {Args:{p_orden:string;p_decision:string;p_comentario?:string};Returns:undefined};
+      crear_orden_desde_proyectian: {Args:{p_enlace:string;p_pendiente:string;p_instalacion?:string};Returns:string};
+      configurar_entrega: {Args:{p_orden:string;p_titulo:string;p_entrega?:string;p_documento?:string;p_eliminar?:boolean};Returns:string};
+      ia_configurar_tarifa: {Args: {p_modelo_id:string;p_entrada:number;p_salida:number;p_fuente:string;p_hasta:string;p_max_entrada:number;p_max_salida:number}; Returns:undefined}
+      personal_restaurar_memoria: {Args:{p_revision:number};Returns:undefined}
+      ia_resumen: {Args: Record<PropertyKey, never>; Returns: IaResumen}
       guardar_secreto_copias: {
         Args: { p_destino_id: string; p_secreto: string }
         Returns: boolean

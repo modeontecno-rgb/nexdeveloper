@@ -1,0 +1,104 @@
+{
+  "ordenes-ejecutar": {
+    "verify_jwt": false
+  },
+  "asistente": {
+    "verify_jwt": false
+  },
+  "auditar": {
+    "verify_jwt": false
+  },
+  "avisos": {
+    "verify_jwt": false
+  },
+  "bandeja": {
+    "verify_jwt": false
+  },
+  "barrer-expertos": {
+    "verify_jwt": false
+  },
+  "calidad-github": {
+    "verify_jwt": false
+  },
+  "canva-oauth": {
+    "verify_jwt": true
+  },
+  "compilar-app": {
+    "verify_jwt": false
+  },
+  "comprobar-secretos": {
+    "verify_jwt": false
+  },
+  "copias-generar": {
+    "verify_jwt": false
+  },
+  "copias-restaurar": {
+    "verify_jwt": false
+  },
+  "desplegar-funcion": {
+    "verify_jwt": false
+  },
+  "documentar": {
+    "verify_jwt": false
+  },
+  "dominios-comprobar": {
+    "verify_jwt": false
+  },
+  "ejecutar-accion": {
+    "verify_jwt": true
+  },
+  "facturacion": {
+    "verify_jwt": false
+  },
+  "gasto-ia": {
+    "verify_jwt": false
+  },
+  "github-repos": {
+    "verify_jwt": true
+  },
+  "habilidades": {
+    "verify_jwt": false
+  },
+  "infraestructura": {
+    "verify_jwt": false
+  },
+  "manuales": {
+    "verify_jwt": false
+  },
+  "mesa": {
+    "verify_jwt": false
+  },
+  "personal": {
+    "verify_jwt": false
+  },
+  "pideme": {
+    "verify_jwt": false
+  },
+  "portal-cliente": {
+    "verify_jwt": false
+  },
+  "probar-proveedor": {
+    "verify_jwt": true
+  },
+  "publicar-experto": {
+    "verify_jwt": true
+  },
+  "resumenes": {
+    "verify_jwt": false
+  },
+  "salud": {
+    "verify_jwt": false
+  },
+  "sincronizar-proyectian": {
+    "verify_jwt": false
+  },
+  "usuarios-clientes": {
+    "verify_jwt": false
+  },
+  "vigilar": {
+    "verify_jwt": false
+  },
+  "voz": {
+    "verify_jwt": false
+  }
+}

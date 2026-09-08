@@ -335,7 +335,7 @@ export function useCancelarEjecucion() {
     mutationFn: (ejecucionId: string) => llamar({ accion: "cancelar", ejecucion_id: ejecucionId }),
     onSuccess: () => {
       refrescar();
-      toast.success("Ejecución cancelada.");
+      toast.success("No se iniciarán más pasos. Comprueba las operaciones externas que ya estaban en curso.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -347,7 +347,7 @@ export function useReintentarEjecucion() {
   return useMutation({
     onMutate: seguirTrabajo.empezar,
     onSettled: seguirTrabajo.acabar,
-    mutationFn: (ejecucionId: string) => llamar({ accion: "reintentar", ejecucion_id: ejecucionId }),
+    mutationFn: (ejecucionId: string) => llamar<{ejecucion:EjecucionOrdenRow}>({ accion: "reintentar", ejecucion_id: ejecucionId }),
     onSuccess: () => {
       refrescar();
       toast.success("Volviendo a intentarlo.");

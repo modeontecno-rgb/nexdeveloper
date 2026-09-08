@@ -27,36 +27,10 @@ async function elegirBuscador(sb: SB, userId: string): Promise<Buscador | null> 
 }
 
 type Salida = { texto: string; tokens_entrada: number; tokens_salida: number; busquedas: number };
-async function consultar(b: Buscador, sistema: string, pregunta: string): Promise<Salida> {
-  if (b.proveedor === "anthropic") {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST", headers: { "x-api-key": b.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: b.modelo, max_tokens: 6000, system: sistema, tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }], messages: [{ role: "user", content: pregunta }] }),
-    });
-    if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 300)}`);
-    const j = await r.json();
-    const texto = (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
-    return { texto, tokens_entrada: j.usage?.input_tokens ?? 0, tokens_salida: j.usage?.output_tokens ?? 0, busquedas: j.usage?.server_tool_use?.web_search_requests ?? 0 };
-  }
-  if (b.proveedor === "google") {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${b.modelo}:generateContent?key=${b.clave}`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.2, maxOutputTokens: 6000 } }),
-    });
-    if (!r.ok) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 300)}`);
-    const j = await r.json();
-    const texto = (j.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("\n");
-    return { texto, tokens_entrada: j.usageMetadata?.promptTokenCount ?? 0, tokens_salida: j.usageMetadata?.candidatesTokenCount ?? 0, busquedas: (j.candidates?.[0]?.groundingMetadata?.webSearchQueries ?? []).length };
-  }
-  // Perplexity (compatible OpenAI)
-  const r = await fetch("https://api.perplexity.ai/chat/completions", {
-    method: "POST", headers: { Authorization: `Bearer ${b.clave}`, "content-type": "application/json" },
-    body: JSON.stringify({ model: b.modelo, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }], temperature: 0.2, max_tokens: 6000 }),
-  });
-  if (!r.ok) throw new Error(`Perplexity ${r.status}: ${(await r.text()).slice(0, 300)}`);
-  const j = await r.json();
-  return { texto: j.choices?.[0]?.message?.content ?? "", tokens_entrada: j.usage?.prompt_tokens ?? 0, tokens_salida: j.usage?.completion_tokens ?? 0, busquedas: (j.citations ?? []).length };
+async function consultar(_b: Buscador, _sistema: string, _pregunta: string): Promise<Salida> {
+  throw new Error('Búsqueda de pago desactivada hasta disponer de una reserva que incluya tokens y recargos de búsqueda. No se ha enviado ninguna consulta.');
 }
+
 function extraerJson(texto: string): any {
   const m = texto.match(/```json\s*([\s\S]*?)```/) ?? texto.match(/(\{[\s\S]*\})/);
   if (!m) throw new Error("La IA no devolvió JSON");
@@ -164,7 +138,7 @@ Deno.serve(async (req) => {
       if (!user) return json({ ok: false, error: "Sin sesión" }, 401);
       userId = user.id;
     }
-    if (!accion) { const b = userId ? await elegirBuscador(sb, userId) : null; return json({ ok: true, listo: true, buscador: b ? `${b.proveedor} · ${b.modelo}` : null }); }
+    if (!accion) { const b = userId ? await elegirBuscador(sb, userId) : null; return json({ ok: true, listo: false, motivo: "Búsqueda con recargos pendiente de control económico", buscador: b ? `${b.proveedor} · ${b.modelo}` : null }); }
 
     if (accion === "programado") {
       if (!esServicio) return json({ ok: false, error: "Solo el servicio" }, 403);

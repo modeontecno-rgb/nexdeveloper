@@ -1,3 +1,4 @@
+import {fetchIADeUsuario} from '../_shared/presupuesto.ts';
 // NexDeveloper · Edge Function «voz» (0.18.0)
 // Voz ElevenLabs para vídeos demo: guion por escenas (IA) a partir del proyecto y sus pantallas, locución con ElevenLabs guardada en el almacén propio.
 // Acciones: voces · generar_guion {proyecto_id, duracion_objetivo_seg?, publico?} · locutar {guion_id?, escena?, texto?, titulo?, proyecto_id?, voz_id?} · enlace {locucion_id} · sin acción → estado
@@ -31,7 +32,7 @@ async function s3put(d: Destino, clave: string, cuerpo: Uint8Array, tipo: string
   const firma = hex(await hmac(await claveFirma(d, corta), aFirmar));
   const headers: Record<string, string> = { ...cabs, Authorization: `AWS4-HMAC-SHA256 Credential=${d.access}/${corta}/${d.region}/s3/aws4_request, SignedHeaders=${firmadas.join(";")}, Signature=${firma}` };
   delete headers.host;
-  const r = await fetch(`${u.protocol}//${host}${ruta}`, { method: "PUT", headers, body: cuerpo });
+  const r = await fetch(`${u.protocol}//${host}${ruta}`, { method: "PUT", headers, body: new Uint8Array(cuerpo).buffer });
   if (!r.ok) throw new Error(`Almacén ${r.status}: ${(await r.text()).slice(0, 200)}`);
 }
 async function presignar(d: Destino, clave: string, nombre: string, seg = 3600, inline = true) {
@@ -57,14 +58,14 @@ async function clave(sb: SB, userId: string, slug: string) {
   const { data } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: p.id });
   return data ? String(data) : null;
 }
-async function redactar(sb: SB, userId: string, sistema: string, pregunta: string) {
+async function redactar(sb: SB, userId: string, sistema: string, pregunta: string, proyectoId:string|null=null) {
   for (const slug of ["anthropic", "groq", "google"]) {
     const k = await clave(sb, userId, slug); if (!k) continue;
     try {
-      if (slug === "anthropic") { const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": k, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 3000, system: sistema, messages: [{ role: "user", content: pregunta }] }) }); if (r.ok) { const j = await r.json(); return { texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), por: slug }; } }
-      else if (slug === "google") { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { responseMimeType: "application/json" } }) }); if (r.ok) { const j = await r.json(); return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), por: slug }; } }
-      else { const r = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer ${k}`, "content-type": "application/json" }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", temperature: 0.4, response_format: { type: "json_object" }, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) }); if (r.ok) { const j = await r.json(); return { texto: j.choices?.[0]?.message?.content ?? "", por: slug }; } }
-    } catch (_) { /* siguiente */ }
+      if (slug === "anthropic") { const r = await fetchIADeUsuario(sb,userId,proyectoId,'voz-guion',"https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": k, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 3000, system: sistema, messages: [{ role: "user", content: pregunta }] }) }); if (r.ok) { const j = await r.json(); return { texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), por: slug }; } }
+      else if (slug === "google") { const r = await fetchIADeUsuario(sb,userId,proyectoId,'voz-guion',`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${k}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { responseMimeType: "application/json" } }) }); if (r.ok) { const j = await r.json(); return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), por: slug }; } }
+      else { const r = await fetchIADeUsuario(sb,userId,proyectoId,'voz-guion',"https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer ${k}`, "content-type": "application/json" }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", temperature: 0.4, response_format: { type: "json_object" }, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) }); if (r.ok) { const j = await r.json(); return { texto: j.choices?.[0]?.message?.content ?? "", por: slug }; } }
+    } catch (error) { throw error; }
   }
   return null;
 }
@@ -79,10 +80,10 @@ Deno.serve(async (req) => {
     const { data: { user } } = jwt ? await sb.auth.getUser(jwt) : { data: { user: null } };
     const tokenCron = req.headers.get("x-cron-token") ?? "";
     let userId = user?.id ?? null;
-    if (!userId && tokenCron) { const { data } = await sb.rpc("comprobar_cron_token", { p_token: tokenCron }); if (data === true) { const { data: c } = await sb.from("voz_config").select("user_id").limit(1).maybeSingle(); userId = c?.user_id ?? null; } }
+    if (!userId && tokenCron) { const { data } = await sb.rpc("comprobar_cron_token", { p_token: tokenCron }); if (data === true && typeof cuerpo.user_id === "string") { userId = cuerpo.user_id; } }
     if (!userId) return json({ ok: false, error: "Sin sesión" }, 401);
     const kEleven = await clave(sb, userId, "elevenlabs");
-    if (!accion) { const d = await destino(sb, userId); return json({ ok: true, listo: true, elevenlabs: !!kEleven, almacen: !!d }); }
+    if (!accion) { const d = await destino(sb, userId); return json({ ok: true, listo: true, locucion_disponible: false, elevenlabs: !!kEleven, almacen: !!d }); }
     const { data: cfg } = await sb.from("voz_config").select("*").eq("user_id", userId).maybeSingle();
 
     if (accion === "voces") {
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
       const pantallas = (previews ?? []).map((v) => `- ${v.titulo}: ${v.url}`).join("\n") || "(sin URLs registradas; usa las pantallas típicas de la aplicación)";
       const sistema = "Eres guionista de vídeos de demostración de software para Soluciones EvoluteIA S.L. Escribes en español de España, natural, para ser leído en voz alta por una locutora. Nada de tecnicismos ni de nombres de proveedores de IA. Devuelves SOLO JSON.";
       const pregunta = `Proyecto: «${p.nombre}». ${p.descripcion ?? ""}\nPúblico: ${publico}. Duración objetivo: ${dur} segundos (unas ${Math.round(dur * 2.3)} palabras).\nPantallas disponibles:\n${pantallas}\n${cuerpo.notas ? `Notas de Javier: ${cuerpo.notas}\n` : ""}\nEscribe un guion por escenas para un vídeo demo: apertura con el problema que resuelve, 4-7 escenas con lo que se ve en pantalla y lo que se dice, y cierre con llamada a la acción (contacto por WhatsApp). Formato: {"titulo":"…","escenas":[{"orden":1,"titulo":"…","texto":"lo que dice la voz (2-5 frases)","url_pantalla":"URL de la pantalla que se muestra o null","duracion_seg":15}]}`;
-      const r = await redactar(sb, userId, sistema, pregunta);
+      const r = await redactar(sb, userId, sistema, pregunta, p.id);
       let guion: any = null;
       if (r) { const m = r.texto.match(/\{[\s\S]*\}/); if (m) { try { guion = JSON.parse(m[0]); } catch { /* nada */ } } }
       if (!guion) guion = { titulo: `Demo de ${p.nombre}`, escenas: [{ orden: 1, titulo: "Presentación", texto: `${p.nombre}: ${p.descripcion ?? "la solución de Soluciones EvoluteIA"}.`, url_pantalla: p.espacio_trabajo_url ?? null, duracion_seg: 20 }, { orden: 2, titulo: "Cierre", texto: "Si quieres verlo con tus datos, escríbenos por WhatsApp y te lo enseñamos en una demo.", url_pantalla: null, duracion_seg: 10 }] };
@@ -113,36 +114,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, guion: fila });
     }
     if (accion === "locutar") {
-      if (!kEleven) return json({ ok: false, error: "Pon la clave de ElevenLabs en Ajustes → Proveedores de IA." });
-      let texto = String(cuerpo.texto ?? ""); let titulo = String(cuerpo.titulo ?? "Locución"); let proyectoId = cuerpo.proyecto_id ?? null; let guionId = cuerpo.guion_id ?? null; let escena: number | null = cuerpo.escena ?? null;
-      if (guionId) {
-        const { data: g } = await sb.from("guiones_demo").select("*").eq("id", String(guionId)).eq("user_id", userId).maybeSingle();
-        if (!g) return json({ ok: false, error: "Guion no encontrado" }, 404);
-        proyectoId = g.proyecto_id;
-        const escenas = (g.escenas ?? []) as any[];
-        if (escena !== null && escena !== undefined) { const e = escenas.find((x) => Number(x.orden) === Number(escena)); if (!e) return json({ ok: false, error: "Escena no encontrada" }, 404); texto = e.texto; titulo = `${g.titulo} · ${e.titulo}`; }
-        else { texto = escenas.map((e) => e.texto).join("\n\n"); titulo = g.titulo; }
-      }
-      texto = texto.trim(); if (!texto) return json({ ok: false, error: "No hay texto que locutar" }, 400);
-      if (texto.length > 4800) return json({ ok: false, error: "Máximo 4.800 caracteres por locución; divide por escenas." }, 400);
-      const vozId = String(cuerpo.voz_id ?? cfg?.voz_id ?? "");
-      if (!vozId) return json({ ok: false, error: "Elige una voz en Voz → Configuración." }, 400);
-      const { data: loc } = await sb.from("locuciones").insert({ user_id: userId, proyecto_id: proyectoId, guion_id: guionId, escena, titulo, texto, voz_id: vozId, voz_nombre: cuerpo.voz_nombre ?? cfg?.voz_nombre ?? null, modelo: cfg?.modelo ?? "eleven_multilingual_v2", estado: "generando", caracteres: texto.length }).select("*").single();
-      try {
-        const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vozId}?output_format=mp3_44100_128`, { method: "POST", headers: { "xi-api-key": kEleven, "content-type": "application/json" }, body: JSON.stringify({ text: texto, model_id: cfg?.modelo ?? "eleven_multilingual_v2", language_code: "es", voice_settings: { stability: Number(cfg?.estabilidad ?? 0.5), similarity_boost: Number(cfg?.similitud ?? 0.75), style: Number(cfg?.estilo ?? 0.2), use_speaker_boost: true, speed: Number(cfg?.velocidad ?? 1) } }) });
-        if (!r.ok) throw new Error(`ElevenLabs ${r.status}: ${(await r.text()).slice(0, 200)}`);
-        const bytes = new Uint8Array(await r.arrayBuffer());
-        const d = await destino(sb, userId); if (!d) throw new Error("Sin destino de almacén");
-        let slug = "general"; if (proyectoId) { const { data: p } = await sb.from("proyectos").select("slug, proyectian_slug").eq("id", proyectoId).maybeSingle(); slug = p?.proyectian_slug ?? p?.slug ?? "general"; }
-        const clave_ = `proyectos/${slug}/03-MANUALES/locuciones/${limpiar(titulo).slice(0, 60)}-${Date.now()}.mp3`;
-        await s3put(d, clave_, bytes, "audio/mpeg");
-        const duracion = Number((bytes.length * 8 / 128000).toFixed(2));
-        await sb.from("locuciones").update({ estado: "ok", ruta_remota: clave_, bytes: bytes.length, duracion_seg: duracion, terminada_el: new Date().toISOString() }).eq("id", loc.id);
-        await sb.from("documentos_nex").insert({ user_id: userId, proyecto_id: proyectoId, tipo: "video", titulo: `Locución: ${titulo}`, nombre_archivo: clave_.split("/").pop(), mime: "audio/mpeg", bytes: bytes.length, ruta_remota: clave_, origen: "nexdeveloper" }).then(() => {}, () => {});
-        const { data: mid } = await sb.from("modelos_ia").select("id").eq("identificador", "eleven_multilingual_v2").maybeSingle();
-        if (mid) await sb.from("consumos_ia").insert({ user_id: userId, proyecto_id: proyectoId, modelo_id: mid.id, tokens_entrada: texto.length, tokens_salida: 0, coste: Number((texto.length * 0.00018).toFixed(4)), resultado: "ok" }).then(() => {}, () => {});
-        return json({ ok: true, locucion_id: loc.id, url: await presignar(d, clave_, clave_.split("/").pop()!), duracion_seg: duracion, bytes: bytes.length });
-      } catch (e) { await sb.from("locuciones").update({ estado: "error", error: String(e?.message ?? e).slice(0, 300), terminada_el: new Date().toISOString() }).eq("id", loc.id); return json({ ok: false, error: String(e?.message ?? e) }); }
+      return json({ok:false,error:'Locución de pago desactivada: falta un contador verificado por caracteres. Guiones y audios existentes siguen disponibles.'},409);
     }
     if (accion === "enlace") {
       const { data: l } = await sb.from("locuciones").select("*").eq("id", String(cuerpo.locucion_id)).eq("user_id", userId).maybeSingle();

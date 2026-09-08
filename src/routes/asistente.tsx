@@ -1,3 +1,4 @@
+import {useDictado} from "@/components/nex/dictado";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronDown,
@@ -491,7 +492,7 @@ function Redaccion({
   proveedor: string;
   onProveedor: (v: string) => void;
 }) {
-  const { escuchando, soportado, alternar } = useDictado((t) => onTexto(texto ? `${texto} ${t}` : t));
+  const { escuchando, soportado, alternar, lienzoOnda } = useDictado((t) => onTexto(texto ? `${texto} ${t}` : t));
 
   return (
     <form
@@ -502,6 +503,7 @@ function Redaccion({
       className="mt-4 border-t border-border pt-3"
     >
       <div className="flex items-end gap-2">
+        {escuchando && <canvas ref={lienzoOnda} aria-label="Onda del micrófono en directo" className="h-12 w-full text-primary" />}
         <textarea
           value={texto}
           onChange={(e) => onTexto(e.target.value)}
@@ -568,64 +570,6 @@ function Redaccion({
       </div>
     </form>
   );
-}
-
-/** Dictado por voz del navegador (es-ES), si está disponible. */
-function useDictado(alTexto: (t: string) => void) {
-  const [escuchando, setEscuchando] = React.useState(false);
-  const [soportado, setSoportado] = React.useState(false);
-  const refReconocimiento = React.useRef<{ start: () => void; stop: () => void } | null>(null);
-  const refTexto = React.useRef(alTexto);
-  refTexto.current = alTexto;
-
-  React.useEffect(() => {
-    const ventana = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
-    const Constructor = (ventana.SpeechRecognition ?? ventana.webkitSpeechRecognition) as
-      | (new () => Record<string, unknown>)
-      | undefined;
-    if (!Constructor) return;
-    setSoportado(true);
-    const reconocimiento = new Constructor() as Record<string, unknown> & { start: () => void; stop: () => void };
-    reconocimiento["lang"] = "es-ES";
-    reconocimiento["interimResults"] = false;
-    reconocimiento["continuous"] = false;
-    reconocimiento["onresult"] = (evento: unknown) => {
-      const resultados = (evento as { results?: Array<Array<{ transcript?: string }>> }).results;
-      const dicho = resultados?.[0]?.[0]?.transcript ?? "";
-      if (dicho) refTexto.current(dicho);
-    };
-    reconocimiento["onend"] = () => setEscuchando(false);
-    reconocimiento["onerror"] = () => {
-      setEscuchando(false);
-      toast.error("No se ha podido usar el micrófono.");
-    };
-    refReconocimiento.current = reconocimiento;
-    return () => {
-      try {
-        reconocimiento.stop();
-      } catch {
-        /* ya parado */
-      }
-    };
-  }, []);
-
-  const alternar = () => {
-    const reconocimiento = refReconocimiento.current;
-    if (!reconocimiento) return;
-    if (escuchando) {
-      reconocimiento.stop();
-      setEscuchando(false);
-      return;
-    }
-    try {
-      reconocimiento.start();
-      setEscuchando(true);
-    } catch {
-      setEscuchando(false);
-    }
-  };
-
-  return { escuchando, soportado, alternar };
 }
 
 /* --------------------------- Piezas reutilizables ------------------------ */

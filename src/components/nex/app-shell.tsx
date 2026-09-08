@@ -1,3 +1,5 @@
+import {EditorEstiloGlobal} from './editor-estilo-global';
+import {ActividadPersistente} from './actividad-persistente';
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
@@ -182,6 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
 
         <main className="min-w-0 overflow-x-hidden px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:py-10 lg:pb-10">
+          <ActividadPersistente/>
           {children}
         </main>
 
@@ -978,7 +981,7 @@ export function Encabezado({
         <h1 className="text-xl font-semibold sm:text-3xl">{titulo}</h1>
         {descripcion ? <p className="mt-1 text-sm text-muted-foreground">{descripcion}</p> : null}
       </div>
-      {acciones ? <div className="flex flex-wrap gap-2">{acciones}</div> : null}
+      <div className="flex flex-wrap gap-2"><EditorEstiloGlobal/>{acciones}</div>
     </div>
   );
 }

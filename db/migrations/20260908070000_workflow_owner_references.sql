@@ -1,0 +1,23 @@
+-- Enforce owner consistency on new workflow references. Existing single-column delete actions remain.
+ALTER TABLE public.ordenes ADD CONSTRAINT ordenes_id_owner_key UNIQUE(id,user_id);
+ALTER TABLE public.tareas ADD CONSTRAINT tareas_id_owner_key UNIQUE(id,user_id);
+ALTER TABLE public.chats ADD CONSTRAINT chats_id_owner_key UNIQUE(id,user_id);
+ALTER TABLE public.ejecuciones_orden ADD CONSTRAINT ejecuciones_orden_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.ejecuciones_orden ADD CONSTRAINT ejecuciones_orden_orden_id_owner_fk FOREIGN KEY(orden_id,user_id) REFERENCES public.ordenes(id,user_id) NOT VALID;
+ALTER TABLE public.ejecuciones_orden ADD CONSTRAINT ejecuciones_orden_tarea_id_owner_fk FOREIGN KEY(tarea_id,user_id) REFERENCES public.tareas(id,user_id) NOT VALID;
+ALTER TABLE public.ejecuciones_orden ADD CONSTRAINT ejecuciones_orden_tarea_origen_id_owner_fk FOREIGN KEY(tarea_origen_id,user_id) REFERENCES public.tareas(id,user_id) NOT VALID;
+ALTER TABLE public.tareas ADD CONSTRAINT tareas_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.tareas ADD CONSTRAINT tareas_orden_id_owner_fk FOREIGN KEY(orden_id,user_id) REFERENCES public.ordenes(id,user_id) NOT VALID;
+ALTER TABLE public.tareas ADD CONSTRAINT tareas_tarea_padre_id_owner_fk FOREIGN KEY(tarea_padre_id,user_id) REFERENCES public.tareas(id,user_id) NOT VALID;
+ALTER TABLE public.chats ADD CONSTRAINT chats_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.mensajes ADD CONSTRAINT mensajes_chat_id_owner_fk FOREIGN KEY(chat_id,user_id) REFERENCES public.chats(id,user_id) NOT VALID;
+ALTER TABLE public.mensajes ADD CONSTRAINT mensajes_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.mesas ADD CONSTRAINT mesas_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.manuales ADD CONSTRAINT manuales_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.documentos_nex ADD CONSTRAINT documentos_nex_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.peticiones_directas ADD CONSTRAINT peticiones_directas_proyecto_id_owner_fk FOREIGN KEY(proyecto_id,user_id) REFERENCES public.proyectos(id,user_id) NOT VALID;
+ALTER TABLE public.peticiones_directas ADD CONSTRAINT peticiones_directas_chat_id_owner_fk FOREIGN KEY(chat_id,user_id) REFERENCES public.chats(id,user_id) NOT VALID;
+ALTER TABLE public.peticiones_directas ADD CONSTRAINT peticiones_directas_orden_id_owner_fk FOREIGN KEY(orden_id,user_id) REFERENCES public.ordenes(id,user_id) NOT VALID;
+ALTER TABLE public.peticiones_directas ADD CONSTRAINT peticiones_directas_mesa_id_owner_fk FOREIGN KEY(mesa_id,user_id) REFERENCES public.mesas(id,user_id) NOT VALID;
+ALTER TABLE public.peticiones_directas ADD CONSTRAINT peticiones_directas_tarea_id_owner_fk FOREIGN KEY(tarea_id,user_id) REFERENCES public.tareas(id,user_id) NOT VALID;
+ALTER TABLE public.peticiones_directas ADD CONSTRAINT peticiones_directas_conversacion_id_owner_fk FOREIGN KEY(conversacion_id,user_id) REFERENCES public.personal_conversaciones(id,user_id) NOT VALID;

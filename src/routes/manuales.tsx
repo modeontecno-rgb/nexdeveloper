@@ -189,6 +189,7 @@ export function LineaPasos({ manual }: { manual: ManualRow }) {
 function useAcciones() {
   const enlace = useEnlaceManual();
   const ver = async (manual: ManualRow, imprimir = false) => {
+    if(imprimir){try{const r=await enlace.mutateAsync({manualId:manual.id,formato:"pdf"});if(r.url)window.open(r.url,"_blank","noopener");}catch{/* notificado por la mutación */}return;}
     if (manual.html) {
       if (!abrirHtml(manual.html, imprimir)) toast.error("El navegador ha bloqueado la ventana nueva.");
       if (imprimir) toast.info("En el diálogo de impresión elige «Guardar como PDF».");
@@ -258,7 +259,7 @@ function ManualesPantalla() {
         <SemaforoRequisito ok={Boolean(req.ia)} texto={req.ia ? "IA lista" : "Falta clave de IA"} />
         <SemaforoRequisito ok={Boolean(req.github)} texto={req.github ? "GitHub conectado" : "GitHub sin conectar"} />
         <SemaforoRequisito ok={Boolean(req.proyectian)} texto={req.proyectian ? "Proyectian" : "Proyectian sin conectar"} />
-        <SemaforoRequisito ok={Boolean(req.almacen)} texto={req.almacen ? "Almacén 03-MANUALES" : "Almacén sin configurar"} />
+        <SemaforoRequisito ok={Boolean(req.almacen)} texto={req.almacen ? "Almacén privado de entregas" : "Almacén sin configurar"} />
         <SemaforoRequisito ok={Boolean(req.revisor)} texto={req.revisor ? "Revisor de redacción" : "Revisor sin IA"} />
         {req.perfil_estilo ? (
           <SemaforoRequisito ok texto="Perfil de estilo cargado" />
