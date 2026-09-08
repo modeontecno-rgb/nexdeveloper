@@ -6,8 +6,6 @@ import {
   ClipboardCheck,
   Download,
   Loader2,
-  Mic,
-  MicOff,
   Send,
   Inbox,
   ListChecks,
@@ -320,6 +318,18 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
   );
 }
 
+/** Ficheros que se enviaron con la petición, con descarga y vista previa. */
+export function AdjuntosDePeticion({ peticionId }: { peticionId: string }) {
+  const { data: adjuntos = [] } = useAdjuntosDePeticion(peticionId);
+  if (!adjuntos.length) return null;
+  return (
+    <div className="mb-3">
+      <p className="text-xs text-muted-foreground">Adjuntos de esta petición</p>
+      <ListaAdjuntos adjuntos={adjuntos} />
+    </div>
+  );
+}
+
 /** Muestra la última petición ya guardada, siempre al día por Realtime. */
 function TarjetaResultado({ peticionId }: { peticionId: string }) {
   const { data: peticiones = [] } = usePeticiones();
@@ -338,6 +348,7 @@ function TarjetaResultado({ peticionId }: { peticionId: string }) {
   return (
     <div className="mt-4 space-y-3">
       <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
+        <AdjuntosDePeticion peticionId={peticion.id} />
         <p className="text-xs text-muted-foreground">Ha ido a</p>
         <p className="font-display text-base font-semibold">{donde}</p>
         <div className="mt-3 flex flex-wrap gap-2">
