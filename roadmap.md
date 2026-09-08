@@ -5,3 +5,4 @@
 - [x] Añadir una guía desde cero dentro de la aplicación para completar un trabajo.
 - [x] Verificar pruebas, compilación y recorridos en la aplicación.
 - [x] Corregir la reserva inflada de IA y mostrar el límite económico exacto que bloquea Pídeme.
+- [x] Hacer que «Usar límites recomendados» active y guarde en un solo paso, cubriendo las reservas retenidas.
