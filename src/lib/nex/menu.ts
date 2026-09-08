@@ -13,6 +13,7 @@ import {
   CalendarCheck,
   Clapperboard,
   Code2,
+  Eraser,
   Coins,
   Cpu,
   DatabaseBackup,
@@ -365,6 +366,21 @@ const GRUPOS_ORIGINALES: GrupoMenu[] = [
         alias: ["semáforos", "diagnóstico", "informe", "comprobaciones"],
         descripcion: "Semáforos de cada pieza de NexDeveloper.",
       },
+      {
+        to: "/mantenimiento",
+        etiqueta: "Mantenimiento",
+        icono: Eraser,
+        alias: [
+          "limpiar",
+          "empezar de cero",
+          "vaciar",
+          "borrar tareas",
+          "buscar problemas",
+          "arreglar",
+          "reparar",
+        ],
+        descripcion: "Vacía la cola de trabajo y busca problemas con su arreglo.",
+      },
     ],
   },
 ];
@@ -423,7 +439,7 @@ export const GRUPOS_MENU: GrupoMenu[] = [
  {id:"productos",titulo:"Productos y proyectos",icono:Boxes,pantallas:pantallas("/proyectos")},
  {id:"trabajo",titulo:"Trabajo",icono:ListTodo,pantallas:pantallas("/tareas","/aprobaciones","/ejecucion","/bandeja","/avisos","/asistente","/mesa","/resumenes","/vigilancia")},
  {id:"entregas",titulo:"Entregas y documentación",icono:BookMarked,pantallas:pantallas("/documentacion","/manuales","/voz","/compilaciones","/repositorios","/calidad")},
- {id:"operaciones",titulo:"Operaciones",icono:Server,pantallas:pantallas("/salud","/infraestructura","/dominios","/copias","/auditoria","/estado")},
+ {id:"operaciones",titulo:"Operaciones",icono:Server,pantallas:pantallas("/salud","/infraestructura","/dominios","/copias","/auditoria","/estado","/mantenimiento")},
  {id:"clientes",titulo:"Clientes",icono:Users,pantallas:pantallas("/usuarios-clientes","/modo-cliente","/facturacion")},
  {id:"configuracion",titulo:"Configuración",icono:Settings,pantallas:pantallas("/ajustes","/ajustes/proveedores","/conexiones","/proyectian","/expertos","/agentes","/habilidades","/revisores","/personal/estilo")},
 ];
