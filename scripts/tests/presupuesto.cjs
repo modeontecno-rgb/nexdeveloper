@@ -19,7 +19,7 @@ async function scenario(o={}){
  await t('F09 Missing usage retains reservation',{reply:{choices:[]}},r=>r.sent===1&&r.error&&r.rpcs.filter(x=>x.name==='ia_liquidar').every(x=>x.args.p_entrada===null));
  await t('F10 Accounting failure stops completion',{settleError:true},r=>r.sent===1&&r.error&&!r.body);
  await t('F11 Provider rejection is not retried',{status:429,reply:{error:'rate limit'}},r=>r.sent===1&&r.error);
- await t('F12 Excessive context blocked before request',{body:{messages:[{content:'x'.repeat(12000)}]}},r=>r.sent===0&&r.error);
+ await t('F12 Excessive context blocked before request',{body:{messages:[{content:'x'.repeat(25000)}]}},r=>r.sent===0&&r.error);
  await t('F13 Truncated output is never presented as complete',{reply:{usage:{prompt_tokens:100,completion_tokens:100},choices:[{finish_reason:'length',message:{content:'cut off'}}]}},r=>r.sent===1&&r.error&&!r.body&&r.rpcs.some(x=>x.args.p_salida===100));
  await t('F14 Short prompts reserve estimated input, not full context',{},r=>{const x=r.rpcs.find(x=>x.name==='ia_reservar');return x&&x.args.p_entrada<10000&&x.args.p_entrada>=1024});
  await t('F15 Reservation exposes the database limit reason',{reserveError:true,reserveMessage:'Límite diario superado'},r=>r.error?.includes('Límite diario superado'));
