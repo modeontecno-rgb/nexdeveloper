@@ -83,10 +83,24 @@ export function tonoVeredicto(texto: string | null | undefined) {
 /** Convierte los avisos técnicos del motor en explicaciones con solución. */
 export function mensajeAmigable(mensaje: string): string {
   const t = (mensaje ?? "").toLowerCase();
-  if (t.includes("contexto demasiado grande") || t.includes("tarifa no verificada"))
-    return "El modelo elegido no tiene una tarifa verificada, o tu texto y sus adjuntos superan el máximo de entrada que le has fijado. Ve a Consumo → «Configurar una tarifa documentada», revisa el modelo y sube el «Máximo tokens de entrada»; si ya la tenías, comprueba que la fecha «Válida hasta» no haya caducado.";
+  if (t.includes("contexto demasiado grande"))
+    return "El texto y sus adjuntos superan el máximo de entrada configurado. Ve a Consumo → «Configurar una tarifa documentada» y aumenta «Máximo tokens de entrada».";
+  if (t.includes("tarifa no verificada") || t.includes("tarifa caducada") || t.includes("tarifa inexistente"))
+    return "La tarifa del modelo no existe o ha caducado. Ve a Consumo → «Configurar una tarifa documentada», usa «Todos los modelos activos» y renueva la fecha.";
+  if (t.includes("consumo ia desactivado"))
+    return "Las llamadas de IA están desactivadas. Ve a Consumo, marca «Permitir llamadas» y guarda los límites.";
+  if (t.includes("máximo por llamada"))
+    return "Esta petición supera el máximo por llamada. Ve a Consumo y aumenta «Máximo por llamada (€)».";
+  if (t.includes("límite mensual"))
+    return "Has alcanzado el límite mensual. Ve a Consumo y aumenta «Límite mensual (€)».";
+  if (t.includes("límite diario"))
+    return "Has alcanzado el límite diario. Ve a Consumo y aumenta «Límite diario (€)».";
+  if (t.includes("límite personal"))
+    return "Has alcanzado el límite mensual de Personal. Ve a Consumo y aumenta «Personal mensual (€)».";
+  if (t.includes("presupuesto por ámbito"))
+    return "Hay un presupuesto global, de proveedor o de proyecto bloqueando esta petición. Revísalo en Consumo → Presupuestos.";
   if (t.includes("no se pudo reservar el presupuesto"))
-    return "Se ha alcanzado alguno de tus límites de gasto. Ajústalos en Consumo → «Límites y reservas antes de llamar a la IA».";
+    return "No se ha podido reservar el gasto de esta petición. Revisa en Consumo que las llamadas estén permitidas y que los límites diario, mensual y por llamada tengan saldo.";
   if (t.includes("modelo no autorizado") || t.includes("modelo no configurado"))
     return "El modelo que se iba a usar no está dado de alta o está desactivado. Revísalo en Configuración → Proveedores de IA.";
   if (t.includes("proveedor no configurado") || t.includes("proveedor sin"))

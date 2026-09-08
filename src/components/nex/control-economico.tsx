@@ -20,18 +20,20 @@ export function ControlEconomico(){
    const row:Partial<IaControlRow>&{user_id:string}={user_id:data.user.id,habilitado:form.habilitado,limite_dia:form.limite_dia,limite_mes:form.limite_mes,limite_personal_mes:form.limite_personal_mes,maximo_llamada:form.maximo_llamada,actualizado_el:new Date().toISOString()};
    const r=await supabase.from('ia_control').upsert(row).select('user_id').single();if(r.error)throw r.error;
  },onSuccess:()=>{setEditando(false);void qc.invalidateQueries({queryKey:clave});toast.success('Límites guardados.');},onError:(e)=>toast.error(e.message)});
+  const aplicarRecomendados=()=>{setEditando(true);setForm({habilitado:true,limite_dia:10,limite_mes:100,limite_personal_mes:20,maximo_llamada:2});};
  if(estado.isPending)return <div role="status" className="panel p-4"><Loader2 className="inline size-4 animate-spin motion-reduce:animate-none"/> Consultando límites y reservas…</div>;
  if(estado.error)return <div role="alert" className="panel p-4">No se ha podido consultar el control económico. El saldo es desconocido. <Boton onClick={()=>void estado.refetch()}>Reintentar</Boton></div>;
  const d=estado.data,restante=d?.config?Math.max(0,Number(d.config.limite_mes)-Number(d.calculado_mes)-Number(d.reservado)):null;
  return <section className="panel space-y-4 p-5" aria-labelledby="control-economico">
   <h2 id="control-economico" className="flex items-center gap-2 font-semibold"><ShieldCheck className="size-5"/> Límites y reservas antes de llamar a la IA</h2>
-  <p className="text-sm text-muted-foreground">Consumo calculado con tokens y tarifas verificadas en euros. La factura del proveedor se concilia por separado. Las reservas sin respuesta no se devuelven automáticamente.</p>
+   <p className="text-sm text-muted-foreground">Consumo calculado con tokens y tarifas verificadas en euros. La factura del proveedor se concilia por separado. Las reservas sin respuesta no se devuelven automáticamente.</p>
+   {(!d?.config||!d.config.habilitado||Number(d.config.limite_dia)<=0||Number(d.config.limite_mes)<=0||Number(d.config.maximo_llamada)<=0)&&<div role="alert" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm"><p className="font-medium text-warning">Las llamadas de IA no tienen límites utilizables.</p><p className="mt-1 text-muted-foreground">Puedes aplicar una configuración inicial de 10 € al día, 100 € al mes, 20 € para Personal y 2 € por llamada; después puedes cambiarla.</p><Boton type="button" variante="suave" className="mt-3" onClick={aplicarRecomendados}>Usar límites recomendados</Boton></div>}
   <div className="grid gap-3 sm:grid-cols-3">{[['Calculado este mes',d?.calculado_mes],['Reservado',d?.reservado],['Disponible mensual',restante]].map(([label,value])=><div key={String(label)} className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold">{value==null?'Sin configurar':formatoDinero(Number(value))}</p></div>)}</div>
   {!!d?.inciertas&&<p role="status" className="text-sm text-warning">{d.inciertas} llamadas pendientes de conciliar. Su importe sigue reservado.</p>}
   <form className="space-y-3" onSubmit={e=>{e.preventDefault();guardar.mutate();}}>
    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.habilitado} onChange={e=>{setEditando(true);setForm(f=>({...f,habilitado:e.target.checked}));}}/> Permitir llamadas que tengan tarifa verificada y reserva disponible</label>
    <div className="grid gap-3 sm:grid-cols-4">{([['limite_dia','Límite diario (€)'],['limite_mes','Límite mensual (€)'],['limite_personal_mes','Personal mensual (€)'],['maximo_llamada','Máximo por llamada (€)']] as const).map(([key,label])=><Campo key={key} etiqueta={label}><input className={claseCampo} type="number" min="0" step="0.000001" required value={Number.isFinite(form[key])?form[key]:""} onChange={e=>{setEditando(true);setForm(f=>({...f,[key]:e.target.valueAsNumber}));}}/></Campo>)}</div>
-   <Boton type="submit" disabled={guardar.isPending}>{guardar.isPending?'Guardando…':'Guardar límites'}</Boton>
+    <Boton type="submit" disabled={guardar.isPending}>{guardar.isPending?'Guardando…':'Guardar límites'}</Boton>
   </form>
   <TarifasVerificadas/>
   <ComparadorCoste/>
