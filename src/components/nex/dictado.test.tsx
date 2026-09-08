@@ -5,6 +5,7 @@ import {createRoot, type Root} from 'react-dom/client';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {useDictado} from './dictado';
 vi.mock('sonner',()=>({toast:{error:vi.fn()}}));
+vi.mock('@/lib/nex/sonidos',()=>({sonidoTic:vi.fn(),sonidoFin:vi.fn()}));
 let latest:ReturnType<typeof useDictado>,root:Root,node:HTMLDivElement;
 let recognizer:FakeRecognition;
 class FakeRecognition {
@@ -36,16 +37,34 @@ describe('dictado y micrófono',()=>{
   expect(received).toHaveBeenCalledExactlyOnceWith('Texto confirmado');
   await act(async()=>latest.alternar());expect(stop).toHaveBeenCalled();expect(close).toHaveBeenCalled();expect(latest.escuchando).toBe(false);
  });
- it('no empieza a grabar si el permiso llega después de salir de pantalla',async()=>{
+ it('cierra el micrófono si el permiso llega después de salir de pantalla',async()=>{
   let permission!:(s:typeof stream)=>void;capture.mockReturnValue(new Promise(resolve=>{permission=resolve}));
   await act(async()=>root.render(<Harness received={()=>{}}/>));
   let pending!:Promise<void>;act(()=>{pending=latest.alternar()});
   await act(async()=>root.unmount());root=createRoot(node);
   await act(async()=>{permission(stream);await pending});
-  expect(stop).toHaveBeenCalled();expect(recognizer.start).not.toHaveBeenCalled();
+  expect(stop).toHaveBeenCalled();
  });
- it('denegar permiso no inicia reconocimiento',async()=>{
+ it('sin permiso de micrófono el dictado sigue funcionando sin onda',async()=>{
   capture.mockRejectedValue(new Error('Denied'));await act(async()=>root.render(<Harness received={()=>{}}/>));
-  await act(async()=>latest.alternar());expect(recognizer.start).not.toHaveBeenCalled();expect(latest.escuchando).toBe(false);expect(latest.iniciando).toBe(false);
+  await act(async()=>latest.alternar());
+  expect(recognizer.start).toHaveBeenCalled();expect(latest.escuchando).toBe(true);expect(latest.hayOnda).toBe(false);
+ });
+ it('si el navegador corta el reconocimiento, se reanuda solo',async()=>{
+  vi.useFakeTimers();
+  await act(async()=>root.render(<Harness received={()=>{}}/>));
+  await act(async()=>latest.alternar());
+  recognizer.start.mockClear();
+  await act(async()=>{recognizer.onend?.();await vi.advanceTimersByTimeAsync(200);});
+  expect(recognizer.start).toHaveBeenCalled();expect(latest.escuchando).toBe(true);
+  vi.useRealTimers();
+ });
+ it('los errores pasajeros no paran el dictado y los graves sí',async()=>{
+  await act(async()=>root.render(<Harness received={()=>{}}/>));
+  await act(async()=>latest.alternar());
+  await act(async()=>{(recognizer.onerror as unknown as (e:{error:string})=>void)?.({error:'network'})});
+  expect(latest.escuchando).toBe(true);
+  await act(async()=>{(recognizer.onerror as unknown as (e:{error:string})=>void)?.({error:'not-allowed'})});
+  expect(latest.escuchando).toBe(false);
  });
 });
