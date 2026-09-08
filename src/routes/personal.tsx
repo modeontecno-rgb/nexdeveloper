@@ -28,7 +28,7 @@ import type {
 import { desde, formatoEuros, marcaTiempo } from "@/lib/nex/labels";
 import { useProyectos } from "@/lib/nex/queries/datos";
 import { markdownAHtml } from "@/lib/nex/queries/resumenes";
-import { useDictado } from "@/components/nex/dictado";
+import { AvisoSinDictado, useDictado } from "@/components/nex/dictado";
 import {
   ETIQUETA_MODO_PERSONAL,
   ETIQUETA_MODO_REESCRITURA,
@@ -139,7 +139,7 @@ function PanelChat({ conversacionInicial }: { conversacionInicial: string | null
   const [busqueda, setBusqueda] = React.useState("");
   const [creandoDoc, setCreandoDoc] = React.useState(false);
   const finRef = React.useRef<HTMLDivElement | null>(null);
-  const { escuchando, soportado, alternar, lienzoOnda } = useDictado((d) => setTexto((t) => (t ? `${t} ${d}` : d)));
+  const { escuchando, alternar, lienzoOnda, parcial, avisoNavegador, ocultarAviso } = useDictado((d) => setTexto((t) => (t ? `${t} ${d}` : d)));
 
   const numIa = Math.max(1, Number(estado.data?.config?.max_proveedores ?? estado.data?.proveedores?.length ?? 1));
 
@@ -270,11 +270,11 @@ function PanelChat({ conversacionInicial }: { conversacionInicial: string | null
             <Boton type="submit" disabled={!texto.trim() || preguntar.isPending}>
               {preguntar.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Preguntar
             </Boton>
-            {soportado ? (
-              <Boton type="button" variante="suave" onClick={alternar}>
-                {escuchando ? <MicOff className="size-4" /> : <Mic className="size-4" />} {escuchando ? "Parar" : "Dictar"}
-              </Boton>
-            ) : null}
+            <Boton type="button" variante="suave" onClick={alternar} aria-pressed={escuchando}>
+              {escuchando ? <MicOff className="size-4" /> : <Mic className="size-4" />} {escuchando ? "Parar" : "Dictar"}
+            </Boton>
+            {parcial ? <span className="text-xs italic text-muted-foreground">{parcial}</span> : null}
+            {avisoNavegador ? <AvisoSinDictado onCerrar={ocultarAviso} /> : null}
             <Boton type="button" variante="suave" onClick={() => setCreandoDoc(true)} disabled={!conversacionId}>
               <FileText className="size-4" /> Crear documento de esta conversación
             </Boton>

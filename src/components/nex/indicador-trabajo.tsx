@@ -83,12 +83,14 @@ export type ManejadorTrabajo = {
 
 type Ctx = {
   trabajo: EstadoTrabajo | null;
+  cola: EstadoTrabajo[];
   iniciarTrabajo: (opciones: { titulo: string; pasos?: string[] }) => ManejadorTrabajo;
   cerrar: () => void;
 };
 
 const CtxTrabajo = React.createContext<Ctx>({
   trabajo: null,
+  cola: [],
   iniciarTrabajo: () => ({ avanzar: () => {}, terminar: () => {}, fallar: () => {} }),
   cerrar: () => {},
 });
@@ -112,7 +114,8 @@ export function TrabajoProvider({ children }: { children: React.ReactNode }) {
   },[]);
   const cerrar=React.useCallback(()=>{if(trabajo)setTrabajos(lista=>lista.filter(t=>t.id!==trabajo.id));},[trabajo]);
   React.useEffect(()=>()=>{for(const timer of timers.current)clearTimeout(timer);timers.current.clear();},[]);
-  const valor=React.useMemo<Ctx>(()=>({trabajo,iniciarTrabajo,cerrar}),[trabajo,iniciarTrabajo,cerrar]);
+  const cola=React.useMemo(()=>trabajos.filter(t=>t.id!==trabajo?.id),[trabajos,trabajo?.id]);
+  const valor=React.useMemo<Ctx>(()=>({trabajo,cola,iniciarTrabajo,cerrar}),[trabajo,cola,iniciarTrabajo,cerrar]);
 
   return (
     <CtxTrabajo.Provider value={valor}>
@@ -125,7 +128,7 @@ export function TrabajoProvider({ children }: { children: React.ReactNode }) {
 /* ------------------------------ Panel flotante ---------------------------- */
 
 function PanelTrabajo() {
-  const { trabajo, cerrar } = useTrabajo();
+  const { trabajo, cola, cerrar } = useTrabajo();
   const [tic, setTic] = React.useState(0);
 
   React.useEffect(() => {
@@ -150,7 +153,7 @@ function PanelTrabajo() {
         <div className="flex items-start gap-3">
           <span
             className={cn(
-              "grid size-14 shrink-0 place-items-center rounded-2xl border",
+              "relative grid size-16 shrink-0 place-items-center rounded-2xl border",
               trabajo.fase === "ok"
                 ? "border-success/40 bg-success/10 text-success"
                 : trabajo.fase === "error"
@@ -159,11 +162,21 @@ function PanelTrabajo() {
             )}
           >
             {trabajo.fase === "ok" ? (
-              <Check className="size-7" />
+              <Check className="size-8" />
             ) : trabajo.fase === "error" ? (
-              <X className="size-7" />
+              <X className="size-8" />
             ) : (
-              <Cpu className="size-7 animate-spin motion-reduce:animate-none" style={{ animationDuration: "2.4s" }} />
+              <>
+                <span
+                  aria-hidden
+                  className="absolute inset-2 rounded-2xl bg-primary/20 animate-ping motion-reduce:animate-none"
+                  style={{ animationDuration: "2.6s" }}
+                />
+                <Cpu
+                  className="relative size-9 animate-spin motion-reduce:animate-none"
+                  style={{ animationDuration: "2.4s" }}
+                />
+              </>
             )}
           </span>
 
@@ -193,6 +206,19 @@ function PanelTrabajo() {
           ) : null}
         </div>
 
+        {cola.length ? (
+          <div className="mt-2 border-t border-border/60 pt-2">
+            <p className="text-[11px] font-medium text-muted-foreground">+ {cola.length} en cola</p>
+            <ul className="mt-0.5 space-y-0.5">
+              {cola.map((t) => (
+                <li key={t.id} className="truncate text-[11px] text-muted-foreground">
+                  {t.titulo}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         {trabajo.fase === "error" ? null : (
           <>
             <div role="progressbar" aria-label={trabajo.titulo} aria-valuemin={0} aria-valuemax={100} aria-valuenow={porcentaje ?? undefined} className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -206,7 +232,9 @@ function PanelTrabajo() {
               />
             </div>
             <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{porcentaje === null ? "Duración pendiente de determinar" : `${porcentaje} %`}</span>
+              <span>
+                {porcentaje === null ? "Esperando la respuesta del servidor (suele tardar 10–40 s)" : `${porcentaje} %`}
+              </span>
               <span>{transcurrido}</span>
             </div>
           </>

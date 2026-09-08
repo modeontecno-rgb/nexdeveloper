@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 0.42.0 — Dictado fiable, adjuntos y trabajo visible
+
+- El micrófono ya no se queda mudo: el botón está siempre disponible y avisa cuando el navegador no permite dictar.
+- Si el navegador corta la escucha, se reanuda sola; solo se para cuando pulsas «Parar».
+- Ves lo que dices mientras hablas, con onda del micrófono o barras animadas y sonido al empezar y al terminar.
+- Campo de texto con dictado común para Pídeme, Personal, Mesa de expertos y Asistente.
+- Puedes adjuntar capturas, PDF, Word, Excel, CSV o texto: se pegan con Ctrl/Cmd+V, se arrastran o se eligen.
+- La IA lee esos adjuntos (texto extraído e imágenes) y cita cuáles ha tenido en cuenta.
+- El panel «Trabajando…» es más visible, dice qué se está haciendo y muestra los trabajos en cola.
+
 ## 0.40.0 — Cuánto cuesta y cuánto se tarda de verdad
 
 - Coste real en créditos, tokens, euros y tiempo en cada mesa de expertos.

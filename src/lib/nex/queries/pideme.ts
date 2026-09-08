@@ -8,6 +8,7 @@ import type {
   DestinoPeticion,
   EstadoGrabacionPlaud,
   EstadoPeticion,
+  PeticionAdjuntoRow,
   PeticionDirectaRow,
   PeticionMensajeRow,
   PlaudGrabacionRow,
@@ -208,12 +209,18 @@ export type RespuestaPedir = {
 };
 
 /** Cuerpo que se envía a la función `pideme` al pedir algo. */
-export function cuerpoPedir(v: { texto: string; origen?: "texto" | "voz"; proyecto_id?: string | null }) {
+export function cuerpoPedir(v: {
+  texto: string;
+  origen?: "texto" | "voz";
+  proyecto_id?: string | null;
+  adjunto_ids?: string[];
+}) {
   return {
     accion: "pedir",
     texto: v.texto,
     origen: v.origen ?? "texto",
     ...(v.proyecto_id ? { proyecto_id: v.proyecto_id } : {}),
+    ...(v.adjunto_ids?.length ? { adjunto_ids: v.adjunto_ids } : {}),
   };
 }
 
@@ -221,8 +228,12 @@ export function cuerpoPedir(v: { texto: string; origen?: "texto" | "voz"; proyec
 export function usePedir() {
   const invalidar = useInvalidar();
   return useMutation({
-    mutationFn: (v: { texto: string; origen?: "texto" | "voz"; proyecto_id?: string | null }) =>
-      llamar<RespuestaPedir>(cuerpoPedir(v)),
+    mutationFn: (v: {
+      texto: string;
+      origen?: "texto" | "voz";
+      proyecto_id?: string | null;
+      adjunto_ids?: string[];
+    }) => llamar<RespuestaPedir>(cuerpoPedir(v)),
     onSuccess: () => invalidar(),
     onError: (e: Error) => {
       invalidar();
@@ -599,5 +610,25 @@ export function useDescartarBorrador() {
       toast.success("Borrador descartado.");
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+
+/* --------------------------------- Adjuntos -------------------------------- */
+
+/** Ficheros adjuntos vinculados a una petición o borrador. */
+export function useAdjuntosDePeticion(peticionId: string | null) {
+  return useQuery({
+    queryKey: ["pideme_adjuntos", peticionId ?? ""],
+    enabled: Boolean(peticionId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("peticiones_adjuntos")
+        .select("*")
+        .eq("peticion_id", peticionId!)
+        .order("creado_el");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as PeticionAdjuntoRow[];
+    },
   });
 }

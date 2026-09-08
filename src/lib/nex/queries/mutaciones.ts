@@ -1,3 +1,4 @@
+import { useSeguirTrabajo } from "@/components/nex/indicador-trabajo";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -56,10 +57,22 @@ export async function crearAlerta(
   });
 }
 
-function useAccion<V>(fn: (v: V) => Promise<void>, mensajeOk: string, invalidar: readonly string[][]) {
+/**
+ * Toda acción pasa por el indicador global «Trabajando…» además del aviso corto.
+ * `titulo` dice en español qué se está haciendo mientras dura.
+ */
+function useAccion<V>(
+  fn: (v: V) => Promise<void>,
+  mensajeOk: string,
+  invalidar: readonly string[][],
+  titulo = mensajeOk,
+) {
   const queryClient = useQueryClient();
+  const seguir = useSeguirTrabajo(titulo);
   return useMutation({
     mutationFn: fn,
+    onMutate: seguir.empezar,
+    onSettled: seguir.acabar,
     onSuccess: () => {
       for (const clave of invalidar) void queryClient.invalidateQueries({ queryKey: clave });
       toast.success(mensajeOk);
@@ -88,6 +101,7 @@ export function useCambiarEstadoTarea() {
     },
     "Tarea actualizada.",
     [[...claves.tareas], [...claves.actividad], [...claves.resumenProyectos]],
+    "Cambiando el estado de la tarea"
   );
 }
 
@@ -98,6 +112,7 @@ export function useCambiarPrioridadTarea() {
     },
     "Prioridad actualizada.",
     [[...claves.tareas]],
+    "Cambiando la prioridad de la tarea"
   );
 }
 
@@ -119,6 +134,7 @@ export function useMoverTarea() {
     },
     "Tarea movida.",
     [[...claves.tareas], [...claves.actividad], [...claves.resumenProyectos]],
+    "Moviendo la tarea de proyecto"
   );
 }
 
@@ -184,6 +200,7 @@ export function useActualizarProyecto() {
     },
     "Proyecto actualizado.",
     [[...claves.proyectos]],
+    "Guardando los cambios del proyecto"
   );
 }
 
@@ -235,6 +252,7 @@ export function useMoverChat() {
     },
     "Conversación movida.",
     [[...claves.chats], [...claves.mensajes], [...claves.actividad]],
+    "Moviendo la conversación de proyecto"
   );
 }
 
@@ -254,6 +272,7 @@ export function useGuardarAjustes() {
     },
     "Ajustes guardados.",
     [[...claves.ajustes]],
+    "Guardando los ajustes"
   );
 }
 
@@ -271,5 +290,6 @@ export function useResolverAlerta() {
     },
     "Alerta resuelta.",
     [[...claves.alertas]],
+    "Resolviendo el aviso"
   );
 }
