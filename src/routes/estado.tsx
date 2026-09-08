@@ -1632,7 +1632,10 @@ function EstadoSistema() {
           </article>
         ))}
       </div>
+
+      <PasoManualPideme />
     </>
+
   );
 }
 
