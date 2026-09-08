@@ -78,3 +78,11 @@ export function sonidoError() {
     tono(220, 0.28, 0, 0.06);
   });
 }
+
+/** Dos notas descendentes: se ha dejado de escuchar. */
+export function sonidoFin() {
+  reproducir(() => {
+    tono(660, 0.09, 0, 0.04);
+    tono(440, 0.12, 0.07, 0.04);
+  });
+}

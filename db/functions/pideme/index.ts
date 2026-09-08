@@ -42,19 +42,24 @@ async function proveedoresDisponibles(sb: SB, userId: string): Promise<Prov[]> {
   return out.sort((a, b) => (a.slug === "anthropic" ? -1 : b.slug === "anthropic" ? 1 : b.calidad - a.calidad));
 }
 const coste = (p: Prov, te: number, ts: number) => Number(((te * p.ce + ts * p.cs) / 1_000_000).toFixed(4));
-async function llamar(sb: SB, userId: string, proyectoId: string | null, p: Prov, sistema: string, pregunta: string, maxTokens = 2500, jsonMode = false) {
+type ImagenAdjunta = { mime: string; b64: string; nombre: string };
+/** ¿El proveedor admite analizar imágenes? */
+const admiteImagenes = (slug: string) => ["anthropic", "openai", "google", "openrouter"].includes(slug);
+
+async function llamar(sb: SB, userId: string, proyectoId: string | null, p: Prov, sistema: string, pregunta: string, maxTokens = 2500, jsonMode = false, imagenes: ImagenAdjunta[] = []) {
+  const imgs = admiteImagenes(p.slug) ? imagenes : [];
   if (p.slug === "anthropic") {
-    const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
+    const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: [...imgs.map((i) => ({ type: "image", source: { type: "base64", media_type: i.mime, data: i.b64 } })), { type: "text", text: pregunta }] }] }) });
     if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
     return { coste: Number(j._nex_coste_eur), texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 };
   }
   if (p.slug === "google") {
-    const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", `https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2, ...(jsonMode ? { responseMimeType: "application/json" } : {}) } }) });
+    const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", `https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [...imgs.map((i) => ({ inlineData: { mimeType: i.mime, data: i.b64 } })), { text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2, ...(jsonMode ? { responseMimeType: "application/json" } : {}) } }) });
     if (!r.ok) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
     return { coste: Number(j._nex_coste_eur), texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 };
   }
   const bases: Record<string, string> = { abacus: "https://routellm.abacus.ai/v1", openai: "https://api.openai.com/v1", groq: "https://api.groq.com/openai/v1", mistral: "https://api.mistral.ai/v1", deepseek: "https://api.deepseek.com/v1", xai: "https://api.x.ai/v1", openrouter: "https://openrouter.ai/api/v1" };
-  const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", `${bases[p.slug]}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.2, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+  const r = await fetchIADeUsuario(sb, userId, proyectoId, "pideme", `${bases[p.slug]}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.2, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), messages: [{ role: "system", content: sistema }, { role: "user", content: imgs.length ? [...imgs.map((i) => ({ type: "image_url", image_url: { url: `data:${i.mime};base64,${i.b64}` } })), { type: "text", text: pregunta }] : pregunta }] }) });
   if (!r.ok) throw new Error(`${p.slug} ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
   return { coste: Number(j._nex_coste_eur), texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
 }
@@ -73,6 +78,73 @@ const extraerJson = (t: string) => {
   }
   return null;
 };
+
+
+// ---------- Adjuntos (capturas, PDF y documentos) ----------
+const BUCKET_ADJUNTOS = "adjuntos-peticiones";
+const MAX_TEXTO_ADJUNTO = 60_000;
+const recortar = (t: string) => (t.length > MAX_TEXTO_ADJUNTO ? `${t.slice(0, MAX_TEXTO_ADJUNTO)}… [recortado]` : t);
+const aBase64 = (b: Uint8Array) => { let s = ""; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); };
+
+/** Extrae el texto de un documento adjunto. Devuelve null si no se ha podido. */
+async function textoDeDocumento(nombre: string, mime: string, datos: Uint8Array): Promise<string | null> {
+  const ext = nombre.toLowerCase().split(".").pop() ?? "";
+  try {
+    if (mime.startsWith("text/") || ["txt", "md", "csv", "json"].includes(ext) || mime === "application/json") {
+      return new TextDecoder().decode(datos);
+    }
+    if (mime === "application/pdf" || ext === "pdf") {
+      const { extractText, getDocumentProxy } = await import("npm:unpdf@0.12.1");
+      const doc = await getDocumentProxy(datos);
+      const { text } = await extractText(doc, { mergePages: true });
+      return String(text ?? "");
+    }
+    if (ext === "docx") {
+      const mammoth = await import("npm:mammoth@1.8.0");
+      const r = await mammoth.extractRawText({ buffer: datos });
+      return String(r.value ?? "");
+    }
+    if (ext === "xlsx") {
+      const xlsx = await import("npm:xlsx@0.18.5");
+      const libro = xlsx.read(datos, { type: "array" });
+      return libro.SheetNames.map((h: string) => `# ${h}\n${xlsx.utils.sheet_to_csv(libro.Sheets[h])}`).join("\n\n");
+    }
+  } catch { return null; }
+  return null;
+}
+
+/** Carga los adjuntos del usuario, extrae su contenido y los deja listos para el modelo. */
+async function materialAdjuntos(sb: SB, userId: string, ids: unknown, peticionId: string | null) {
+  const lista = Array.isArray(ids) ? ids.map(String).slice(0, 5) : [];
+  const vacio = { texto: "", imagenes: [] as ImagenAdjunta[], nombres: [] as string[], sinTexto: [] as string[] };
+  if (!lista.length) return vacio;
+  const { data: filas } = await sb.from("peticiones_adjuntos").select("*").in("id", lista).eq("user_id", userId);
+  if (!filas?.length) return vacio;
+  if (peticionId) await sb.from("peticiones_adjuntos").update({ peticion_id: peticionId }).in("id", filas.map((f: any) => f.id));
+  const partes: string[] = [];
+  for (const f of filas as any[]) {
+    vacio.nombres.push(f.nombre);
+    const { data: blob, error } = await sb.storage.from(BUCKET_ADJUNTOS).download(f.ruta);
+    if (error || !blob) { await sb.from("peticiones_adjuntos").update({ estado: "error" }).eq("id", f.id); continue; }
+    const datos = new Uint8Array(await blob.arrayBuffer());
+    if (String(f.tipo_mime).startsWith("image/")) {
+      vacio.imagenes.push({ mime: f.tipo_mime, b64: aBase64(datos), nombre: f.nombre });
+      await sb.from("peticiones_adjuntos").update({ estado: "analizado" }).eq("id", f.id);
+      continue;
+    }
+    const texto = await textoDeDocumento(f.nombre, f.tipo_mime, datos);
+    if (texto && texto.trim()) {
+      const recortado = recortar(texto.trim());
+      partes.push(`Documento adjunto «${f.nombre}»:\n${recortado}`);
+      await sb.from("peticiones_adjuntos").update({ texto_extraido: recortado, estado: "analizado" }).eq("id", f.id);
+    } else {
+      vacio.sinTexto.push(f.nombre);
+      await sb.from("peticiones_adjuntos").update({ estado: "sin_texto" }).eq("id", f.id);
+    }
+  }
+  vacio.texto = partes.length ? `\n\nMATERIAL ADJUNTO A TENER EN CUENTA:\n${partes.join("\n\n")}` : "";
+  return vacio;
+}
 
 // ---------- Clasificación ----------
 const normalizar = (s: string) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -128,7 +200,7 @@ const AREAS: { area: string; slugs: string[]; persona: string; cuando: RegExp | 
   { area: "Datos y rendimiento", slugs: ["arquitecto-db-backend", "devops-observabilidad"], persona: "arquitecto de datos y rendimiento (PostgreSQL, RLS, migraciones, índices)", cuando: /\b(tabla|base de datos|dato|campo|migra|informe|listado|filtro|exportar|importar|lento|rendimiento|copia)\b/ },
   { area: "Calidad y pruebas", slugs: ["qa-tolerancia-fallos", "testing-automatizado"], persona: "responsable de QA: pruebas, casos límite y tolerancia a fallos", cuando: null },
 ];
-async function proponer(sb: SB, userId: string, provs: Prov[], proyectoId: string, peticion: string, resumen: string) {
+async function proponer(sb: SB, userId: string, provs: Prov[], proyectoId: string, peticion: string, resumen: string, imagenes: ImagenAdjunta[] = []) {
   const ctx = await contextoProyecto(sb, userId, proyectoId);
   const { data: expertos } = await sb.from("expertos").select("slug, nombre, papel, instrucciones").eq("user_id", userId).eq("estado", "adoptado");
   const t = normalizar(peticion);
@@ -145,7 +217,7 @@ async function proponer(sb: SB, userId: string, provs: Prov[], proyectoId: strin
     const ex = (expertos ?? []).find((e) => a.slugs.includes(e.slug));
     const sistema = `${ex?.instrucciones ? ex.instrucciones.slice(0, 5000) : `Eres ${a.persona}.`}\n\nRevisas una modificación pedida para un proyecto de software desde el punto de vista de tu área («${a.area}»). Español de España, concreto, máximo 250 palabras. Devuelve SOLO JSON: {"observaciones":["…"],"riesgos":["…"],"requisitos":["qué debe cumplir la implementación"],"veredicto":"adelante|adelante con cambios|no recomendable","cambios_sugeridos":"texto breve o vacío"}`;
     const p = a.area.startsWith("Programación") || a.area.startsWith("Seguridad") ? mejor : barato;
-    try { const r = await llamar(sb, userId, proyectoId, p, sistema, base, 900, true); costeTotal += r.coste; const j = extraerJson(r.texto) ?? { observaciones: [r.texto.slice(0, 500)], riesgos: [], requisitos: [], veredicto: "adelante" }; revisiones.push({ area: a.area, experto: ex?.nombre ?? a.persona, proveedor: p.slug, modelo: p.modelo, ...j }); }
+    try { const r = await llamar(sb, userId, proyectoId, p, sistema, base, 900, true, imagenes); costeTotal += r.coste; const j = extraerJson(r.texto) ?? { observaciones: [r.texto.slice(0, 500)], riesgos: [], requisitos: [], veredicto: "adelante" }; revisiones.push({ area: a.area, experto: ex?.nombre ?? a.persona, proveedor: p.slug, modelo: p.modelo, ...j }); }
     catch (e) { revisiones.push({ area: a.area, experto: ex?.nombre ?? a.persona, error: String(e?.message ?? e).slice(0, 150), observaciones: [], riesgos: [], requisitos: [], veredicto: "sin revisar" }); }
   }
   // Auditor jefe: síntesis y plan
@@ -158,7 +230,7 @@ async function proponer(sb: SB, userId: string, provs: Prov[], proyectoId: strin
 }
 
 // ---------- Enrutado ----------
-async function procesarPeticion(sb: SB, userId: string, peticionId: string) {
+async function procesarPeticion(sb: SB, userId: string, peticionId: string, adjuntoIds: unknown = null) {
   const { data: pet } = await sb.from("peticiones_directas").select("*").eq("id", peticionId).eq("user_id", userId).single();
   if (!pet) throw new Error("Petición no encontrada");
   const provs = await proveedoresDisponibles(sb, userId);
@@ -167,7 +239,12 @@ async function procesarPeticion(sb: SB, userId: string, peticionId: string) {
   if (!forzar) throw new Error("Elige un proyecto antes de procesar. Personal se abre por separado.");
   const {data: autorizado,error: errorProyecto}=await sb.from("proyectos").select("id").eq("id",forzar).eq("user_id",userId).single();
   if(errorProyecto || !autorizado) throw new Error("Proyecto no autorizado");
-  const c = await clasificar(sb, userId, pet.texto, provs, forzar);
+  const material = await materialAdjuntos(sb, userId, adjuntoIds, pet.id);
+  const notaAdjuntos = material.nombres.length
+    ? `\n\nAdjuntos aportados: ${material.nombres.join(", ")}. Cita en tu respuesta cuáles has tenido en cuenta.${material.sinTexto.length ? ` No se ha podido leer el contenido de: ${material.sinTexto.join(", ")}.` : ""}`
+    : "";
+  const textoConAdjuntos = `${pet.texto}${material.texto}${notaAdjuntos}`;
+  const c = await clasificar(sb, userId, textoConAdjuntos, provs, forzar);
   await sb.from("peticiones_directas").update({ clasificacion: c, destino: c.destino, proyecto_id: c.destino === "proyecto" ? c.proyecto_id : null, estado: "clasificada", actualizado_el: ahora() }).eq("id", pet.id);
   const salida: any = { clasificacion: c };
   try {
@@ -193,7 +270,7 @@ async function procesarPeticion(sb: SB, userId: string, peticionId: string) {
         Object.assign(salida, { tareas: ids.length, respuesta: texto });
       } else if (c.tipo === "modificacion") {
         if (!provs.length) throw new Error("No hay proveedor de IA con clave para preparar la propuesta");
-        const prop = await proponer(sb, userId, provs, proyectoId, pet.texto, c.resumen ?? pet.texto);
+        const prop = await proponer(sb, userId, provs, proyectoId, textoConAdjuntos, c.resumen ?? pet.texto, material.imagenes);
         const texto = `PROPUESTA (revisada por ${prop.areas.length} áreas: ${prop.areas.join(", ")}):\n${prop.sintesis}\n\nRecomendación: ${prop.recomendacion}. Horas estimadas: ${prop.horas_estimadas ?? "?"}. Riesgo: ${prop.riesgo ?? "?"}.\nApruébala o recházala desde «Pídeme qué quieres» → Propuestas.`;
         await sb.from("mensajes").insert({ user_id: userId, chat_id: chat!.id, proyecto_id: proyectoId, autor: "agente", texto });
         await sb.from("peticiones_directas").update({ chat_id: chat!.id, propuesta: prop, respuesta: prop.sintesis, estado: "propuesta", actualizado_el: ahora() }).eq("id", pet.id);
@@ -203,7 +280,7 @@ async function procesarPeticion(sb: SB, userId: string, peticionId: string) {
         // Consulta: respuesta con contexto del proyecto
         if (!provs.length) throw new Error("No hay proveedor de IA con clave");
         const p = provs[0]; const ctx = await contextoProyecto(sb, userId, proyectoId);
-        const r = await llamar(sb, userId, proyectoId, p, `Eres el asistente de NexDeveloper para el proyecto ${c.proyecto_nombre}. Respondes a Javier en español de España, con datos del contexto; si no sabes algo, dilo y propón cómo averiguarlo.\n\nCONTEXTO:\n${ctx}`, pet.texto, 1800);
+        const r = await llamar(sb, userId, proyectoId, p, `Eres el asistente de NexDeveloper para el proyecto ${c.proyecto_nombre}. Respondes a Javier en español de España, con datos del contexto; si no sabes algo, dilo y propón cómo averiguarlo.\n\nCONTEXTO:\n${ctx}`, textoConAdjuntos, 1800, false, material.imagenes);
         r.coste;
         await sb.from("mensajes").insert({ user_id: userId, chat_id: chat!.id, proyecto_id: proyectoId, autor: "agente", texto: r.texto, tokens_entrada: r.te, tokens_salida: r.ts, coste: r.coste });
         await sb.from("peticiones_directas").update({ chat_id: chat!.id, respuesta: r.texto, estado: "respondida", actualizado_el: ahora() }).eq("id", pet.id);
@@ -358,7 +435,7 @@ Deno.serve(async (req) => {
         if(errorDestino || !destinoAutorizado) return json({ok:false,error:"Proyecto no autorizado"},403);
         const texto = String(cuerpo.texto ?? "").trim(); if (texto.length < 3) return json({ ok: false, error: "Dime qué quieres" }, 400);
         const { data: pet } = await sb.from("peticiones_directas").insert({ user_id: userId, texto, origen: cuerpo.origen === "voz" ? "voz" : "texto", proyecto_id: cuerpo.proyecto_id ? String(cuerpo.proyecto_id) : null }).select("id").single();
-        const r = await procesarPeticion(sb, userId, pet!.id);
+        const r = await procesarPeticion(sb, userId, pet!.id, cuerpo.adjunto_ids ?? null);
         const { data: fin } = await sb.from("peticiones_directas").select("*").eq("id", pet!.id).single();
         return json({ ok: true, peticion: fin, ...r });
       }

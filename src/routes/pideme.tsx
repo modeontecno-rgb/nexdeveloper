@@ -1,4 +1,5 @@
-import {useDictado} from "@/components/nex/dictado";
+import {BotonAdjuntar, ListaAdjuntos, useAdjuntos, ZonaAdjuntos} from "@/components/nex/adjuntos";
+import {AvisoSinDictado, CampoTextoConDictado, esAppInstalada, useDictado} from "@/components/nex/dictado";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ChevronDown,
@@ -176,10 +177,12 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
   const { data: borradores = [] } = useBorradores();
   const { lanzarBorrador, enCurso } = useLanzarBorradorCompleto();
   const areaRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const { escuchando, soportado, alternar, lienzoOnda } = useDictado((dicho) => {
-    setUsoVoz(true);
-    setTexto((t) => (t ? `${t} ${dicho}` : dicho));
-  });
+  const adjuntos = useAdjuntos();
+  const [avisoPwa, setAvisoPwa] = React.useState(false);
+  React.useEffect(() => {
+    const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    if (esAppInstalada() && !w.SpeechRecognition && !w.webkitSpeechRecognition) setAvisoPwa(true);
+  }, []);
   const borradorAbierto = borradores.find((b) => b.id === borradorId) ?? null;
 
   React.useEffect(() => {
@@ -200,6 +203,7 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
       { texto: limpio, origen, proyectoId: proyectoElegido || null },
       {
         onSuccess: (b) => {
+          void adjuntos.vincular(b.id).then(() => adjuntos.limpiar());
           setTexto("");
           setUsoVoz(false);
           setBorradorId(b.id);
@@ -218,9 +222,10 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
       return;
     }
     pedir.mutate(
-      { texto: limpio, origen, proyecto_id: proyectoElegido },
+      { texto: limpio, origen, proyecto_id: proyectoElegido, adjunto_ids: adjuntos.ids },
       {
         onSuccess: (r) => {
+          if (r.peticion?.id) void adjuntos.vincular(r.peticion.id).then(() => adjuntos.limpiar());
           setTexto("");
           if (r.peticion?.id) setResultado({ peticionId: r.peticion.id });
         },
@@ -247,20 +252,24 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
         }}
         className="mt-3"
       >
-        <textarea
-          ref={areaRef}
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          rows={compacto ? 2 : 3}
-          placeholder="Por ejemplo: en Gericentro quiero que el portal de familias avise por correo cuando haya un informe nuevo."
-          className={cn(claseCampo, "resize-y")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              enviar(usoVoz ? "voz" : "texto");
-            }
-          }}
-        />
+        <ZonaAdjuntos onFicheros={(f) => void adjuntos.anadir(f)}>
+          <CampoTextoConDictado
+            areaRef={areaRef}
+            valor={texto}
+            onValor={(v) => setTexto(v)}
+            filas={compacto ? 2 : 3}
+            placeholder="Por ejemplo: en Gericentro quiero que el portal de familias avise por correo cuando haya un informe nuevo."
+            extras={<BotonAdjuntar onFicheros={(f) => void adjuntos.anadir(f)} disabled={adjuntos.subiendo} />}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                enviar(usoVoz ? "voz" : "texto");
+              }
+            }}
+          />
+          <ListaAdjuntos adjuntos={adjuntos.adjuntos} onQuitar={(a) => void adjuntos.quitar(a)} />
+          {adjuntos.error ? <p className="mt-1 text-xs text-destructive">{adjuntos.error}</p> : null}
+        </ZonaAdjuntos>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Boton type="submit" disabled={!texto.trim() || pedir.isPending}>
             {pedir.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
@@ -275,33 +284,13 @@ export function BloquePideme({ compacto = false }: { compacto?: boolean }) {
             {crearBorrador.isPending ? <Loader2 className="size-4 animate-spin" /> : <ClipboardCheck className="size-4" />}
             Revisar antes de lanzar
           </Boton>
-          {soportado ? (
-            <Boton
-              type="button"
-              variante="suave"
-              onClick={alternar}
-              aria-pressed={escuchando}
-              className={escuchando ? "border-destructive/40 text-destructive" : ""}
-            >
-              {escuchando ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-              {escuchando ? "Parar" : "Dictar"}
-            </Boton>
-          ) : null}
           <BotonImportarPlaud />
           <span className="text-xs text-muted-foreground">Atajo: Ctrl/Cmd + J</span>
         </div>
       </form>
 
-      {escuchando ? (
-        <div className="mt-3">
-          <p className="flex items-center gap-2 text-sm text-destructive">
-            <span className="size-2 animate-pulse rounded-full bg-destructive" aria-hidden /> Te escucho…
-          </p>
-          <canvas ref={lienzoOnda} height={72} className="mt-2 h-[72px] w-full rounded-lg border border-border bg-surface text-primary" />
-        </div>
-      ) : usoVoz ? (
-        <p className="mt-3 text-sm text-muted-foreground">Escuchado</p>
-      ) : null}
+      {avisoPwa ? <AvisoSinDictado onCerrar={() => setAvisoPwa(false)} /> : null}
+      {usoVoz ? <p className="mt-3 text-sm text-muted-foreground">Escuchado</p> : null}
 
       {pedir.isPending ? (
         <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import {useDictado} from "@/components/nex/dictado";
+import {AvisoSinDictado, useDictado} from "@/components/nex/dictado";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronDown,
@@ -492,7 +492,7 @@ function Redaccion({
   proveedor: string;
   onProveedor: (v: string) => void;
 }) {
-  const { escuchando, soportado, alternar, lienzoOnda } = useDictado((t) => onTexto(texto ? `${texto} ${t}` : t));
+  const { escuchando, alternar, lienzoOnda, parcial, avisoNavegador, ocultarAviso } = useDictado((t) => onTexto(texto ? `${texto} ${t}` : t));
 
   return (
     <form
@@ -517,17 +517,18 @@ function Redaccion({
           placeholder="Pregúntale a NexDeveloper… (Intro para enviar, Mayús+Intro para salto de línea)"
           className={cn(claseCampo, "min-h-[3rem] resize-y")}
         />
-        {soportado ? (
-          <Boton
-            type="button"
-            variante="suave"
-            aria-label={escuchando ? "Dejar de dictar" : "Dictar la pregunta"}
-            onClick={alternar}
-            className={cn("shrink-0", escuchando && "border-primary/60 text-primary")}
-          >
-            {escuchando ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-          </Boton>
-        ) : null}
+        <Boton
+          type="button"
+          variante="suave"
+          aria-pressed={escuchando}
+          aria-label={escuchando ? "Dejar de dictar" : "Dictar la pregunta"}
+          onClick={alternar}
+          className={cn("shrink-0", escuchando && "border-destructive/50 text-destructive")}
+        >
+          {escuchando ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+        </Boton>
+        {parcial ? <span className="self-center text-xs italic text-muted-foreground">{parcial}</span> : null}
+        {avisoNavegador ? <AvisoSinDictado onCerrar={ocultarAviso} /> : null}
         <Boton type="submit" disabled={ocupado || !texto.trim()} className="shrink-0">
           {ocupado ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
           Enviar

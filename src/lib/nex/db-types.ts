@@ -2355,6 +2355,21 @@ export type PropuestaPeticion = {
   coste?: number | null
 }
 
+export type PeticionAdjuntoRow = {
+  id: string
+  user_id: string
+  peticion_id: string | null
+  conversacion_id: string | null
+  chat_id: string | null
+  ruta: string
+  nombre: string
+  tipo_mime: string
+  tamano_bytes: number
+  texto_extraido: string | null
+  estado: "subido" | "analizado" | "sin_texto" | "error"
+  creado_el: string
+}
+
 export type PeticionDirectaRow = {
   id: string
   user_id: string
@@ -2752,6 +2767,11 @@ export type Database = {
       infra_sincronizacion: Tabla<InfraSincronizacionRow>
       infra_config: Tabla<InfraConfigRow, Partial<SinUsuario<InfraConfigRow>>, Partial<SinUsuario<InfraConfigRow>>>
       peticiones_directas: Tabla<PeticionDirectaRow>
+      peticiones_adjuntos: Tabla<
+        PeticionAdjuntoRow,
+        Partial<SinUsuario<PeticionAdjuntoRow>> & { ruta: string; nombre: string; tipo_mime: string; tamano_bytes: number },
+        Partial<SinUsuario<PeticionAdjuntoRow>>
+      >
       peticiones_mensajes: Tabla<PeticionMensajeRow>
       diccionario_nombres: Tabla<
         DiccionarioNombreRow,
