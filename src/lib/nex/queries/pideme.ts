@@ -80,6 +80,22 @@ export function tonoVeredicto(texto: string | null | undefined) {
 
 /* -------------------------------- Llamadas -------------------------------- */
 
+/** Convierte los avisos técnicos del motor en explicaciones con solución. */
+export function mensajeAmigable(mensaje: string): string {
+  const t = (mensaje ?? "").toLowerCase();
+  if (t.includes("contexto demasiado grande") || t.includes("tarifa no verificada"))
+    return "El modelo elegido no tiene una tarifa verificada, o tu texto y sus adjuntos superan el máximo de entrada que le has fijado. Ve a Consumo → «Configurar una tarifa documentada», revisa el modelo y sube el «Máximo tokens de entrada»; si ya la tenías, comprueba que la fecha «Válida hasta» no haya caducado.";
+  if (t.includes("no se pudo reservar el presupuesto"))
+    return "Se ha alcanzado alguno de tus límites de gasto. Ajústalos en Consumo → «Límites y reservas antes de llamar a la IA».";
+  if (t.includes("modelo no autorizado") || t.includes("modelo no configurado"))
+    return "El modelo que se iba a usar no está dado de alta o está desactivado. Revísalo en Configuración → Proveedores de IA.";
+  if (t.includes("proveedor no configurado") || t.includes("proveedor sin"))
+    return "Falta configurar ese proveedor de IA o su tarifa. Revísalo en Configuración → Proveedores de IA y en Consumo.";
+  if (t.includes("límite explícito de salida"))
+    return "Falta fijar el «Máximo tokens de salida» de ese modelo en Consumo → «Configurar una tarifa documentada».";
+  return mensaje || "No se ha podido completar la operación.";
+}
+
 async function llamar<T = Record<string, unknown>>(cuerpo: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke("pideme", { body: cuerpo });
   const respuesta = (data ?? null) as ({ ok?: boolean; error?: string } & T) | null;
@@ -94,13 +110,14 @@ async function llamar<T = Record<string, unknown>>(cuerpo: Record<string, unknow
         /* sin cuerpo JSON */
       }
     }
-    throw new Error(mensaje);
+    throw new Error(mensajeAmigable(mensaje));
   }
   if (!respuesta || respuesta.ok === false) {
-    throw new Error(respuesta?.error ?? "No se ha podido completar la operación.");
+    throw new Error(mensajeAmigable(respuesta?.error ?? "No se ha podido completar la operación."));
   }
   return respuesta;
 }
+
 
 export type EstadoPlaud = {
   estado?: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cuerpoPedir } from "./pideme";
+import { cuerpoPedir, mensajeAmigable } from "./pideme";
 
 describe("cuerpoPedir", () => {
   it("envía el proyecto elegido cuando se le pasa", () => {
@@ -14,5 +14,14 @@ describe("cuerpoPedir", () => {
 
   it("no envía proyecto si no hay", () => {
     expect(cuerpoPedir({ texto: "hola" })).toEqual({ accion: "pedir", texto: "hola", origen: "texto" });
+  });
+});
+
+describe("mensajeAmigable", () => {
+  it("explica la tarifa no verificada", () => {
+    expect(mensajeAmigable("Contexto demasiado grande o tarifa no verificada")).toContain("Consumo");
+  });
+  it("deja pasar otros mensajes", () => {
+    expect(mensajeAmigable("Fallo raro")).toBe("Fallo raro");
   });
 });
