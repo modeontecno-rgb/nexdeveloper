@@ -211,29 +211,26 @@ function TarjetaConexion() {
       ? { clase: "text-destructive", texto: "Motor Claude + GitHub: falta la clave de Anthropic" }
       : { clase: "text-destructive", texto: "Motor Claude + GitHub: falta el GITHUB_TOKEN" };
 
+  const [verLovable, setVerLovable] = React.useState(false);
+
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-display text-sm font-semibold">Conexión con Lovable</h2>
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs ${chip.clase}`}>
-            {isPending ? "Comprobando..." : chip.texto}
+          <h2 className="font-display text-sm font-semibold">Motor de ejecución</h2>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs ${
+              estado?.motor_claude_listo
+                ? "border-success/40 bg-success/10 text-success"
+                : "border-destructive/40 bg-destructive/10 text-destructive"
+            }`}
+          >
+            {isPending ? "Comprobando..." : estado?.motor_claude_listo ? "Claude + GitHub: listo" : motorClaude.texto}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
           <Boton variante="suave" onClick={() => void navegar({ to: "/mesa" })} className="px-3 py-1.5 text-xs">
             <MessagesSquare className="size-3.5" /> Ir a Mesa de expertos
-          </Boton>
-          <Boton onClick={() => conectar.mutate()} disabled={conectar.isPending} className="px-3 py-1.5 text-xs">
-            <PlugZap className="size-3.5" /> Conectar con Lovable
-          </Boton>
-          <Boton
-            variante="suave"
-            onClick={() => desconectar.mutate()}
-            disabled={desconectar.isPending}
-            className="px-3 py-1.5 text-xs"
-          >
-            <Unplug className="size-3.5" /> Desconectar
           </Boton>
           <Boton
             variante="suave"
@@ -249,17 +246,13 @@ function TarjetaConexion() {
 
       {prueba ? (
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          <SemaforoPrueba nombre="Lovable" ok={Boolean(prueba.lovable?.ok)} detalle={prueba.lovable?.cuenta ?? prueba.lovable?.error ?? null} />
           <SemaforoPrueba nombre="GitHub" ok={Boolean(prueba.github?.ok)} detalle={prueba.github?.cuenta ?? prueba.github?.error ?? null} />
           <SemaforoPrueba nombre="Anthropic" ok={Boolean(prueba.anthropic?.ok)} detalle={prueba.anthropic?.error ?? null} />
+          <SemaforoPrueba nombre="Lovable (opcional)" ok={Boolean(prueba.lovable?.ok)} detalle={prueba.lovable?.cuenta ?? prueba.lovable?.error ?? null} />
         </div>
       ) : null}
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        Si Lovable rechaza la conexión, NexDeveloper ejecuta las órdenes con el motor Claude + GitHub; puedes pedir a
-        Lovable que autorice la URI de retorno{estado?.url_callback ? ` (${estado.url_callback})` : ""}.
-      </p>
-      <p className={`mt-1.5 text-xs ${motorClaude.clase}`}>
+      <p className={`mt-3 text-xs ${motorClaude.clase}`}>
         {motorClaude.texto} ·{" "}
         <Link to="/ajustes/proveedores" className="underline">
           Ajustes → Proveedores
@@ -270,9 +263,51 @@ function TarjetaConexion() {
           {estado.proyectos_sin_lovable} proyectos no tienen todavía su proyecto de Lovable asignado.
         </p>
       ) : null}
+
+      <div className="mt-4 rounded-lg border border-border/70 bg-muted/30 p-3">
+        <button
+          type="button"
+          onClick={() => setVerLovable((v) => !v)}
+          className="text-xs font-medium text-muted-foreground underline"
+        >
+          {verLovable ? "Ocultar conexión con Lovable (avanzado)" : "Conexión con Lovable (avanzado)"}
+        </button>
+        {verLovable ? (
+          <div className="mt-3 space-y-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs ${chip.clase}`}>
+              {chip.texto}
+            </span>
+            <p className="text-xs text-muted-foreground">
+              Este motor no está disponible todavía: la ventana de autorización se cierra sin devolver el código porque
+              Lovable aún no admite nuestra dirección de retorno
+              {estado?.url_callback ? ` (${estado.url_callback})` : ""}. Si ves el mensaje «Lovable no devolvió el código
+              de autorización», no es un fallo de tu sesión: cierra la ventana y sigue trabajando con Claude + GitHub.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Boton
+                variante="suave"
+                onClick={() => conectar.mutate()}
+                disabled={conectar.isPending}
+                className="px-3 py-1.5 text-xs"
+              >
+                <PlugZap className="size-3.5" /> Intentar conectar
+              </Boton>
+              <Boton
+                variante="suave"
+                onClick={() => desconectar.mutate()}
+                disabled={desconectar.isPending}
+                className="px-3 py-1.5 text-xs"
+              >
+                <Unplug className="size-3.5" /> Desconectar
+              </Boton>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }
+
 
 function SemaforoPrueba({ nombre, ok, detalle }: { nombre: string; ok: boolean; detalle: string | null }) {
   return (
