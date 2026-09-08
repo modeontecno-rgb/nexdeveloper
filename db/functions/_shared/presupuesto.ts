@@ -29,10 +29,16 @@ export async function fetchIA(sb: DB, ctx: ContextoIA, url: string, init: Reques
  if (!Number.isSafeInteger(output) || output<1) throw new Error('La petición necesita un límite explícito de salida');
  // Reserve the verified maximum input capacity; tokenizers/provider framing differ.
  const { data: price, error: te } = await sb.from('ia_tarifas').select('max_entrada').eq('modelo_id',ctx.modeloId).eq('user_id',ctx.userId).single();
- if (te || !price || new TextEncoder().encode(init.body).byteLength + 4096 > price.max_entrada) throw new Error('Contexto demasiado grande o tarifa no verificada');
+ const bytesEntrada = new TextEncoder().encode(init.body).byteLength;
+ // Reserve a conservative estimate of this request, not the model's entire
+ // configured context window. Reserving max_entrada made a short prompt with a
+ // 200k-token model look like a full 200k-token call and exhausted every limit.
+ const entradaReservada = Math.max(1, Math.ceil(bytesEntrada / 2) + 1024);
+ if (te || !price) throw new Error('Tarifa no verificada');
+ if (entradaReservada > price.max_entrada) throw new Error('Contexto demasiado grande para el máximo de entrada configurado');
  const id = crypto.randomUUID();
- const { data: reservation, error: re } = await sb.rpc('ia_reservar',{p_id:id,p_user_id:ctx.userId,p_modelo_id:ctx.modeloId,p_ambito:ctx.ambito,p_proyecto_id:ctx.proyectoId??null,p_operacion:ctx.operacion,p_entrada:price.max_entrada,p_salida:output,p_ejecucion_id:ctx.ejecucionId??null});
- if (re || reservation?.id !== id) throw new Error('Llamada bloqueada: no se pudo reservar el presupuesto');
+ const { data: reservation, error: re } = await sb.rpc('ia_reservar',{p_id:id,p_user_id:ctx.userId,p_modelo_id:ctx.modeloId,p_ambito:ctx.ambito,p_proyecto_id:ctx.proyectoId??null,p_operacion:ctx.operacion,p_entrada:entradaReservada,p_salida:output,p_ejecucion_id:ctx.ejecucionId??null});
+ if (re || reservation?.id !== id) throw new Error(`Llamada bloqueada: ${re?.message ?? 'no se pudo reservar el presupuesto'}`);
  let emitida=false;
  try {
    if(ctx.ejecucionId){

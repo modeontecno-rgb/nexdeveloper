@@ -24,4 +24,8 @@ describe("mensajeAmigable", () => {
   it("deja pasar otros mensajes", () => {
     expect(mensajeAmigable("Fallo raro")).toBe("Fallo raro");
   });
+  it("explica el límite exacto que bloquea", () => {
+    expect(mensajeAmigable("Llamada bloqueada: Límite diario superado")).toContain("límite diario");
+    expect(mensajeAmigable("Llamada bloqueada: Máximo por llamada superado")).toContain("máximo por llamada");
+  });
 });
