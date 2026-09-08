@@ -1,3 +1,4 @@
+import { ControlEconomico } from "@/components/nex/control-economico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, Coins, Loader2, Lock, Plus, RefreshCw, Trash2 } from "lucide-react";
 import * as React from "react";
@@ -190,6 +191,8 @@ function PantallaGastoIa() {
           </>
         }
       />
+
+      <ControlEconomico />
 
       {sincronizar.isError ? (
         <p className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">

@@ -20,6 +20,16 @@ function fetchConClave(clave: string): typeof fetch {
     if (init?.headers) new Headers(init.headers).forEach((v, k) => headers.set(k, v));
     if (headers.get("Authorization") === `Bearer ${clave}`) headers.delete("Authorization");
     headers.set("apikey", clave);
+    // Optional localhost-only function runner for development. Auth/data stay on the configured local API.
+    const localFunctions=import.meta.env.DEV ? import.meta.env['VITE_LOCAL_FUNCTIONS_URL'] : undefined;
+    if(localFunctions){
+      const local=new URL(String(localFunctions)),source=new URL(input instanceof Request?input.url:String(input));
+      if(!['127.0.0.1','localhost','[::1]'].includes(local.hostname)||!['http:','https:'].includes(local.protocol))throw new Error('El servidor de funciones de desarrollo debe ser local');
+      if(source.origin===new URL(SUPABASE_URL).origin&&source.pathname.startsWith('/functions/v1/')){
+        const routed=new URL(source.pathname+source.search,local).href;
+        return fetch(input instanceof Request?new Request(routed,input):routed,{...init,headers});
+      }
+    }
     return fetch(input, { ...init, headers });
   };
 }

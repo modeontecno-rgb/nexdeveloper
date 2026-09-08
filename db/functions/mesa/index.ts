@@ -2,6 +2,7 @@
 // Mesa de expertos: recomienda el equipo (planificar / ejecutar / revisar) para un trabajo, delibera con varios expertos
 // (cada uno con su proveedor y modelo) y sintetiza un plan con riesgos, coste y horas; puede crear las tareas del plan.
 // Acciones: recomendar {proyecto_id, pregunta, contexto?, modo?} · deliberar {mesa_id} · crear_tareas {mesa_id} · sin acción → estado
+import { fetchIADeUsuario } from "../_shared/presupuesto.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
@@ -23,26 +24,25 @@ async function proveedoresDisponibles(sb: SB, userId: string): Promise<Prov[]> {
   }
   return out.sort((a, b) => b.calidad - a.calidad);
 }
-async function llamar(p: Prov, sistema: string, pregunta: string, maxTokens = 2500) {
+async function llamar(sb: SB, userId: string, proyectoId: string | null, p: Prov, sistema: string, pregunta: string, maxTokens = 2500) {
   if (p.slug === "anthropic") {
-    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
+    const r = await fetchIADeUsuario(sb, userId, proyectoId, "mesa", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": p.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
     if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
-    return { texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 };
+    return { coste: Number(j._nex_coste_eur), texto: (j.content ?? []).map((c: any) => c.text ?? "").join(""), te: j.usage?.input_tokens ?? 0, ts: j.usage?.output_tokens ?? 0 };
   }
   if (p.slug === "google") {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens } }) });
+    const r = await fetchIADeUsuario(sb, userId, proyectoId, "mesa", `https://generativelanguage.googleapis.com/v1beta/models/${p.modelo}:generateContent?key=${p.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { maxOutputTokens: maxTokens } }) });
     if (!r.ok) throw new Error(`Google ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
-    return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 };
+    return { coste: Number(j._nex_coste_eur), texto: (j.candidates?.[0]?.content?.parts ?? []).map((x: any) => x.text ?? "").join(""), te: j.usageMetadata?.promptTokenCount ?? 0, ts: j.usageMetadata?.candidatesTokenCount ?? 0 };
   }
   const bases: Record<string, string> = { openai: "https://api.openai.com/v1", groq: "https://api.groq.com/openai/v1", mistral: "https://api.mistral.ai/v1", deepseek: "https://api.deepseek.com/v1", xai: "https://api.x.ai/v1", openrouter: "https://openrouter.ai/api/v1" };
-  const r = await fetch(`${bases[p.slug]}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.3, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+  const r = await fetchIADeUsuario(sb, userId, proyectoId, "mesa", `${bases[p.slug]}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${p.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: p.modelo, max_tokens: maxTokens, temperature: 0.3, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
   if (!r.ok) throw new Error(`${p.slug} ${r.status}: ${(await r.text()).slice(0, 160)}`); const j = await r.json();
-  return { texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
+  return { coste: Number(j._nex_coste_eur), texto: j.choices?.[0]?.message?.content ?? "", te: j.usage?.prompt_tokens ?? 0, ts: j.usage?.completion_tokens ?? 0 };
 }
 const coste = (p: Prov, te: number, ts: number) => Number(((te * p.ce + ts * p.cs) / 1_000_000).toFixed(4));
 const extraerJson = (t: string) => { const m = t.match(/```json\s*([\s\S]*?)```/) ?? t.match(/(\{[\s\S]*\})/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } };
 
-// Elegir expertos según el texto (papel, cuando_usarlo, tareas)
 async function elegirExpertos(sb: SB, userId: string, texto: string, n = 3) {
   const { data: expertos } = await sb.from("expertos").select("slug, nombre, papel, cuando_usarlo, instrucciones, tareas").eq("user_id", userId).eq("estado", "adoptado").eq("origen", "propio");
   const t = texto.toLowerCase();
@@ -77,7 +77,6 @@ Deno.serve(async (req) => {
       const modo = ["economico", "equilibrado", "maxima_calidad"].includes(cuerpo.modo) ? cuerpo.modo : "equilibrado";
       let proyecto: any = null; if (proyectoId) { const { data: p } = await sb.from("proyectos").select("id, nombre, descripcion, tecnologias").eq("id", proyectoId).eq("user_id", userId).maybeSingle(); proyecto = p; }
       const expertos = await elegirExpertos(sb, userId, `${pregunta} ${cuerpo.contexto ?? ""} ${proyecto?.descripcion ?? ""}`, modo === "economico" ? 2 : modo === "maxima_calidad" ? 4 : 3);
-      // Reparto de proveedores: el mejor planifica/revisa, los baratos opinan
       const mejor = provs[0]; const barato = provs.slice().sort((a, b) => a.ce - b.ce)[0] ?? mejor;
       const participantes = expertos.map((e, i) => {
         const rol = i === 0 ? "planificar" : e.slug === "auditor-jefe-orquestador" ? "revisar" : "opinar";
@@ -106,24 +105,23 @@ Deno.serve(async (req) => {
           const p = provs.find((x) => x.slug === part.proveedor) ?? provs[0];
           const ex = (expertos ?? []).find((e) => e.slug === part.experto_slug);
           const sistema = `${ex?.instrucciones ? ex.instrucciones.slice(0, 6000) : `Eres ${ex?.nombre ?? part.experto_nombre}, ${ex?.papel ?? "experto"}.`}\n\nRespondes en español de España, concreto y breve (máximo 350 palabras), como miembro de una mesa de expertos. Tu rol en esta mesa: ${part.rol}.`;
-            const preg = part.rol === "planificar" ? `${base}\nPropón el plan: pasos numerados (máx. 8), quién los hace (Claude, Lovable, un experto, Javier), horas estimadas y riesgos.` : part.rol === "revisar" ? `${base}\nOpiniones previas de la mesa:\n${opiniones.join("\n\n")}\n\nRevisa el plan: qué falta, qué sobra, qué riesgos de seguridad, datos o calidad ves, y si requiere aprobación de Javier antes de ejecutar.` : `${base}\nDa tu opinión desde tu especialidad: qué hay que tener en cuenta y qué recomendarías.`;
-          const r = await llamar(p, sistema, preg, 1200);
-          te += r.te; ts += r.ts; const c = coste(p, r.te, r.ts); costeTotal += c; orden++;
+          const preg = part.rol === "planificar" ? `${base}\nPropón el plan: pasos numerados (máx. 8), quién los hace (Claude, Lovable, un experto, Javier), horas estimadas y riesgos.` : part.rol === "revisar" ? `${base}\nOpiniones previas de la mesa:\n${opiniones.join("\n\n")}\n\nRevisa el plan: qué falta, qué sobra, qué riesgos de seguridad, datos o calidad ves, y si requiere aprobación de Javier antes de ejecutar.` : `${base}\nDa tu opinión desde tu especialidad: qué hay que tener en cuenta y qué recomendarías.`;
+          const r = await llamar(sb, userId, mesa.proyecto_id, p, sistema, preg, 1200);
+          te += r.te; ts += r.ts; const c = r.coste; costeTotal += c; orden++;
           opiniones.push(`[${part.experto_nombre} · ${part.rol}]\n${r.texto}`);
           await sb.from("mesa_intervenciones").insert({ user_id: userId, mesa_id: mesa.id, orden, rol: part.rol, experto_slug: part.experto_slug, experto_nombre: part.experto_nombre, proveedor: p.slug, modelo: p.modelo, texto: r.texto, tokens_entrada: r.te, tokens_salida: r.ts, coste: c });
-          if (p.modelo_id) await sb.from("consumos_ia").insert({ user_id: userId, proyecto_id: mesa.proyecto_id, modelo_id: p.modelo_id, tokens_entrada: r.te, tokens_salida: r.ts, coste: c, resultado: "ok" }).then(() => {}, () => {});
+
         }
-        // Síntesis con el mejor modelo
         const mejor = provs[0];
         const { data: ajustes } = await sb.from("ajustes").select("umbral_aprobacion_eur, aprobar_si_riesgo_alto").eq("user_id", userId).maybeSingle();
         const sistemaS = "Eres el coordinador de la mesa de expertos de Soluciones EvoluteIA. Sintetizas en español de España y devuelves SOLO JSON.";
         const pregS = `${base}\nIntervenciones de la mesa:\n${opiniones.join("\n\n")}\n\nDevuelve JSON: {"sintesis":"conclusión en 4-6 frases para Javier","equipo":{"planificar":"nombre","ejecutar":"Claude|Lovable|experto|Javier","revisar":"nombre"},"plan":[{"orden":1,"titulo":"…","descripcion":"…","responsable":"Claude|Lovable|Javier|experto","horas":1.5,"requiere_atencion":false}],"riesgos":["…"],"coste_estimado_eur":0,"horas_estimadas":0,"calidad_prevista":"alta|media|baja","riesgo":"bajo|medio|alto","requiere_aprobacion":true|false,"motivo_aprobacion":"…"}`;
-        const s = await llamar(mejor, sistemaS, pregS, 2000);
-        te += s.te; ts += s.ts; const cs = coste(mejor, s.te, s.ts); costeTotal += cs; orden++;
+        const s = await llamar(sb, userId, mesa.proyecto_id, mejor, sistemaS, pregS, 2000);
+        te += s.te; ts += s.ts; const cs = s.coste; costeTotal += cs; orden++;
         const j = extraerJson(s.texto) ?? { sintesis: s.texto.slice(0, 1500), equipo: mesa.recomendacion?.equipo, plan: [], riesgos: [] };
         const requiere = !!j.requiere_aprobacion || (j.riesgo === "alto" && ajustes?.aprobar_si_riesgo_alto !== false) || (Number(j.coste_estimado_eur ?? 0) >= Number(ajustes?.umbral_aprobacion_eur ?? 50));
         await sb.from("mesa_intervenciones").insert({ user_id: userId, mesa_id: mesa.id, orden, rol: "sintesis", experto_slug: "coordinador", experto_nombre: "Coordinador de la mesa", proveedor: mejor.slug, modelo: mejor.modelo, texto: j.sintesis ?? s.texto, tokens_entrada: s.te, tokens_salida: s.ts, coste: cs });
-        if (mejor.modelo_id) await sb.from("consumos_ia").insert({ user_id: userId, proyecto_id: mesa.proyecto_id, modelo_id: mejor.modelo_id, tokens_entrada: s.te, tokens_salida: s.ts, coste: cs, resultado: "ok" }).then(() => {}, () => {});
+
         const recomendacion = { equipo: j.equipo ?? mesa.recomendacion?.equipo, plan: j.plan ?? [], riesgos: j.riesgos ?? [], coste_estimado: j.coste_estimado_eur ?? null, horas_estimadas: j.horas_estimadas ?? null, calidad_prevista: j.calidad_prevista ?? null, riesgo: j.riesgo ?? null, requiere_aprobacion: requiere, motivo: j.motivo_aprobacion ?? (requiere ? "Supera el umbral o el riesgo configurado" : "Dentro de los umbrales") };
         await sb.from("mesas").update({ estado: "concluida", sintesis: j.sintesis ?? s.texto, recomendacion, tokens_entrada: te, tokens_salida: ts, coste: costeTotal, concluida_el: new Date().toISOString() }).eq("id", mesa.id);
         if (mesa.orden_id) await sb.from("ordenes").update({ equipo: recomendacion.equipo, coste_estimado: recomendacion.coste_estimado, horas_estimadas: recomendacion.horas_estimadas, riesgo: recomendacion.riesgo, calidad_prevista: recomendacion.calidad_prevista, requiere_aprobacion: requiere, motivo_aprobacion: recomendacion.motivo }).eq("id", mesa.orden_id).then(() => {}, () => {});

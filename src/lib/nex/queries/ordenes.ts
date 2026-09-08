@@ -1,10 +1,11 @@
+import {useRef} from 'react';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import type { AjustesRow, ModoEjecucion, OrdenRow, Prioridad, Riesgo } from "../db-types";
 import { supabase } from "../supabase";
 import { claves } from "./claves";
-import { crearAlerta, registrarActividad } from "./mutaciones";
+import { registrarActividad } from "./mutaciones";
 
 export interface NuevaOrden {
   proyectoId: string | null;
@@ -17,7 +18,8 @@ export interface NuevaOrden {
   costeEstimado: number;
   horasEstimadas: number;
   riesgo: Riesgo;
-  calidadPrevista: number;
+  calidadPrevista: number | null;
+  origenMesaId?: string;
 }
 
 export interface Sugerencia {
@@ -33,139 +35,20 @@ export async function sugerirProyecto(texto: string): Promise<Sugerencia | null>
   return ordenadas[0] ?? null;
 }
 
-function necesitaAprobacion(orden: NuevaOrden, ajustes: AjustesRow | null) {
-  if (!ajustes) return orden.costeEstimado > 150;
-  if (orden.costeEstimado > ajustes.umbral_aprobacion_eur) return true;
-  if (ajustes.aprobar_si_prioridad_critica && orden.prioridad === "critica") return true;
-  if (ajustes.aprobar_si_riesgo_alto && orden.riesgo === "Alto") return true;
-  return false;
-}
-
-async function crearTareaDesdeOrden(orden: OrdenRow, userId?: string) {
-  if (!orden.proyecto_id) return;
-  await supabase.from("tareas").insert({
-    ...(userId ? { user_id: userId } : {}),
-    proyecto_id: orden.proyecto_id,
-    orden_id: orden.id,
-    titulo: orden.texto.slice(0, 120),
-    descripcion: orden.texto,
-    estado: "en_cola",
-    prioridad: orden.prioridad,
-    agente_id: orden.agente_id,
-    enviada_el: new Date().toISOString(),
-    estimacion_horas: orden.horas_estimadas,
-    coste_estimado: orden.coste_estimado,
-  });
-}
-
 export function useCrearOrden() {
   const queryClient = useQueryClient();
+  const solicitud=useRef<{contenido:string;id:string}|null>(null);
 
   return useMutation({
     mutationFn: async ({ entrada, ajustes }: { entrada: NuevaOrden; ajustes: AjustesRow | null }) => {
-      const { data: identidad, error: errorIdentidad } = await supabase.auth.getUser();
-      const userId = identidad.user?.id;
-      if (errorIdentidad || !userId) {
-        throw new Error("Tu sesión ha caducado. Vuelve a entrar para crear la orden.");
-      }
-      const sugerencia = await sugerirProyecto(entrada.texto);
-      const umbralConfianza = ajustes?.umbral_confianza_reorganizacion ?? 0.85;
-      const automatica = ajustes?.reorganizacion_automatica ?? true;
-
-      let proyectoFinal = entrada.proyectoId;
-      let proyectoOrigen: string | null = null;
-      let confianza: number | null = sugerencia?.confianza ?? null;
-      let reorganizada: string | null = null;
-      let pendienteConfirmar = false;
-
-      if (sugerencia && sugerencia.proyecto_id !== entrada.proyectoId) {
-        if (automatica && sugerencia.confianza >= umbralConfianza) {
-          proyectoOrigen = entrada.proyectoId;
-          proyectoFinal = sugerencia.proyecto_id;
-          reorganizada = new Date().toISOString();
-        } else {
-          pendienteConfirmar = true;
-        }
-      }
-
-      const requiere = necesitaAprobacion(entrada, ajustes);
-      const fila = await supabase
-        .from("ordenes")
-        .insert({
-          user_id: userId,
-          proyecto_id: proyectoFinal,
-          chat_id: entrada.chatId ?? null,
-          texto: entrada.texto,
-          modo: entrada.modo,
-          prioridad: entrada.prioridad,
-          agente_id: entrada.agenteId,
-          equipo: entrada.equipo,
-          estado: requiere ? "pendiente_aprobacion" : "en_cola",
-          coste_estimado: entrada.costeEstimado,
-          horas_estimadas: entrada.horasEstimadas,
-          riesgo: entrada.riesgo,
-          calidad_prevista: entrada.calidadPrevista,
-          requiere_aprobacion: requiere,
-          motivo_aprobacion: requiere ? motivo(entrada, ajustes) : null,
-          proyecto_origen_id: proyectoOrigen,
-          confianza_clasificacion: confianza,
-          reorganizada_el: reorganizada,
-          pendiente_confirmar_proyecto: pendienteConfirmar,
-        })
-        .select("*")
-        .single();
-
-      if (fila.error) throw new Error(fila.error.message);
-      const orden = fila.data as OrdenRow;
-
-      await supabase.from("estimaciones").insert({
-        user_id: userId,
-        proyecto_id: orden.proyecto_id,
-        orden_id: orden.id,
-        agente_id: orden.agente_id,
-        modo: orden.modo,
-        horas_estimadas: orden.horas_estimadas,
-        coste_estimado: orden.coste_estimado,
-        calidad_prevista: orden.calidad_prevista,
-        riesgo: orden.riesgo,
-      });
-
-      if (reorganizada && sugerencia) {
-        await registrarActividad(
-          proyectoFinal,
-          "reorganizacion",
-          `Orden reasignada automáticamente a «${sugerencia.nombre}» con ${Math.round(sugerencia.confianza * 100)}% de confianza`,
-          { referencia_tabla: "ordenes", referencia_id: orden.id },
-          userId,
-        );
-      }
-
-      if (pendienteConfirmar && sugerencia) {
-        await crearAlerta(
-          proyectoFinal,
-          `Una orden podría pertenecer a «${sugerencia.nombre}» (${Math.round(sugerencia.confianza * 100)}% de confianza). Confirma el proyecto.`,
-          "aviso",
-          true,
-          userId,
-        );
-      }
-
-      if (requiere) {
-        await registrarActividad(orden.proyecto_id, "aprobacion", `Orden pendiente de aprobación: ${orden.texto.slice(0, 60)}`, {
-          referencia_tabla: "ordenes",
-          referencia_id: orden.id,
-        }, userId);
-      } else {
-        await crearTareaDesdeOrden(orden, userId);
-        await registrarActividad(orden.proyecto_id, "orden", `Orden enviada a la cola: ${orden.texto.slice(0, 60)}`, {
-          referencia_tabla: "ordenes",
-          referencia_id: orden.id,
-        }, userId);
-      }
-
-      return orden;
+      const datos={proyecto_id:entrada.proyectoId,chat_id:entrada.chatId??null,texto:entrada.texto,modo:entrada.modo,prioridad:entrada.prioridad,agente_id:entrada.agenteId,equipo:entrada.equipo,coste_estimado:entrada.costeEstimado,horas_estimadas:entrada.horasEstimadas,riesgo:entrada.riesgo,calidad_prevista:entrada.calidadPrevista,origen_mesa_id:entrada.origenMesaId??null};
+      const contenido=JSON.stringify(datos);if(solicitud.current?.contenido!==contenido)solicitud.current={contenido,id:crypto.randomUUID()};
+      const {data,error}=await supabase.rpc('crear_orden_completa',{p_solicitud:solicitud.current.id,p_datos:datos});
+      if(error||!data)throw new Error(error?.message??'No se pudo registrar la orden');
+      return data as unknown as OrdenRow;
     },
     onSuccess: (orden) => {
+      solicitud.current=null;
       for (const clave of [claves.ordenes, claves.tareas, claves.actividad, claves.alertas, claves.resumenProyectos]) {
         void queryClient.invalidateQueries({ queryKey: clave });
       }
@@ -175,14 +58,6 @@ export function useCrearOrden() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-}
-
-function motivo(entrada: NuevaOrden, ajustes: AjustesRow | null) {
-  const razones: string[] = [];
-  if (entrada.costeEstimado > (ajustes?.umbral_aprobacion_eur ?? 150)) razones.push("supera el umbral de coste");
-  if (ajustes?.aprobar_si_prioridad_critica && entrada.prioridad === "critica") razones.push("prioridad crítica");
-  if (ajustes?.aprobar_si_riesgo_alto && entrada.riesgo === "Alto") razones.push("riesgo alto");
-  return razones.join(", ") || "requiere revisión manual";
 }
 
 export function useResolverOrden() {
@@ -197,35 +72,7 @@ export function useResolverOrden() {
       decision: "aprobada" | "rechazada";
       comentario?: string;
     }) => {
-      const { data: sesion } = await supabase.auth.getUser();
-      let resueltaPor: string | null = sesion.user?.email ?? null;
-      if (sesion.user?.id) {
-        const { data: perfil } = await supabase
-          .from("perfiles")
-          .select("nombre_completo")
-          .eq("id", sesion.user.id)
-          .maybeSingle();
-        resueltaPor = perfil?.nombre_completo ?? sesion.user.email ?? null;
-      }
-      const actualizada = await supabase
-        .from("ordenes")
-        .update({
-          estado: decision === "aprobada" ? "en_cola" : "rechazada",
-          resuelta_el: new Date().toISOString(),
-          resuelta_por: resueltaPor,
-          comentario: comentario ?? null,
-        })
-        .eq("id", orden.id)
-        .select("*")
-        .single();
-      if (actualizada.error) throw new Error(actualizada.error.message);
-
-      if (decision === "aprobada") {
-        await crearTareaDesdeOrden(actualizada.data as OrdenRow);
-        await registrarActividad(orden.proyecto_id, "orden", `Orden aprobada y enviada a la cola: ${orden.texto.slice(0, 60)}`);
-      } else {
-        await registrarActividad(orden.proyecto_id, "decision", `Orden rechazada: ${orden.texto.slice(0, 60)}`);
-      }
+      const {error}=await supabase.rpc('resolver_orden_completa',{p_orden:orden.id,p_decision:decision,...(comentario!==undefined?{p_comentario:comentario}:{})});if(error)throw new Error(error.message);
     },
     onSuccess: () => {
       for (const clave of [claves.ordenes, claves.tareas, claves.actividad, claves.resumenProyectos]) {
@@ -268,7 +115,7 @@ export function useCancelarOrden() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await supabase.from("ordenes").update({ estado: "cancelada" }).eq("id", id).select("id").maybeSingle();
+      const res = await supabase.rpc("cancelar_orden_completa",{p_orden:id});
       if (res.error) throw new Error(res.error.message);
     },
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: claves.ordenes }),

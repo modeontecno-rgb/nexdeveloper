@@ -1,6 +1,8 @@
 // NexDeveloper · Edge Function «resumenes» (0.14.0)
 // Resumen diario (08:00) e informe semanal de cartera: recopila datos reales, redacta (plantilla o IA) y envía por correo (Gmail conectado o Resend) y WhatsApp (Meta).
-// Acciones: generar {tipo, fecha?, enviar?} (usuario) · programado {tipo} (x-cron-token) · enviar {resumen_id, canales?} · previsualizar {tipo}
+// Acciones: generar {tipo, fecha?, enviar?, canales?} (usuario) · programado {tipo} (x-cron-token) · enviar {resumen_id, canales?}
+// 0.36.0: la intro por IA prueba primero Abacus (RouteLLM), incluido sin coste extra en la suscripción.
+import { fetchIADeUsuario } from "../_shared/presupuesto.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
@@ -16,7 +18,6 @@ const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&
 const fechaEs = (d: Date) => d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Madrid" });
 const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
 
-// ---------- Recopilar datos ----------
 async function recopilar(sb: SB, userId: string, desde: Date, hasta: Date) {
   const d = desde.toISOString(), h = hasta.toISOString();
   const [atencion, desatendidas, completadas, compil, vig, dom, copias, bandeja, calidad, consumo, actividad, alertas, proyectos] = await Promise.all([
@@ -46,9 +47,8 @@ async function recopilar(sb: SB, userId: string, desde: Date, hasta: Date) {
   };
 }
 
-// ---------- Redacción ----------
 async function introIA(sb: SB, userId: string, tipo: string, cifras: Record<string, unknown>, detalle: string) {
-  for (const slug of ["groq", "anthropic", "google"]) {
+  for (const slug of ["abacus", "groq", "anthropic", "google"]) {
     const { data: p } = await sb.from("proveedores_ia").select("id, clave_cifrada").eq("user_id", userId).eq("clave_slug", slug).maybeSingle();
     if (!p?.clave_cifrada) continue;
     const { data: clave } = await sb.rpc("descifrar_clave_proveedor", { p_proveedor_id: p.id });
@@ -57,16 +57,19 @@ async function introIA(sb: SB, userId: string, tipo: string, cifras: Record<stri
     const pregunta = `Redacta el párrafo de apertura del ${tipo === "diario" ? "resumen de esta mañana" : "informe semanal de la cartera"} a partir de estas cifras y detalles. Empieza por lo más urgente. No inventes nada.\nCifras: ${JSON.stringify(cifras)}\nDetalle:\n${detalle.slice(0, 5000)}`;
     try {
       if (slug === "anthropic") {
-        const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": String(clave), "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: "claude-3-5-haiku-latest", max_tokens: 400, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
+        const r = await fetchIADeUsuario(sb, userId, null, "resumenes", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": String(clave), "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: "claude-3-5-haiku-latest", max_tokens: 400, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
         if (r.ok) { const j = await r.json(); return { texto: (j.content ?? []).map((c: any) => c.text ?? "").join("").trim(), por: slug }; }
       } else if (slug === "google") {
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }] }) });
+        const r = await fetchIADeUsuario(sb, userId, null, "resumenes", `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }] }) });
         if (r.ok) { const j = await r.json(); return { texto: (j.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("").trim(), por: slug }; }
+      } else if (slug === "abacus") {
+        const r = await fetchIADeUsuario(sb, userId, null, "resumenes", "https://routellm.abacus.ai/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer ${clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: "route-llm", temperature: 0.3, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+        if (r.ok) { const j = await r.json(); return { texto: (j.choices?.[0]?.message?.content ?? "").trim(), por: slug }; }
       } else {
-        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer ${clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", temperature: 0.3, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+        const r = await fetchIADeUsuario(sb, userId, null, "resumenes", "https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { Authorization: `Bearer ${clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", temperature: 0.3, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
         if (r.ok) { const j = await r.json(); return { texto: (j.choices?.[0]?.message?.content ?? "").trim(), por: slug }; }
       }
-    } catch (_) { /* siguiente */ }
+    } catch (error) { return null; }
   }
   return null;
 }
@@ -115,7 +118,6 @@ function redactar(tipo: "diario" | "semanal", fecha: Date, desde: Date, hasta: D
   return { titulo, md: md.join("\n"), html, cifras };
 }
 
-// ---------- Envío ----------
 async function enviarCorreo(sb: SB, userId: string, destino: string, asunto: string, html: string, texto: string) {
   const { data: f } = await sb.from("bandeja_fuentes").select("*").eq("user_id", userId).eq("origen", "gmail").maybeSingle();
   if (f?.secreto_cifrado && G_ID && G_SECRET) {
@@ -148,7 +150,6 @@ async function enviarWhatsapp(sb: SB, userId: string, destino: string, texto: st
 }
 function textoWhatsapp(titulo: string, md: string) { return `*${titulo}*\n\n` + md.split("\n").filter((l) => !l.startsWith("# ") && l !== "---").map((l) => l.replace(/^## (.*)/, "*$1*").replace(/^- /, "• ")).join("\n").slice(0, 3800); }
 
-// ---------- Generar ----------
 async function generar(sb: SB, userId: string, tipo: "diario" | "semanal", fecha: Date, enviar: boolean, canalesForzados?: string[]) {
   const { data: cfg } = await sb.from("resumenes_config").select("*").eq("user_id", userId).maybeSingle();
   const hasta = new Date(fecha); hasta.setHours(23, 59, 59, 999);

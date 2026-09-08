@@ -41,7 +41,7 @@ export function avanzarTrabajo(estado: EstadoTrabajo, paso: string, porcentaje?:
     ...estado,
     pasos,
     indice: pasos.indexOf(paso),
-    porcentaje: typeof porcentaje === "number" ? Math.max(0, Math.min(100, Math.round(porcentaje))) : estado.porcentaje,
+    porcentaje: typeof porcentaje === "number" && Number.isFinite(porcentaje) ? Math.max(0, Math.min(100, Math.round(porcentaje))) : null,
     fase: "activo",
   };
 }
@@ -62,12 +62,10 @@ export function textoPaso(estado: EstadoTrabajo): string {
   return `Paso ${estado.indice + 1} de ${estado.pasos.length} · ${estado.pasos[estado.indice]}`;
 }
 
-/** Porcentaje que se pinta: si no hay real, avanza por pasos y nunca pasa del 90 %. */
-export function porcentajeVisible(estado: EstadoTrabajo, simulado = 0): number {
+/** Only a measured percentage is displayed. Unknown duration stays indeterminate. */
+export function porcentajeVisible(estado: EstadoTrabajo): number | null {
   if (estado.fase === "ok") return 100;
-  if (typeof estado.porcentaje === "number") return estado.porcentaje;
-  const porPasos = estado.pasos.length ? ((estado.indice + 1) / (estado.pasos.length + 1)) * 100 : 0;
-  return Math.min(90, Math.round(Math.max(porPasos, simulado)));
+  return typeof estado.porcentaje === "number" && Number.isFinite(estado.porcentaje) ? estado.porcentaje : null;
 }
 
 export function mmss(ms: number): string {
@@ -100,48 +98,21 @@ export function useTrabajo() {
 }
 
 export function TrabajoProvider({ children }: { children: React.ReactNode }) {
-  const [trabajo, setTrabajo] = React.useState<EstadoTrabajo | null>(null);
-  const refCierre = React.useRef<number | null>(null);
-
-  const limpiarCierre = () => {
-    if (refCierre.current) window.clearTimeout(refCierre.current);
-    refCierre.current = null;
-  };
-
-  const iniciarTrabajo = React.useCallback((opciones: { titulo: string; pasos?: string[] }) => {
-    limpiarCierre();
-    const inicial = crearTrabajo(opciones.titulo, opciones.pasos ?? []);
-    setTrabajo(inicial);
-    sonidoTic();
-
-    const propio = (accion: (a: EstadoTrabajo) => EstadoTrabajo) =>
-      setTrabajo((actual) => (actual && actual.id === inicial.id ? accion(actual) : actual));
-
+  const [trabajos,setTrabajos]=React.useState<EstadoTrabajo[]>([]);
+  const timers=React.useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const trabajo=trabajos.find(t=>t.fase==='activo')??trabajos[0]??null;
+  const iniciarTrabajo=React.useCallback((opciones:{titulo:string;pasos?:string[]})=>{
+    const inicial=crearTrabajo(opciones.titulo,opciones.pasos??[]);setTrabajos(lista=>[...lista,inicial]);sonidoTic();
+    const propio=(accion:(a:EstadoTrabajo)=>EstadoTrabajo)=>setTrabajos(lista=>lista.map(t=>t.id===inicial.id?accion(t):t));
     return {
-      avanzar: (paso: string, porcentaje?: number) => propio((a) => avanzarTrabajo(a, paso, porcentaje)),
-      terminar: (mensajeOk?: string) => {
-        propio((a) => terminarTrabajo(a, mensajeOk));
-        sonidoExito();
-        limpiarCierre();
-        refCierre.current = window.setTimeout(() => {
-          setTrabajo((actual) => (actual && actual.id === inicial.id ? null : actual));
-        }, 4000);
-      },
-      fallar: (mensajeError: string) => {
-        propio((a) => fallarTrabajo(a, mensajeError));
-        sonidoError();
-      },
+      avanzar:(paso:string,porcentaje?:number)=>propio(a=>avanzarTrabajo(a,paso,porcentaje)),
+      terminar:(mensaje?:string)=>{propio(a=>terminarTrabajo(a,mensaje));sonidoExito();const timer=setTimeout(()=>{setTrabajos(lista=>lista.filter(t=>t.id!==inicial.id));timers.current.delete(timer);},4000);timers.current.add(timer);},
+      fallar:(mensaje:string)=>{propio(a=>fallarTrabajo(a,mensaje));sonidoError();},
     } satisfies ManejadorTrabajo;
-  }, []);
-
-  const cerrar = React.useCallback(() => {
-    limpiarCierre();
-    setTrabajo(null);
-  }, []);
-
-  React.useEffect(() => () => limpiarCierre(), []);
-
-  const valor = React.useMemo<Ctx>(() => ({ trabajo, iniciarTrabajo, cerrar }), [trabajo, iniciarTrabajo, cerrar]);
+  },[]);
+  const cerrar=React.useCallback(()=>{if(trabajo)setTrabajos(lista=>lista.filter(t=>t.id!==trabajo.id));},[trabajo]);
+  React.useEffect(()=>()=>{for(const timer of timers.current)clearTimeout(timer);timers.current.clear();},[]);
+  const valor=React.useMemo<Ctx>(()=>({trabajo,iniciarTrabajo,cerrar}),[trabajo,iniciarTrabajo,cerrar]);
 
   return (
     <CtxTrabajo.Provider value={valor}>
@@ -156,24 +127,17 @@ export function TrabajoProvider({ children }: { children: React.ReactNode }) {
 function PanelTrabajo() {
   const { trabajo, cerrar } = useTrabajo();
   const [tic, setTic] = React.useState(0);
-  const [simulado, setSimulado] = React.useState(0);
 
   React.useEffect(() => {
     if (!trabajo) return;
-    setSimulado(0);
     const reloj = window.setInterval(() => setTic((v) => v + 1), 500);
     return () => window.clearInterval(reloj);
   }, [trabajo?.id]);
 
-  React.useEffect(() => {
-    if (!trabajo || trabajo.fase !== "activo") return;
-    const paso = window.setInterval(() => setSimulado((v) => Math.min(90, v + (90 - v) * 0.06 + 0.5)), 400);
-    return () => window.clearInterval(paso);
-  }, [trabajo?.id, trabajo?.fase]);
 
   if (!trabajo) return null;
 
-  const porcentaje = porcentajeVisible(trabajo, simulado);
+  const porcentaje = porcentajeVisible(trabajo);
   const transcurrido = mmss(Date.now() - trabajo.inicio + tic * 0);
 
   return (
@@ -231,17 +195,18 @@ function PanelTrabajo() {
 
         {trabajo.fase === "error" ? null : (
           <>
-            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div role="progressbar" aria-label={trabajo.titulo} aria-valuemin={0} aria-valuemax={100} aria-valuenow={porcentaje ?? undefined} className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
                   "h-full rounded-full transition-[width] duration-500",
+                  porcentaje === null && "animate-pulse motion-reduce:animate-none",
                   trabajo.fase === "ok" ? "bg-success" : "bg-primary",
                 )}
-                style={{ width: `${porcentaje}%` }}
+                style={{ width: porcentaje === null ? "100%" : `${porcentaje}%` }}
               />
             </div>
             <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{porcentaje} %</span>
+              <span>{porcentaje === null ? "Duración pendiente de determinar" : `${porcentaje} %`}</span>
               <span>{transcurrido}</span>
             </div>
           </>

@@ -1,1 +1,145 @@
 project_id = "eqyuodrmlbclobaverdb"
+
+# Explicit entrypoints: deploy with the full CLI bundle, never index.ts alone.
+
+[functions.asistente]
+verify_jwt = false
+entrypoint = "../db/functions/asistente/index.ts"
+
+[functions.auditar]
+verify_jwt = false
+entrypoint = "../db/functions/auditar/index.ts"
+
+[functions.avisos]
+verify_jwt = false
+entrypoint = "../db/functions/avisos/index.ts"
+
+[functions.bandeja]
+verify_jwt = false
+entrypoint = "../db/functions/bandeja/index.ts"
+
+[functions.barrer-expertos]
+verify_jwt = false
+entrypoint = "../db/functions/barrer-expertos/index.ts"
+
+[functions.calidad-github]
+verify_jwt = false
+entrypoint = "../db/functions/calidad-github/index.ts"
+
+[functions.canva-oauth]
+verify_jwt = true
+entrypoint = "../db/functions/canva-oauth/index.ts"
+
+[functions.compilar-app]
+verify_jwt = false
+entrypoint = "../db/functions/compilar-app/index.ts"
+
+[functions.comprobar-secretos]
+verify_jwt = false
+entrypoint = "../db/functions/comprobar-secretos/index.ts"
+
+[functions.copias-generar]
+verify_jwt = false
+entrypoint = "../db/functions/copias-generar/index.ts"
+
+[functions.copias-restaurar]
+verify_jwt = false
+entrypoint = "../db/functions/copias-restaurar/index.ts"
+
+[functions.desplegar-funcion]
+verify_jwt = false
+entrypoint = "../db/functions/desplegar-funcion/index.ts"
+
+[functions.documentar]
+verify_jwt = false
+entrypoint = "../db/functions/documentar/index.ts"
+static_files = ["../db/functions/_shared/fonts/*"]
+
+[functions.dominios-comprobar]
+verify_jwt = false
+entrypoint = "../db/functions/dominios-comprobar/index.ts"
+
+[functions.ejecutar-accion]
+verify_jwt = true
+entrypoint = "../db/functions/ejecutar-accion/index.ts"
+
+[functions.facturacion]
+verify_jwt = false
+entrypoint = "../db/functions/facturacion/index.ts"
+
+[functions.gasto-ia]
+verify_jwt = false
+entrypoint = "../db/functions/gasto-ia/index.ts"
+
+[functions.github-repos]
+verify_jwt = true
+entrypoint = "../db/functions/github-repos/index.ts"
+
+[functions.habilidades]
+verify_jwt = false
+entrypoint = "../db/functions/habilidades/index.ts"
+
+[functions.infraestructura]
+verify_jwt = false
+entrypoint = "../db/functions/infraestructura/index.ts"
+
+[functions.intercambio-proyectian]
+verify_jwt = true
+entrypoint = "../db/functions/intercambio-proyectian/index.ts"
+
+[functions.manuales]
+verify_jwt = false
+entrypoint = "../db/functions/manuales/index.ts"
+static_files = ["../db/functions/_shared/fonts/*"]
+
+[functions.mesa]
+verify_jwt = false
+entrypoint = "../db/functions/mesa/index.ts"
+
+[functions.ordenes-ejecutar]
+verify_jwt = false
+entrypoint = "../db/functions/ordenes-ejecutar/index.ts"
+
+[functions.personal]
+verify_jwt = false
+entrypoint = "../db/functions/personal/index.ts"
+
+[functions.pideme]
+verify_jwt = false
+entrypoint = "../db/functions/pideme/index.ts"
+
+[functions.portal-cliente]
+verify_jwt = false
+entrypoint = "../db/functions/portal-cliente/index.ts"
+
+[functions.probar-proveedor]
+verify_jwt = true
+entrypoint = "../db/functions/probar-proveedor/index.ts"
+
+[functions.publicar-experto]
+verify_jwt = true
+entrypoint = "../db/functions/publicar-experto/index.ts"
+
+[functions.resumenes]
+verify_jwt = false
+entrypoint = "../db/functions/resumenes/index.ts"
+
+[functions.salud]
+verify_jwt = false
+entrypoint = "../db/functions/salud/index.ts"
+
+[functions.sincronizar-proyectian]
+verify_jwt = false
+entrypoint = "../db/functions/sincronizar-proyectian/index.ts"
+
+[functions.usuarios-clientes]
+verify_jwt = false
+entrypoint = "../db/functions/usuarios-clientes/index.ts"
+
+[functions.vigilar]
+verify_jwt = false
+entrypoint = "../db/functions/vigilar/index.ts"
+
+[functions.voz]
+verify_jwt = false
+entrypoint = "../db/functions/voz/index.ts"

@@ -1,6 +1,7 @@
 // NexDeveloper · Edge Function «bandeja» (0.13.0)
 // Bandeja única: Gmail (OAuth + sondeo), WhatsApp Business (webhook de Meta Cloud API), notas Plaud/manual (ingesta)
 // → clasificación por proyecto (palabras clave + IA) → tarea con un clic.
+import { fetchIADeUsuario } from "../_shared/presupuesto.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
@@ -14,7 +15,6 @@ const servicio = () => createClient(URL_SUPABASE, CLAVE_SERVICIO, { auth: { pers
 type SB = ReturnType<typeof servicio>;
 const URL_FUNCION = `${URL_SUPABASE}/functions/v1/bandeja`;
 
-// ---------- Clasificación ----------
 const norm = (s: string) => (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 async function clasificarPorPalabras(sb: SB, userId: string, texto: string) {
   const { data: proyectos } = await sb.from("proyectos").select("id, slug, nombre, palabras_clave").eq("user_id", userId);
@@ -40,23 +40,23 @@ async function claveProveedor(sb: SB, userId: string, slugs: string[]) {
   return null;
 }
 async function clasificarConIA(sb: SB, userId: string, e: { remitente?: string; asunto?: string; texto?: string; origen: string }) {
-  const prov = await claveProveedor(sb, userId, ["groq", "anthropic", "google", "openai"]);
+  const prov = await claveProveedor(sb, userId, ["abacus", "groq", "anthropic", "google", "openai"]);
   if (!prov) return null;
   const { data: proyectos } = await sb.from("proyectos").select("slug, nombre, descripcion, palabras_clave").eq("user_id", userId);
   const lista = (proyectos ?? []).map((p) => `- ${p.slug}: ${p.nombre}. ${(p.descripcion ?? "").slice(0, 120)} Claves: ${(p.palabras_clave ?? []).join(", ")}`).join("\n");
   const sistema = `Eres el asistente de organización de Javier (Soluciones EvoluteIA S.L.). Clasificas mensajes entrantes (correo, WhatsApp, notas de voz) en uno de sus proyectos de software y propones una tarea. Respondes en español de España y SOLO con JSON.`;
-  const pregunta = `Proyectos:\n${lista}\n\nMensaje (${e.origen}) de ${e.remitente ?? "desconocido"}${e.asunto ? ` · asunto: ${e.asunto}` : ""}:\n"""\n${(e.texto ?? "").slice(0, 6000)}\n"""\n\nDevuelve JSON: {"proyecto_slug": "slug o null si no encaja en ninguno", "confianza": 0-1, "resumen": "2 frases", "es_accionable": true|false, "propuesta": {"titulo": "tarea en imperativo, ≤ 90 caracteres", "descripcion": "qué hay que hacer", "prioridad": "baja|media|alta|critica", "requiere_atencion": true si Javier debe decidir o hacer algo personalmente, false si puede hacerlo un agente sin él, "instrucciones": "si requiere atención, pasos claros"}}`;
+  const pregunta = `Proyectos:\n${lista}\n\nMensaje (${e.origen}) de ${e.remitente ?? "desconocido"}${e.asunto ? ` · asunto: ${e.asunto}` : ""}:\n\"\"\"\n${(e.texto ?? "").slice(0, 6000)}\n\"\"\"\n\nDevuelve JSON: {"proyecto_slug": "slug o null si no encaja en ninguno", "confianza": 0-1, "resumen": "2 frases", "es_accionable": true|false, "propuesta": {"titulo": "tarea en imperativo, ≤ 90 caracteres", "descripcion": "qué hay que hacer", "prioridad": "baja|media|alta|critica", "requiere_atencion": true si Javier debe decidir o hacer algo personalmente, false si puede hacerlo un agente sin él, "instrucciones": "si requiere atención, pasos claros"}}`;
   let texto = "";
   if (prov.slug === "anthropic") {
-    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": prov.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: "claude-3-5-haiku-latest", max_tokens: 800, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
+    const r = await fetchIADeUsuario(sb, userId, null, "bandeja", "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": prov.clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: "claude-3-5-haiku-latest", max_tokens: 800, system: sistema, messages: [{ role: "user", content: pregunta }] }) });
     if (!r.ok) throw new Error(`Anthropic ${r.status}`); const j = await r.json(); texto = (j.content ?? []).map((c: any) => c.text ?? "").join("");
   } else if (prov.slug === "google") {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${prov.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { temperature: 0.1, responseMimeType: "application/json" } }) });
+    const r = await fetchIADeUsuario(sb, userId, null, "bandeja", `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${prov.clave}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: "user", parts: [{ text: pregunta }] }], generationConfig: { temperature: 0.1, responseMimeType: "application/json" } }) });
     if (!r.ok) throw new Error(`Google ${r.status}`); const j = await r.json(); texto = (j.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
   } else {
-    const base = prov.slug === "groq" ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1";
-    const modelo = prov.slug === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini";
-    const r = await fetch(`${base}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${prov.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: modelo, temperature: 0.1, response_format: { type: "json_object" }, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
+    const base = prov.slug === "groq" ? "https://api.groq.com/openai/v1" : prov.slug === "abacus" ? "https://routellm.abacus.ai/v1" : "https://api.openai.com/v1";
+    const modelo = prov.slug === "groq" ? "llama-3.3-70b-versatile" : prov.slug === "abacus" ? "route-llm" : "gpt-4o-mini";
+    const r = await fetchIADeUsuario(sb, userId, null, "bandeja", `${base}/chat/completions`, { method: "POST", headers: { Authorization: `Bearer ${prov.clave}`, "content-type": "application/json" }, body: JSON.stringify({ model: modelo, temperature: 0.1, response_format: { type: "json_object" }, messages: [{ role: "system", content: sistema }, { role: "user", content: pregunta }] }) });
     if (!r.ok) throw new Error(`${prov.slug} ${r.status}`); const j = await r.json(); texto = j.choices?.[0]?.message?.content ?? "";
   }
   const m = texto.match(/\{[\s\S]*\}/); if (!m) return null;
@@ -92,7 +92,6 @@ async function ingestar(sb: SB, userId: string, e: { origen: string; id_externo?
   return { id: fila.id, nueva: true };
 }
 
-// ---------- Gmail ----------
 async function tokenGmail(sb: SB, fuente: any) {
   const refresh = await sb.rpc("leer_secreto_bandeja", { p_fuente_id: fuente.id });
   if (!refresh.data) throw new Error("Gmail no está conectado");
@@ -139,7 +138,6 @@ Deno.serve(async (req) => {
   const sb = servicio();
   const url = new URL(req.url);
   try {
-    // ----- GET: callback de Google y verificación del webhook de WhatsApp -----
     if (req.method === "GET") {
       const accion = url.searchParams.get("accion") ?? "";
       if (accion === "gmail_callback") {
@@ -167,9 +165,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, listo: true });
     }
 
-    // ----- POST -----
     const cuerpo = await req.json().catch(() => ({}));
-    // Webhook de WhatsApp (Meta): sin sesión; se identifica por phone_number_id
     if (cuerpo.object === "whatsapp_business_account") {
       let n = 0;
       for (const entry of cuerpo.entry ?? []) for (const ch of entry.changes ?? []) {
@@ -200,7 +196,7 @@ Deno.serve(async (req) => {
       userId = user.id;
     }
     if (!accion) {
-      const prov = userId ? await claveProveedor(sb, userId, ["groq", "anthropic", "google", "openai"]) : null;
+      const prov = userId ? await claveProveedor(sb, userId, ["abacus", "groq", "anthropic", "google", "openai"]) : null;
       return json({ ok: true, listo: true, google_oauth: !!(G_ID && G_SECRET), clasificador_ia: prov?.slug ?? null, url_webhook_whatsapp: `${URL_FUNCION}?accion=whatsapp`, url_callback_gmail: `${URL_FUNCION}?accion=gmail_callback` });
     }
     switch (accion) {
@@ -228,7 +224,6 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
       case "whatsapp_configurar": {
-        // Guarda phone_number_id, verify_token y el token de acceso de Meta (cifrado)
         const { data: f } = await sb.from("bandeja_fuentes").select("*").eq("user_id", userId!).eq("origen", "whatsapp").maybeSingle();
         if (!f) return json({ ok: false, error: "Fuente no encontrada" }, 404);
         const verify = cuerpo.verify_token || f.configuracion?.verify_token || crypto.randomUUID();
@@ -237,7 +232,6 @@ Deno.serve(async (req) => {
         return json({ ok: true, url_webhook: `${URL_FUNCION}?accion=whatsapp`, verify_token: verify });
       }
       case "ingestar": {
-        // Usuario (manual) o servicio (Plaud/otros) → { origen, id_externo?, remitente?, asunto?, texto, fecha?, user_id? (solo servicio) }
         const uid = esServicio ? String(cuerpo.user_id ?? "") : userId!;
         let u = uid;
         if (esServicio && !u) { const { data: f } = await sb.from("bandeja_fuentes").select("user_id").limit(1).maybeSingle(); u = f?.user_id ?? ""; }

@@ -67,7 +67,7 @@ export type GrupoMenu = {
 
 /* -------------------------- Fijos, siempre visibles ----------------------- */
 
-export const FIJOS_ARRIBA: PantallaMenu[] = [
+const FIJOS_ORIGINALES: PantallaMenu[] = [
   {
     to: "/",
     etiqueta: "Inicio",
@@ -100,7 +100,7 @@ export const FIJOS_ARRIBA: PantallaMenu[] = [
 
 /* --------------------------------- Grupos --------------------------------- */
 
-export const GRUPOS_MENU: GrupoMenu[] = [
+const GRUPOS_ORIGINALES: GrupoMenu[] = [
   {
     id: "mi-dia",
     titulo: "Mi día",
@@ -371,7 +371,7 @@ export const GRUPOS_MENU: GrupoMenu[] = [
 
 /* ------------------------------ Pie del menú ------------------------------ */
 
-export const ANCLADOS_PIE: PantallaMenu[] = [
+const PIE_ORIGINAL: PantallaMenu[] = [
   {
     to: "/ajustes",
     etiqueta: "Ajustes",
@@ -411,12 +411,31 @@ export const ANCLADOS_PIE: PantallaMenu[] = [
   },
 ];
 
+/** Catalogue remains searchable; the sidebar follows the user's work process. */
+const CATALOGO = [...FIJOS_ORIGINALES,...GRUPOS_ORIGINALES.flatMap(g=>g.pantallas),...PIE_ORIGINAL];
+const pantallas = (...rutas: RutaMenu[]): PantallaMenu[] => rutas.map(to => {
+  const pantalla=CATALOGO.find(p=>p.to===to);
+  if (!pantalla) throw new Error(`Ruta de menú sin catálogo: ${to}`);
+  return pantalla;
+});
+export const FIJOS_ARRIBA: PantallaMenu[] = pantallas("/","/pideme","/personal","/gasto-ia").map(p=>({...p,etiqueta:p.to==="/pideme"?"Pedir trabajo":p.to==="/personal"?"Personal":p.to==="/gasto-ia"?"Consumo":p.etiqueta}));
+export const GRUPOS_MENU: GrupoMenu[] = [
+ {id:"productos",titulo:"Productos y proyectos",icono:Boxes,pantallas:pantallas("/proyectos")},
+ {id:"trabajo",titulo:"Trabajo",icono:ListTodo,pantallas:pantallas("/tareas","/aprobaciones","/ejecucion","/bandeja","/avisos","/asistente","/mesa","/resumenes","/vigilancia")},
+ {id:"entregas",titulo:"Entregas y documentación",icono:BookMarked,pantallas:pantallas("/documentacion","/manuales","/voz","/compilaciones","/repositorios","/calidad")},
+ {id:"operaciones",titulo:"Operaciones",icono:Server,pantallas:pantallas("/salud","/infraestructura","/dominios","/copias","/auditoria","/estado")},
+ {id:"clientes",titulo:"Clientes",icono:Users,pantallas:pantallas("/usuarios-clientes","/modo-cliente","/facturacion")},
+ {id:"configuracion",titulo:"Configuración",icono:Settings,pantallas:pantallas("/ajustes","/ajustes/proveedores","/conexiones","/proyectian","/expertos","/agentes","/habilidades","/revisores","/personal/estilo")},
+];
+export const ANCLADOS_PIE: PantallaMenu[] = pantallas("/guia");
+
 /* ------------------------------- Utilidades ------------------------------- */
 
 export const TODAS_LAS_PANTALLAS: PantallaMenu[] = [
   ...FIJOS_ARRIBA,
   ...GRUPOS_MENU.flatMap((g) => g.pantallas),
   ...ANCLADOS_PIE,
+  ...CATALOGO.filter(p=>![...FIJOS_ARRIBA,...GRUPOS_MENU.flatMap(g=>g.pantallas),...ANCLADOS_PIE].some(v=>v.to===p.to)),
 ];
 
 const NOMBRE_GRUPO: Record<string, string> = {

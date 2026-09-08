@@ -76,6 +76,7 @@ export function useDocumentosNex(proyectoId?: string) {
 }
 
 export type DocumentoProyectian = {
+  origen?:string;
   id: string;
   tipo: TipoDocumentoNex | string;
   titulo: string;
@@ -120,6 +121,7 @@ export type DatosCierre = Pick<
 
 export type ResultadoCierre = {
   ok?: boolean;
+  documento_pdf_id?: string;
   avisos?: string[];
   proyectian_ok?: boolean;
   ruta_remota_html?: string | null;
@@ -139,7 +141,7 @@ export function useCerrarVersion() {
   });
 }
 
-export const LIMITE_SUBIDA_BYTES = 45 * 1024 * 1024;
+export const LIMITE_SUBIDA_BYTES = 20000000;
 
 export function useSubirDocumento() {
   const qc = useQueryClient();
@@ -162,7 +164,7 @@ export function useSubirDocumento() {
 
 export function useEnlaceDescarga() {
   return useMutation({
-    mutationFn: (input: { ruta_remota: string; bucket?: string; inline?: boolean }) =>
+    mutationFn: (input: { documento_id?:string; ruta_remota?: string; bucket?: string; inline?: boolean }) =>
       llamar<{ url?: string }>({ accion: "enlace_descarga", ...input }),
   });
 }

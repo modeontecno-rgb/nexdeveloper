@@ -67,6 +67,7 @@ Deno.serve(async (req: Request) => {
     });
     if (!source.ok) return json({ ok: false, error: `No se pudo leer el código (GitHub ${source.status})` }, 502);
     const code = await source.text();
+    if (/\b(?:from\s*|import\s*(?:\(\s*)?)["']\.{1,2}\//.test(code) || /\bDeno\.readFile\b/.test(code)) return json({ok:false,error:'Esta función requiere archivos compartidos. Despliega el paquete completo con Supabase CLI; no se envía un index.ts incompleto.'},409);
     const bytes = new TextEncoder().encode(code).length;
     if (bytes < 100 || bytes > 1_000_000) return json({ ok: false, error: "Tamaño de código no válido" }, 400);
     const form = new FormData();

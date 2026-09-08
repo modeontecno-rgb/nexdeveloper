@@ -1,9 +1,4 @@
-// Edge Function «probar-proveedor».
-// Hace una llamada mínima al proveedor con la clave guardada (que se descifra
-// en el servidor) y devuelve solo «correcto» o el error. La clave nunca sale
-// de aquí ni se registra en ningún sitio.
-//
-// Despliegue: supabase functions deploy probar-proveedor
+// Edge Function «probar-proveedor» (v4: perplexity y fal sin endpoint válido de comprobación; Canva con renovación de permiso).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS = {
@@ -29,15 +24,21 @@ function peticionDePrueba(slug: string, clave: string, urlBase: string | null): 
     case "elevenlabs":
       return { url: `${base || "https://api.elevenlabs.io"}/v1/models`, cabeceras: { "xi-api-key": clave } };
     case "fal":
-      return { url: `${base || "https://fal.run"}/`, cabeceras: { Authorization: `Key ${clave}` } };
+      // fal.ai no tiene un endpoint raíz de comprobación: cada llamada va contra un modelo concreto
+      // (p. ej. fal.run/fal-ai/flux/schnell), así que probar la raíz "/" siempre da 404 aunque la clave sea correcta.
+      return null;
     case "cohere":
       return { url: `${base || "https://api.cohere.com"}/v1/models`, cabeceras: { Authorization: `Bearer ${clave}` } };
+    case "perplexity":
+      // La API de Perplexity no tiene endpoint GET /models (solo POST /chat/completions), así que
+      // probar "/models" siempre da 404 aunque la clave sea correcta. Probarla de verdad consumiría
+      // una llamada de pago, así que no se comprueba en automático.
+      return null;
     case "canva":
       return { url: `${base || "https://api.canva.com/rest/v1"}/users/me`, cabeceras: { Authorization: `Bearer ${clave}` } };
     case "ollama":
       return { url: `${base || "http://localhost:11434"}/api/tags`, cabeceras: {} };
     default:
-      // Proveedores compatibles con la API de OpenAI.
       return { url: `${base}/models`, cabeceras: { Authorization: `Bearer ${clave}` } };
   }
 }
@@ -58,7 +59,6 @@ Deno.serve(async (req: Request) => {
     const autorizacion = req.headers.get("Authorization") ?? "";
     const url = Deno.env.get("SUPABASE_URL")!;
 
-    // 1) Comprobamos que el proveedor es del usuario que llama.
     const comoUsuario = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: autorizacion } },
     });
@@ -70,7 +70,6 @@ Deno.serve(async (req: Request) => {
     if (!info) return responder({ ok: false, error: "Proveedor no encontrado." }, 404);
     if (!info.tiene_clave) return responder({ ok: false, error: "Este proveedor todavía no tiene clave guardada." });
 
-    // 2) Descifrado en servidor.
     const comoServicio = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: clave, error: errorClave } = await comoServicio.rpc("descifrar_clave_proveedor", {
       p_proveedor_id: proveedorId,
@@ -79,8 +78,6 @@ Deno.serve(async (req: Request) => {
 
     let claveUso = clave as string;
 
-    // Canva guarda un JSON con los dos tokens: si el de acceso ha caducado se
-    // renueva con el de refresco antes de probar.
     if (info.clave_slug === "canva") {
       try {
         const tokens = JSON.parse(claveUso);

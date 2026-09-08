@@ -1,3 +1,4 @@
+import {EntregasOrden} from '@/components/nex/entregas-orden';
 import { createFileRoute } from "@tanstack/react-router";
 import * as React from "react";
 
@@ -71,7 +72,7 @@ function Aprobaciones() {
           <article key={o.id} className="panel p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm text-foreground">{o.texto}</p>
+                <details><summary className="cursor-pointer text-sm font-medium">{o.texto.split("\n")[0]?.slice(0,160)}</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words font-sans text-sm text-muted-foreground">{o.texto}</pre></details>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {nombreProyecto(o.proyecto_id)} · {formatoFechaHora(o.creado_el)}
                 </p>
@@ -92,10 +93,10 @@ function Aprobaciones() {
             </div>
 
             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
-              <Dato termino="Coste" valor={formatoDinero(Number(o.coste_estimado), moneda)} />
-              <Dato termino="Tiempo" valor={`${Number(o.horas_estimadas).toFixed(1)} h`} />
+              <Dato termino="Coste estimado" valor={formatoDinero(Number(o.coste_estimado), moneda)} />
+              <Dato termino="Tiempo estimado" valor={`${Number(o.horas_estimadas).toFixed(1)} h`} />
               <Dato termino="Riesgo" valor={o.riesgo} />
-              <Dato termino="Calidad prevista" valor={`${o.calidad_prevista}%`} />
+              <Dato termino="Calidad prevista" valor={o.calidad_prevista == null ? "Sin estimación numérica" : `${o.calidad_prevista}%`} />
             </dl>
 
             <p className="mt-3 text-xs text-muted-foreground">
@@ -103,6 +104,7 @@ function Aprobaciones() {
               {o.motivo_aprobacion ? ` · Motivo: ${o.motivo_aprobacion}` : ""}
             </p>
 
+            {o.proyecto_id?<div className="mt-3"><EntregasOrden ordenId={o.id} proyectoId={o.proyecto_id}/></div>:null}
             <input
               value={comentarios[o.id] ?? ""}
               onChange={(e) => setComentarios((c) => ({ ...c, [o.id]: e.target.value }))}

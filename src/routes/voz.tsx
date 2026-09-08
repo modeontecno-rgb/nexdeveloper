@@ -1,3 +1,4 @@
+import {VideoLocal} from '@/components/nex/video-local';
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ChevronLeft,
@@ -101,10 +102,10 @@ function VozYDemos() {
     <>
       <Encabezado
         titulo="Voz y demos"
-        descripcion="Escribe el guion de la demostración por escenas, con las capturas de cada pantalla, y ponle voz para grabar el vídeo sin salir de aquí."
+        descripcion="Prepara guiones, crea vídeos de diapositivas en tu dispositivo y consulta las locuciones existentes."
         acciones={
           <>
-            <Boton variante="suave" onClick={() => setTextoLibre(true)}>
+            <Boton variante="suave" disabled title="Locución de pago desactivada">
               <Mic className="size-4" /> Locutar texto libre
             </Boton>
             <Boton onClick={() => setNuevoGuion(true)}>
@@ -113,23 +114,13 @@ function VozYDemos() {
           </>
         }
       />
+      <VideoLocal/>
+      <p className="mb-4 text-sm text-muted-foreground">La generación de voz de pago está desactivada hasta verificar su contador por caracteres. Puedes preparar guiones y consultar las locuciones guardadas.</p>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2">
         <div className="panel p-4">
           <p className="text-xs text-muted-foreground">Locución (ElevenLabs)</p>
-          {pingPendiente ? (
-            <p className="mt-1 text-sm text-muted-foreground">Comprobando…</p>
-          ) : ping?.elevenlabs ? (
-            <EstadoSuscripcion />
-          ) : (
-            <p className="mt-1 text-sm text-destructive">
-              Pon la clave en{" "}
-              <Link to="/ajustes" className="underline">
-                Ajustes → Proveedores
-              </Link>
-              .
-            </p>
-          )}
+          <p className="mt-1 text-sm text-muted-foreground">Generación desactivada. Los audios guardados se conservan.</p>
         </div>
         <div className="panel p-4">
           <p className="text-xs text-muted-foreground">Almacén de audios</p>
@@ -387,7 +378,7 @@ function EditorGuion({
           <Boton variante="suave" type="button" onClick={onReproducir}>
             <Play className="size-4" /> Reproducir demo
           </Boton>
-          <Boton variante="suave" type="button" onClick={() => void locutarTodo()} disabled={locutar.isPending}>
+          <Boton variante="suave" type="button" onClick={() => void locutarTodo()} disabled title="Locución de pago pendiente de contador por caracteres">
             {locutar.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mic className="size-4" />} Locutar todo
           </Boton>
           <Boton type="button" onClick={guardarTodo} disabled={guardar.isPending}>
@@ -465,7 +456,7 @@ function EditorGuion({
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Boton variante="suave" type="button" onClick={() => void locutarEscena(indice + 1)} disabled={locutar.isPending}>
+                <Boton variante="suave" type="button" onClick={() => void locutarEscena(indice + 1)} disabled title="Locución de pago pendiente de contador por caracteres">
                   <Mic className="size-4" /> Locutar escena
                 </Boton>
                 <Boton
@@ -718,7 +709,7 @@ function TablaLocuciones() {
                     <Boton
                       variante="suave"
                       type="button"
-                      disabled={locutar.isPending || !l.texto}
+                      disabled title="Locución de pago pendiente de contador por caracteres"
                       onClick={() =>
                         locutar.mutate({
                           ...(l.texto ? { texto: l.texto } : {}),
@@ -827,7 +818,7 @@ function DialogoTextoLibre({ onCerrar }: { onCerrar: () => void }) {
           <Boton variante="suave" type="button" onClick={onCerrar}>
             Cerrar
           </Boton>
-          <Boton type="button" onClick={() => void lanzar()} disabled={locutar.isPending}>
+          <Boton type="button" onClick={() => void lanzar()} disabled title="Locución de pago pendiente de contador por caracteres">
             {locutar.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mic className="size-4" />} Locutar
           </Boton>
         </div>
@@ -961,7 +952,7 @@ function Configuracion() {
           <Boton
             type="button"
             variante="suave"
-            disabled={locutar.isPending}
+            disabled title="Locución de pago pendiente de contador por caracteres"
             onClick={() =>
               void locutar
                 .mutateAsync({ texto: "Hola, esta es una prueba de la voz elegida para las demostraciones.", titulo: "Prueba de voz" })
