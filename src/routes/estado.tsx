@@ -1642,3 +1642,36 @@ function EstadoSistema() {
 function etiquetaNivel(nivel: Nivel) {
   return nivel === "ok" ? "Correcto" : nivel === "aviso" ? "Atención" : "Fallo";
 }
+
+const PASOS_PIDEME = [
+  "1. Abre el panel de tu proyecto de base de datos y ve al apartado de funciones.",
+  "2. Elige la función «pideme» y pulsa desplegar (o vuelve a desplegarla si ya existe).",
+  "3. Usa como código el del repositorio: db/functions/pideme/index.ts (rama main).",
+  "4. Vuelve aquí y comprueba que el semáforo de «pideme» aparece en verde.",
+].join("\n");
+
+function PasoManualPideme() {
+  return (
+    <section className="panel mt-3 p-5">
+      <h2 className="font-display text-sm font-semibold">Paso manual pendiente · lectura de adjuntos</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Los adjuntos ya se suben y se guardan desde la aplicación. Para que la IA lea las capturas y los documentos hay
+        que desplegar una vez la función «pideme»; esto es lo único que no se puede hacer desde dentro del programa.
+      </p>
+      <pre className="mt-3 whitespace-pre-wrap rounded-lg border border-border bg-surface p-3 text-xs text-foreground">
+        {PASOS_PIDEME}
+      </pre>
+      <Boton
+        variante="suave"
+        className="mt-3 px-3 py-1.5 text-xs"
+        onClick={() => {
+          void navigator.clipboard.writeText(PASOS_PIDEME);
+          toast.success("Pasos copiados.");
+        }}
+      >
+        <ClipboardCopy className="size-3.5" /> Copiar los pasos
+      </Boton>
+    </section>
+  );
+}
+
