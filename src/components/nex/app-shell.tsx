@@ -976,12 +976,17 @@ export function Encabezado({
   acciones?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        <h1 className="text-xl font-semibold sm:text-3xl">{titulo}</h1>
-        {descripcion ? <p className="mt-1 text-sm text-muted-foreground">{descripcion}</p> : null}
+    <div className="mb-6 flex w-full min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div className="min-w-0 flex-1 basis-full lg:basis-1/2">
+        <h1 className="text-xl font-semibold break-words sm:text-3xl">{titulo}</h1>
+        {descripcion ? (
+          <p className="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground break-words">{descripcion}</p>
+        ) : null}
       </div>
-      <div className="flex flex-wrap gap-2"><EditorEstiloGlobal/>{acciones}</div>
+      <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:justify-end">
+        <EditorEstiloGlobal />
+        {acciones}
+      </div>
     </div>
   );
 }
