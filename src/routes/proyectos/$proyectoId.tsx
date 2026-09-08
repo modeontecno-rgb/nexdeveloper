@@ -134,7 +134,8 @@ function DetalleProyecto() {
         titulo={proyecto.nombre}
         {...(proyecto.descripcion ? { descripcion: proyecto.descripcion } : {})}
         acciones={
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+
             {ultimasCompilaciones
               .filter((c) => c.proyecto_id === proyectoId)
               .map((c) => (
