@@ -53,6 +53,7 @@ import {
   useRealtimePideme,
   useReclasificar,
   useRechazarPropuesta,
+  useAdjuntosDePeticion,
 } from "@/lib/nex/queries/pideme";
 import { cn } from "@/lib/utils";
 
