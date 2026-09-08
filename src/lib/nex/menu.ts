@@ -365,6 +365,21 @@ const GRUPOS_ORIGINALES: GrupoMenu[] = [
         alias: ["semáforos", "diagnóstico", "informe", "comprobaciones"],
         descripcion: "Semáforos de cada pieza de NexDeveloper.",
       },
+      {
+        to: "/mantenimiento",
+        etiqueta: "Mantenimiento",
+        icono: Eraser,
+        alias: [
+          "limpiar",
+          "empezar de cero",
+          "vaciar",
+          "borrar tareas",
+          "buscar problemas",
+          "arreglar",
+          "reparar",
+        ],
+        descripcion: "Vacía la cola de trabajo y busca problemas con su arreglo.",
+      },
     ],
   },
 ];
