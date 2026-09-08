@@ -32,6 +32,7 @@ import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as HabilidadesRouteImport } from './routes/habilidades'
 import { Route as InfraestructuraRouteImport } from './routes/infraestructura'
 import { Route as IntegracionesRouteImport } from './routes/integraciones'
+import { Route as MantenimientoRouteImport } from './routes/mantenimiento'
 import { Route as ManualesRouteImport } from './routes/manuales'
 import { Route as MesaRouteImport } from './routes/mesa'
 import { Route as ModoClienteRouteImport } from './routes/modo-cliente'
@@ -169,6 +170,11 @@ const InfraestructuraRoute = InfraestructuraRouteImport.update({
 const IntegracionesRoute = IntegracionesRouteImport.update({
   id: '/integraciones',
   path: '/integraciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MantenimientoRoute = MantenimientoRouteImport.update({
+  id: '/mantenimiento',
+  path: '/mantenimiento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManualesRoute = ManualesRouteImport.update({
@@ -312,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/habilidades': typeof HabilidadesRoute
   '/infraestructura': typeof InfraestructuraRoute
   '/integraciones': typeof IntegracionesRoute
+  '/mantenimiento': typeof MantenimientoRoute
   '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
@@ -360,6 +367,7 @@ export interface FileRoutesByTo {
   '/habilidades': typeof HabilidadesRoute
   '/infraestructura': typeof InfraestructuraRoute
   '/integraciones': typeof IntegracionesRoute
+  '/mantenimiento': typeof MantenimientoRoute
   '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/habilidades': typeof HabilidadesRoute
   '/infraestructura': typeof InfraestructuraRoute
   '/integraciones': typeof IntegracionesRoute
+  '/mantenimiento': typeof MantenimientoRoute
   '/manuales': typeof ManualesRoute
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
@@ -459,6 +468,7 @@ export interface FileRouteTypes {
     | '/habilidades'
     | '/infraestructura'
     | '/integraciones'
+    | '/mantenimiento'
     | '/manuales'
     | '/mesa'
     | '/modo-cliente'
@@ -507,6 +517,7 @@ export interface FileRouteTypes {
     | '/habilidades'
     | '/infraestructura'
     | '/integraciones'
+    | '/mantenimiento'
     | '/manuales'
     | '/mesa'
     | '/modo-cliente'
@@ -555,6 +566,7 @@ export interface FileRouteTypes {
     | '/habilidades'
     | '/infraestructura'
     | '/integraciones'
+    | '/mantenimiento'
     | '/manuales'
     | '/mesa'
     | '/modo-cliente'
@@ -604,6 +616,7 @@ export interface RootRouteChildren {
   HabilidadesRoute: typeof HabilidadesRoute
   InfraestructuraRoute: typeof InfraestructuraRoute
   IntegracionesRoute: typeof IntegracionesRoute
+  MantenimientoRoute: typeof MantenimientoRoute
   ManualesRoute: typeof ManualesRoute
   MesaRoute: typeof MesaRoute
   ModoClienteRoute: typeof ModoClienteRoute
@@ -789,6 +802,13 @@ declare module '@tanstack/react-router' {
       path: '/integraciones'
       fullPath: '/integraciones'
       preLoaderRoute: typeof IntegracionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mantenimiento': {
+      id: '/mantenimiento'
+      path: '/mantenimiento'
+      fullPath: '/mantenimiento'
+      preLoaderRoute: typeof MantenimientoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manuales': {
@@ -990,6 +1010,7 @@ const rootRouteChildren: RootRouteChildren = {
   HabilidadesRoute: HabilidadesRoute,
   InfraestructuraRoute: InfraestructuraRoute,
   IntegracionesRoute: IntegracionesRoute,
+  MantenimientoRoute: MantenimientoRoute,
   ManualesRoute: ManualesRoute,
   MesaRoute: MesaRoute,
   ModoClienteRoute: ModoClienteRoute,
