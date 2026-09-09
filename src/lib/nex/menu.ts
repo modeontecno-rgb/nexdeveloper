@@ -434,16 +434,19 @@ const pantallas = (...rutas: RutaMenu[]): PantallaMenu[] => rutas.map(to => {
   if (!pantalla) throw new Error(`Ruta de menú sin catálogo: ${to}`);
   return pantalla;
 });
-export const FIJOS_ARRIBA: PantallaMenu[] = pantallas("/","/pideme","/personal","/gasto-ia").map(p=>({...p,etiqueta:p.to==="/pideme"?"Pedir trabajo":p.to==="/personal"?"Personal":p.to==="/gasto-ia"?"Consumo":p.etiqueta}));
-export const GRUPOS_MENU: GrupoMenu[] = [
- {id:"productos",titulo:"Productos y proyectos",icono:Boxes,pantallas:pantallas("/proyectos")},
- {id:"trabajo",titulo:"Trabajo",icono:ListTodo,pantallas:pantallas("/tareas","/aprobaciones","/ejecucion","/bandeja","/avisos","/asistente","/mesa","/resumenes","/vigilancia")},
- {id:"entregas",titulo:"Entregas y documentación",icono:BookMarked,pantallas:pantallas("/documentacion","/manuales","/voz","/compilaciones","/repositorios","/calidad")},
- {id:"operaciones",titulo:"Operaciones",icono:Server,pantallas:pantallas("/salud","/infraestructura","/dominios","/copias","/auditoria","/estado","/mantenimiento")},
- {id:"clientes",titulo:"Clientes",icono:Users,pantallas:pantallas("/usuarios-clientes","/modo-cliente","/facturacion")},
- {id:"configuracion",titulo:"Configuración",icono:Settings,pantallas:pantallas("/ajustes","/ajustes/proveedores","/conexiones","/proyectian","/expertos","/agentes","/habilidades","/revisores","/personal/estilo")},
+export const FIJOS_ARRIBA: PantallaMenu[] = [
+ {...pantallas('/')[0]!,etiqueta:'Desarrollar',descripcion:'Un encargo, tu equipo y el resultado.'},
+ ...pantallas('/proyectos'),
+ {to:'/equipo',etiqueta:'Mi equipo',icono:Bot,alias:['agentes','IA','reparto'],descripcion:'Quién puede intervenir y para qué.'},
+ {...pantallas('/gasto-ia')[0]!,etiqueta:'Consumo'},
 ];
-export const ANCLADOS_PIE: PantallaMenu[] = pantallas("/guia");
+export const GRUPOS_MENU: GrupoMenu[] = [
+ {id:'conexiones',titulo:'Conexiones y ajustes',icono:Settings,pantallas:pantallas('/conexiones','/ajustes/proveedores','/ajustes','/proyectian')},
+ {id:'aparcadas',titulo:'Más herramientas',icono:Boxes,pantallas:[
+ {to:'/panel-avanzado',etiqueta:'Panel anterior',icono:LayoutDashboard,alias:['panel antiguo'],descripcion:'El resumen completo anterior, conservado.'},
+ ...CATALOGO.filter(p=>!['/','/proyectos','/gasto-ia','/conexiones','/ajustes/proveedores','/ajustes','/proyectian'].includes(p.to))]},
+];
+export const ANCLADOS_PIE: PantallaMenu[] = [];
 
 /* ------------------------------- Utilidades ------------------------------- */
 
@@ -515,7 +518,7 @@ export function buscarPantallas(consulta: string): ResultadoBusqueda[] {
 
 export const CLAVE_ACCESOS_MOVIL = "nexdeveloper-accesos-movil";
 
-export const ACCESOS_MOVIL_POR_DEFECTO: RutaMenu[] = ["/", "/pideme", "/tareas", "/avisos"];
+export const ACCESOS_MOVIL_POR_DEFECTO: RutaMenu[] = ["/", "/proyectos", "/equipo", "/gasto-ia"];
 
 export function pantallaPorRuta(to: string): PantallaMenu | undefined {
   return TODAS_LAS_PANTALLAS.find((p) => p.to === to);

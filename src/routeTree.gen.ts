@@ -24,6 +24,7 @@ import { Route as CopiasRouteImport } from './routes/copias'
 import { Route as DocumentacionRouteImport } from './routes/documentacion'
 import { Route as DominiosRouteImport } from './routes/dominios'
 import { Route as EjecucionRouteImport } from './routes/ejecucion'
+import { Route as EquipoRouteImport } from './routes/equipo'
 import { Route as EstadoRouteImport } from './routes/estado'
 import { Route as ExpertosRouteImport } from './routes/expertos'
 import { Route as FacturacionRouteImport } from './routes/facturacion'
@@ -37,6 +38,7 @@ import { Route as ManualesRouteImport } from './routes/manuales'
 import { Route as MesaRouteImport } from './routes/mesa'
 import { Route as ModoClienteRouteImport } from './routes/modo-cliente'
 import { Route as NuevaOrdenRouteImport } from './routes/nueva-orden'
+import { Route as PanelAvanzadoRouteImport } from './routes/panel-avanzado'
 import { Route as PersonalRouteImport } from './routes/personal'
 import { Route as PidemeRouteImport } from './routes/pideme'
 import { Route as ProyectianRouteImport } from './routes/proyectian'
@@ -132,6 +134,11 @@ const EjecucionRoute = EjecucionRouteImport.update({
   path: '/ejecucion',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EquipoRoute = EquipoRouteImport.update({
+  id: '/equipo',
+  path: '/equipo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EstadoRoute = EstadoRouteImport.update({
   id: '/estado',
   path: '/estado',
@@ -195,6 +202,11 @@ const ModoClienteRoute = ModoClienteRouteImport.update({
 const NuevaOrdenRoute = NuevaOrdenRouteImport.update({
   id: '/nueva-orden',
   path: '/nueva-orden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelAvanzadoRoute = PanelAvanzadoRouteImport.update({
+  id: '/panel-avanzado',
+  path: '/panel-avanzado',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonalRoute = PersonalRouteImport.update({
@@ -310,6 +322,7 @@ export interface FileRoutesByFullPath {
   '/documentacion': typeof DocumentacionRoute
   '/dominios': typeof DominiosRoute
   '/ejecucion': typeof EjecucionRoute
+  '/equipo': typeof EquipoRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/facturacion': typeof FacturacionRoute
@@ -323,6 +336,7 @@ export interface FileRoutesByFullPath {
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/panel-avanzado': typeof PanelAvanzadoRoute
   '/personal': typeof PersonalRoute
   '/pideme': typeof PidemeRoute
   '/proyectian': typeof ProyectianRoute
@@ -359,6 +373,7 @@ export interface FileRoutesByTo {
   '/documentacion': typeof DocumentacionRoute
   '/dominios': typeof DominiosRoute
   '/ejecucion': typeof EjecucionRoute
+  '/equipo': typeof EquipoRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/facturacion': typeof FacturacionRoute
@@ -372,6 +387,7 @@ export interface FileRoutesByTo {
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/panel-avanzado': typeof PanelAvanzadoRoute
   '/personal': typeof PersonalRoute
   '/pideme': typeof PidemeRoute
   '/proyectian': typeof ProyectianRoute
@@ -409,6 +425,7 @@ export interface FileRoutesById {
   '/documentacion': typeof DocumentacionRoute
   '/dominios': typeof DominiosRoute
   '/ejecucion': typeof EjecucionRoute
+  '/equipo': typeof EquipoRoute
   '/estado': typeof EstadoRoute
   '/expertos': typeof ExpertosRoute
   '/facturacion': typeof FacturacionRoute
@@ -422,6 +439,7 @@ export interface FileRoutesById {
   '/mesa': typeof MesaRoute
   '/modo-cliente': typeof ModoClienteRoute
   '/nueva-orden': typeof NuevaOrdenRoute
+  '/panel-avanzado': typeof PanelAvanzadoRoute
   '/personal': typeof PersonalRoute
   '/pideme': typeof PidemeRoute
   '/proyectian': typeof ProyectianRoute
@@ -460,6 +478,7 @@ export interface FileRouteTypes {
     | '/documentacion'
     | '/dominios'
     | '/ejecucion'
+    | '/equipo'
     | '/estado'
     | '/expertos'
     | '/facturacion'
@@ -473,6 +492,7 @@ export interface FileRouteTypes {
     | '/mesa'
     | '/modo-cliente'
     | '/nueva-orden'
+    | '/panel-avanzado'
     | '/personal'
     | '/pideme'
     | '/proyectian'
@@ -509,6 +529,7 @@ export interface FileRouteTypes {
     | '/documentacion'
     | '/dominios'
     | '/ejecucion'
+    | '/equipo'
     | '/estado'
     | '/expertos'
     | '/facturacion'
@@ -522,6 +543,7 @@ export interface FileRouteTypes {
     | '/mesa'
     | '/modo-cliente'
     | '/nueva-orden'
+    | '/panel-avanzado'
     | '/personal'
     | '/pideme'
     | '/proyectian'
@@ -558,6 +580,7 @@ export interface FileRouteTypes {
     | '/documentacion'
     | '/dominios'
     | '/ejecucion'
+    | '/equipo'
     | '/estado'
     | '/expertos'
     | '/facturacion'
@@ -571,6 +594,7 @@ export interface FileRouteTypes {
     | '/mesa'
     | '/modo-cliente'
     | '/nueva-orden'
+    | '/panel-avanzado'
     | '/personal'
     | '/pideme'
     | '/proyectian'
@@ -608,6 +632,7 @@ export interface RootRouteChildren {
   DocumentacionRoute: typeof DocumentacionRoute
   DominiosRoute: typeof DominiosRoute
   EjecucionRoute: typeof EjecucionRoute
+  EquipoRoute: typeof EquipoRoute
   EstadoRoute: typeof EstadoRoute
   ExpertosRoute: typeof ExpertosRoute
   FacturacionRoute: typeof FacturacionRoute
@@ -621,6 +646,7 @@ export interface RootRouteChildren {
   MesaRoute: typeof MesaRoute
   ModoClienteRoute: typeof ModoClienteRoute
   NuevaOrdenRoute: typeof NuevaOrdenRoute
+  PanelAvanzadoRoute: typeof PanelAvanzadoRoute
   PersonalRoute: typeof PersonalRoute
   PidemeRoute: typeof PidemeRoute
   ProyectianRoute: typeof ProyectianRoute
@@ -748,6 +774,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EjecucionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/equipo': {
+      id: '/equipo'
+      path: '/equipo'
+      fullPath: '/equipo'
+      preLoaderRoute: typeof EquipoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/estado': {
       id: '/estado'
       path: '/estado'
@@ -837,6 +870,13 @@ declare module '@tanstack/react-router' {
       path: '/nueva-orden'
       fullPath: '/nueva-orden'
       preLoaderRoute: typeof NuevaOrdenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel-avanzado': {
+      id: '/panel-avanzado'
+      path: '/panel-avanzado'
+      fullPath: '/panel-avanzado'
+      preLoaderRoute: typeof PanelAvanzadoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/personal': {
@@ -1002,6 +1042,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocumentacionRoute: DocumentacionRoute,
   DominiosRoute: DominiosRoute,
   EjecucionRoute: EjecucionRoute,
+  EquipoRoute: EquipoRoute,
   EstadoRoute: EstadoRoute,
   ExpertosRoute: ExpertosRoute,
   FacturacionRoute: FacturacionRoute,
@@ -1015,6 +1056,7 @@ const rootRouteChildren: RootRouteChildren = {
   MesaRoute: MesaRoute,
   ModoClienteRoute: ModoClienteRoute,
   NuevaOrdenRoute: NuevaOrdenRoute,
+  PanelAvanzadoRoute: PanelAvanzadoRoute,
   PersonalRoute: PersonalRoute,
   PidemeRoute: PidemeRoute,
   ProyectianRoute: ProyectianRoute,

@@ -22,7 +22,9 @@ export async function fetchIA(sb: DB, ctx: ContextoIA, url: string, init: Reques
  const body = JSON.parse(init.body);
  if((body.n??1)!==1 || (body.generationConfig?.candidateCount??1)!==1 || body.modalities?.some((m:string)=>m!=='text')) throw new Error('Solo se admite una respuesta de texto por reserva');
  if(body.tools?.some((t:any)=>(t.type && t.type!=='function') || t.google_search || t.web_search)) throw new Error('Herramientas de pago adicionales sin tarifa verificada');
- if(body.messages?.some((m:any)=>Array.isArray(m.content)&&m.content.some((c:any)=>!['text','tool_use','tool_result'].includes(c.type))) || body.contents?.some((c:any)=>c.parts?.some((p:any)=>typeof p.text!=='string'))) throw new Error('Entrada multimedia pendiente de adaptación económica');
+ const imagenes=provider.clave_slug==='google'?(body.contents??[]).flatMap((c:any)=>(c.parts??[]).filter((p:any)=>p.inlineData).map((p:any)=>p.inlineData)):[];
+ if(imagenes.length>5||imagenes.some((i:any)=>!['image/png','image/jpeg','image/webp'].includes(i.mimeType)||typeof i.data!=='string'||i.data.length>2800000||!/^[A-Za-z0-9+/]*={0,2}$/.test(i.data)))throw Error('Usa hasta cinco imágenes PNG, JPEG o WebP de menos de 2 MB cada una.');
+ if(body.messages?.some((m:any)=>Array.isArray(m.content)&&m.content.some((c:any)=>!['text','tool_use','tool_result'].includes(c.type))) || body.contents?.some((c:any)=>c.parts?.some((p:any)=>typeof p.text!=='string'&&!p.functionCall&&!p.functionResponse&&!(provider.clave_slug==='google'&&p.inlineData)))) throw new Error('Entrada multimedia pendiente de adaptación económica');
  const modelSent = body.model ?? (endpoint.pathname.match(/\/models\/([^:]+):/)?.[1]);
  if (modelSent !== model.identificador || body.stream) throw new Error('Modelo distinto o transmisión sin contador');
  const output = body.max_tokens ?? body.max_completion_tokens ?? body.generationConfig?.maxOutputTokens;
@@ -33,13 +35,13 @@ export async function fetchIA(sb: DB, ctx: ContextoIA, url: string, init: Reques
  // Reserve a conservative estimate of this request, not the model's entire
  // configured context window. Reserving max_entrada made a short prompt with a
  // 200k-token model look like a full 200k-token call and exhausted every limit.
- const entradaReservada = Math.max(1, Math.ceil(bytesEntrada / 2) + 1024);
+ const entradaReservada = imagenes.length ? Number(price?.max_entrada??0) : Math.max(1, Math.ceil(bytesEntrada / 2) + 1024);
  if (te || !price) throw new Error('Tarifa no verificada');
  if (entradaReservada > price.max_entrada) throw new Error('Contexto demasiado grande para el máximo de entrada configurado');
  const id = crypto.randomUUID();
  const { data: reservation, error: re } = await sb.rpc('ia_reservar',{p_id:id,p_user_id:ctx.userId,p_modelo_id:ctx.modeloId,p_ambito:ctx.ambito,p_proyecto_id:ctx.proyectoId??null,p_operacion:ctx.operacion,p_entrada:entradaReservada,p_salida:output,p_ejecucion_id:ctx.ejecucionId??null});
  if (re || reservation?.id !== id) throw new Error(`Llamada bloqueada: ${re?.message ?? 'no se pudo reservar el presupuesto'}`);
- let emitida=false;
+ let emitida=false;let httpEstado:number|null=null;let detalleSeguro="";
  try {
    if(ctx.ejecucionId){
      if(!ctx.bloqueoToken)throw new Error('Ejecución sin bloqueo');
@@ -50,11 +52,15 @@ export async function fetchIA(sb: DB, ctx: ContextoIA, url: string, init: Reques
    const signal = init.signal ? AbortSignal.any([timeout,init.signal]) : timeout;
    emitida=true;
    const response = await fetch(url,{...init,signal,redirect:'error'});
+   httpEstado=response.status;
    const data = await response.clone().json();
+   if(!response.ok)detalleSeguro=String(data.error?.status??data.error?.type??data.error?.code??"rechazo del proveedor").slice(0,80);
    const u = data.usage ?? data.usageMetadata;
    // Include cached prompt tokens and Google's thinking tokens conservatively.
    const input = u?.input_tokens != null ? u.input_tokens + (u.cache_creation_input_tokens??0) + (u.cache_read_input_tokens??0) : (u?.prompt_tokens ?? u?.promptTokenCount);
-   const outputUsed = u?.output_tokens ?? u?.completion_tokens ?? (u?.candidatesTokenCount != null ? u.candidatesTokenCount+(u.thoughtsTokenCount??0) : undefined);
+   const reportedOutput = u?.output_tokens ?? u?.completion_tokens ?? (u?.candidatesTokenCount != null ? u.candidatesTokenCount+(u.thoughtsTokenCount??0) : undefined);
+   const total=u?.total_tokens??u?.totalTokenCount;
+   const outputUsed=Number.isSafeInteger(total)&&Number.isSafeInteger(input)?Math.max(reportedOutput??0,total-input):reportedOutput;
    const valid = Number.isSafeInteger(input) && input>=0 && Number.isSafeInteger(outputUsed) && outputUsed>=0;
    const { data: settled, error: se } = await sb.rpc('ia_liquidar',{p_id:id,p_user_id:ctx.userId,p_entrada:valid?input:null,p_salida:valid?outputUsed:null});
    if (se || !settled) throw new Error('Respuesta recibida, pero el consumo queda pendiente de conciliación');
@@ -65,7 +71,8 @@ export async function fetchIA(sb: DB, ctx: ContextoIA, url: string, init: Reques
  } catch (error) {
    // Unknown transport outcome is not a refund: the provider may have processed it.
    await sb.rpc('ia_liquidar',{p_id:id,p_user_id:ctx.userId,p_entrada:emitida?null:0,p_salida:emitida?null:0});
-   throw new Error(`La llamada no pudo confirmarse. Revisa el consumo o reserva ${id} antes de repetirla.`);
+   const motivoSeguro=/Respuesta incompleta|consumo queda pendiente|Proveedor sin uso verificable|ejecución ya no está activa/.test(String((error as Error)?.message))?String((error as Error).message):"";
+   throw new Error(`${motivoSeguro?motivoSeguro+". ":""}La llamada no pudo confirmarse${httpEstado?` (HTTP ${httpEstado}${detalleSeguro?": "+detalleSeguro:""})`:""}. Revisa el consumo o reserva ${id} antes de repetirla.`);
  }
 }
 
