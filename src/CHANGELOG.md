@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## 0.43.1 — Resultados visibles y lectura cómoda
+
+- Aviso grande con sonido y pulso visual al terminar una consulta o desarrollo; abre automáticamente el resultado en Tus trabajos.
+- Diferencia entregas listas para revisión, trabajos terminados, errores y cancelaciones. El aviso permanece hasta pulsar Entendido.
+- Inter, lectura principal de 18 px, menús y botones mayores, contraste reforzado en claro y oscuro.
+- Los trabajos que esperan aprobación ya no muestran una rueda de ejecución.
+
 ## 0.43.0 — Un encargo y un equipo coordinado
 
 - Nueva entrada principal para desarrollar o pedir consejo con texto, dictado y adjuntos.

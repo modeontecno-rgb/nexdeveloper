@@ -18,7 +18,6 @@ import { TrabajoProvider } from "@/components/nex/indicador-trabajo";
 import { ProveedorAuth } from "@/lib/nex/auth";
 import { Toaster } from "@/components/ui/sonner";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -87,7 +86,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "NexDeveloper · Centro de control multiagente" },
       {
         name: "description",
-        content: "Gestiona todos tus proyectos de IA, agentes, tareas y costes desde un único lugar.",
+        content:
+          "Gestiona todos tus proyectos de IA, agentes, tareas y costes desde un único lugar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -106,12 +106,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/iconos/apple-touch-icon.png" },
-
     ],
     scripts: [
       {
@@ -171,5 +170,4 @@ function RootComponent() {
       </ProveedorAuth>
     </QueryClientProvider>
   );
-
 }

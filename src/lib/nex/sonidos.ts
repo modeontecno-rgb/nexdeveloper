@@ -26,11 +26,13 @@ function obtenerContexto(): AudioContext | null {
   if (typeof window === "undefined") return null;
   const Ctor = (window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as
-    | typeof AudioContext
-    | undefined;
+    typeof AudioContext | undefined;
   if (!Ctor) return null;
   if (!contexto) contexto = new Ctor();
-  if (contexto.state === "suspended") void contexto.resume();
+  if (contexto.state === "suspended")
+    void contexto.resume().catch(() => {
+      /* El aviso visual permanece si se bloquea el audio. */
+    });
   return contexto;
 }
 
@@ -84,5 +86,21 @@ export function sonidoFin() {
   reproducir(() => {
     tono(660, 0.09, 0, 0.04);
     tono(440, 0.12, 0.07, 0.04);
+  });
+}
+
+/** Se llama durante el clic de envío para habilitar el aviso posterior. */
+export function prepararSonido() {
+  reproducir(() => {
+    obtenerContexto();
+  });
+}
+
+/** Aviso de finalización perceptible, una sola vez por cambio de estado. */
+export function sonidoTrabajoTerminado() {
+  reproducir(() => {
+    tono(660, 0.22, 0, 0.12);
+    tono(880, 0.22, 0.28, 0.12);
+    tono(1100, 0.35, 0.56, 0.12);
   });
 }

@@ -10,6 +10,10 @@
  */
 
 @theme inline {
+  --text-xs: 0.9rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.55;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -63,8 +67,8 @@
 
 :root {
   --radius: 0.75rem;
-  --font-display-family: "Sora", ui-sans-serif, system-ui, sans-serif;
-  --font-sans-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans-family: "Inter", ui-sans-serif, system-ui, sans-serif;
   color-scheme: light;
 
   --background: oklch(0.975 0.005 260);
@@ -75,24 +79,24 @@
   --card-foreground: oklch(0.22 0.02 262);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.02 262);
-  --primary: oklch(0.6 0.12 200);
+  --primary: #075985;
   --primary-foreground: oklch(0.985 0.004 200);
   --secondary: oklch(0.94 0.008 260);
   --secondary-foreground: oklch(0.28 0.02 262);
   --muted: oklch(0.945 0.007 260);
-  --muted-foreground: oklch(0.5 0.02 262);
+  --muted-foreground: #475569;
   --accent: oklch(0.58 0.14 300);
   --accent-foreground: oklch(0.985 0.004 300);
   --destructive: oklch(0.58 0.2 24);
   --destructive-foreground: oklch(0.985 0.004 260);
-  --success: oklch(0.6 0.15 155);
+  --success: #166534;
   --success-foreground: oklch(0.985 0.004 155);
-  --warning: oklch(0.68 0.14 70);
+  --warning: #92400e;
   --warning-foreground: oklch(0.985 0.004 82);
-  --info: oklch(0.58 0.12 245);
+  --info: #075985;
   --info-foreground: oklch(0.985 0.004 240);
-  --border: oklch(0.885 0.008 260);
-  --input: oklch(0.885 0.008 260);
+  --border: #a8b5c5;
+  --input: #64748b;
   --ring: oklch(0.6 0.12 200);
   --chart-1: oklch(0.6 0.12 200);
   --chart-2: oklch(0.58 0.14 300);
@@ -101,13 +105,14 @@
   --chart-5: oklch(0.58 0.2 24);
   --sidebar: oklch(0.96 0.006 260);
   --sidebar-foreground: oklch(0.28 0.02 262);
-  --sidebar-primary: oklch(0.6 0.12 200);
+  --sidebar-primary: #075985;
   --sidebar-primary-foreground: oklch(0.985 0.004 200);
   --sidebar-accent: oklch(0.915 0.008 260);
   --sidebar-accent-foreground: oklch(0.24 0.02 262);
   --sidebar-border: oklch(0.885 0.008 260);
   --sidebar-ring: oklch(0.6 0.12 200);
-  --shadow-elevated: 0 1px 0 0 oklch(1 0 0 / 60%) inset, 0 18px 45px -28px oklch(0.3 0.03 262 / 35%);
+  --shadow-elevated:
+    0 1px 0 0 oklch(1 0 0 / 60%) inset, 0 18px 45px -28px oklch(0.3 0.03 262 / 35%);
 }
 
 .dark {
@@ -126,7 +131,7 @@
   --secondary: oklch(0.26 0.015 262);
   --secondary-foreground: oklch(0.93 0.006 260);
   --muted: oklch(0.25 0.013 262);
-  --muted-foreground: oklch(0.68 0.014 260);
+  --muted-foreground: #cbd5e1;
   --accent: oklch(0.72 0.13 300);
   --accent-foreground: oklch(0.17 0.02 300);
   --destructive: oklch(0.63 0.2 22);
@@ -137,8 +142,8 @@
   --warning-foreground: oklch(0.2 0.04 82);
   --info: oklch(0.72 0.11 240);
   --info-foreground: oklch(0.17 0.03 240);
-  --border: oklch(0.3 0.014 262);
-  --input: oklch(0.3 0.014 262);
+  --border: #58677d;
+  --input: #94a3b8;
   --ring: oklch(0.78 0.13 188);
   --chart-1: oklch(0.78 0.13 188);
   --chart-2: oklch(0.72 0.13 300);
@@ -161,20 +166,15 @@
   }
 
   html {
-    /* 15 px en móvil, 14 px en escritorio. */
-    font-size: 15px;
-  }
-
-  @media (min-width: 1024px) {
-    html {
-      font-size: 14px;
-    }
+    font-size: 112.5%; /* 18 px con la configuración habitual; respeta el tamaño del navegador. */
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans-family);
+    font-size: 1rem;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
     background-image:
@@ -236,3 +236,38 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Pulso lento del borde, manteniendo el texto siempre visible. */
+@keyframes nex-aviso-final {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.nex-aviso-final {
+  animation: nex-aviso-final 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nex-aviso-final {
+    animation: none;
+  }
+}
+
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--muted-foreground);
+    opacity: 1;
+  }
+  button:not([data-compacto]),
+  select,
+  input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 48px;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+}

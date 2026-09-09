@@ -1,5 +1,5 @@
-import {EditorEstiloGlobal} from './editor-estilo-global';
-import {ActividadPersistente} from './actividad-persistente';
+import { EditorEstiloGlobal } from "./editor-estilo-global";
+import { ActividadPersistente } from "./actividad-persistente";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
@@ -157,7 +157,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="min-h-screen lg:grid"
         style={{ gridTemplateColumns: contraido ? "4.5rem 1fr" : "17rem 1fr" }}
       >
-        <CabeceraMovil titulo={pantallaActual?.etiqueta ?? "NexDeveloper"} onMenu={() => setHoja(true)} />
+        <CabeceraMovil
+          titulo={pantallaActual?.etiqueta ?? "NexDeveloper"}
+          onMenu={() => setHoja(true)}
+        />
 
         <aside
           className={cn(
@@ -184,7 +187,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
 
         <main className="min-w-0 overflow-x-hidden px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:py-10 lg:pb-10">
-          <ActividadPersistente/>
+          <ActividadPersistente />
           {children}
         </main>
 
@@ -305,18 +308,24 @@ function MenuLateral({
                   onClick={() => alternar(g.id)}
                   aria-expanded={abierto}
                   className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-muted-foreground/80 transition-colors hover:text-foreground"
-                  style={{ fontSize: "12.5px" }}
+                  style={{ fontSize: "0.9rem" }}
                 >
                   <ChevronDown
                     className={cn(
                       "size-3.5 shrink-0 transition-transform motion-reduce:transition-none",
                       !abierto && "-rotate-90",
                     )}
-                    style={{ transitionDuration: abierto ? "180ms" : "140ms", transitionTimingFunction: CURVA }}
+                    style={{
+                      transitionDuration: abierto ? "180ms" : "140ms",
+                      transitionTimingFunction: CURVA,
+                    }}
                   />
                   <span className="truncate">{g.titulo}</span>
                   {!abierto && tieneActiva ? (
-                    <span className="ml-auto size-1.5 shrink-0 rounded-full bg-sidebar-primary" aria-hidden />
+                    <span
+                      className="ml-auto size-1.5 shrink-0 rounded-full bg-sidebar-primary"
+                      aria-hidden
+                    />
                   ) : null}
                 </button>
 
@@ -403,7 +412,7 @@ function ItemMenu({
           ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
           : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
       )}
-      style={{ fontSize: "13.5px", height: alto ? `${alto}px` : "40px" }}
+      style={{ fontSize: "1rem", minHeight: `${Math.max(alto ?? 48, 48)}px` }}
     >
       {activo ? (
         <span
@@ -413,7 +422,7 @@ function ItemMenu({
         />
       ) : null}
       <Icono className={cn("size-4 shrink-0", activo && "text-sidebar-primary")} />
-      <span className="truncate">{pantalla.etiqueta}</span>
+      <span className="min-w-0 flex-1 py-2 leading-snug">{pantalla.etiqueta}</span>
       {contador > 0 ? (
         <span className="ml-auto shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
           {contador > 99 ? "99+" : contador}
@@ -615,7 +624,9 @@ function BuscadorMenu({
       {texto.trim().length >= 2 ? (
         <div className="mt-2 max-h-[60vh] overflow-y-auto rounded-xl border border-sidebar-border bg-sidebar p-2 shadow-lg">
           {!hayResultados ? (
-            <p className="px-2 py-3 text-sm text-muted-foreground">No hay ninguna pantalla con ese nombre.</p>
+            <p className="px-2 py-3 text-sm text-muted-foreground">
+              No hay ninguna pantalla con ese nombre.
+            </p>
           ) : null}
           {porGrupo.map(([grupo, lista]) => (
             <div key={grupo} className="mb-2 last:mb-0">
@@ -780,7 +791,7 @@ function HojaMenu({
                     onClick={() => alternar(g.id)}
                     aria-expanded={abierto}
                     className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-left text-muted-foreground/80"
-                    style={{ fontSize: "12.5px" }}
+                    style={{ fontSize: "0.9rem" }}
                   >
                     <ChevronDown
                       className={cn(
@@ -791,14 +802,23 @@ function HojaMenu({
                     />
                     <span className="truncate">{g.titulo}</span>
                     {!abierto && tieneActiva ? (
-                      <span className="ml-auto size-1.5 rounded-full bg-sidebar-primary" aria-hidden />
+                      <span
+                        className="ml-auto size-1.5 rounded-full bg-sidebar-primary"
+                        aria-hidden
+                      />
                     ) : null}
                   </button>
                   {abierto ? (
                     <ul className="ml-[18px] flex flex-col gap-0.5 border-l border-sidebar-border pl-[18px]">
                       {g.pantallas.map((p) => (
                         <li key={p.to}>
-                          <ItemMenu pantalla={p} ruta={ruta} sangrado onNavegar={onCerrar} alto={48} />
+                          <ItemMenu
+                            pantalla={p}
+                            ruta={ruta}
+                            sangrado
+                            onNavegar={onCerrar}
+                            alto={48}
+                          />
                         </li>
                       ))}
                     </ul>
@@ -869,7 +889,10 @@ function BarraInferior({ ruta, onMenu }: { ruta: string; onMenu: () => void }) {
             <Icono className="size-5" />
             <span className="max-w-full truncate px-1">{pantalla.etiqueta}</span>
             {contador > 0 ? (
-              <span className="absolute right-[22%] top-2 size-2 rounded-full bg-primary" aria-hidden />
+              <span
+                className="absolute right-[22%] top-2 size-2 rounded-full bg-primary"
+                aria-hidden
+              />
             ) : null}
           </Link>
         );
@@ -935,7 +958,9 @@ function SelectorTema() {
         aria-pressed={!oscuro}
         className={cn(
           "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-          !oscuro ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:text-foreground",
+          !oscuro
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Sun className="size-3.5" /> Claro
@@ -946,7 +971,9 @@ function SelectorTema() {
         aria-pressed={oscuro}
         className={cn(
           "flex min-h-9 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-          oscuro ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:text-foreground",
+          oscuro
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Moon className="size-3.5" /> Oscuro
@@ -980,7 +1007,9 @@ export function Encabezado({
       <div className="w-full min-w-0 2xl:max-w-3xl">
         <h1 className="font-display text-2xl font-semibold break-words sm:text-3xl">{titulo}</h1>
         {descripcion ? (
-          <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground break-words">{descripcion}</p>
+          <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground break-words">
+            {descripcion}
+          </p>
         ) : null}
       </div>
       <div className="flex w-full min-w-0 flex-wrap items-center gap-2 2xl:w-auto 2xl:justify-end">
