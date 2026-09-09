@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowUpRight,
+  BellRing,
   Check,
   ChevronDown,
   Code2,
@@ -24,6 +25,8 @@ import { Boton, claseCampo } from "./campos";
 import { CampoTextoConDictado } from "./dictado";
 import { BotonAdjuntar, ListaAdjuntos, ZonaAdjuntos, useAdjuntos } from "./adjuntos";
 import { Encabezado } from "./app-shell";
+import { prepararSonido, sonidoTrabajoTerminado } from "@/lib/nex/sonidos";
+import { detectarFinalizados, tituloFinalizacion } from "@/lib/nex/finalizacion";
 import { formatoEuros } from "@/lib/nex/labels";
 
 type Fase = {
@@ -72,6 +75,10 @@ export function EstudioDesarrollo() {
     [consejo, setConsejo] = React.useState(false),
     [abierto, setAbierto] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [avisos, setAvisos] = React.useState<Encargo[]>([]);
+  const aviso = avisos[0];
+  const estados = React.useRef(new Map<string, string>());
+  const resultado = React.useRef<HTMLDivElement>(null);
   const solicitud = React.useRef<{ firma: string; id: string } | null>(null);
   const adjuntos = useAdjuntos();
   React.useEffect(() => {
@@ -95,6 +102,24 @@ export function EstudioDesarrollo() {
     },
     refetchInterval: 5000,
   });
+  React.useEffect(() => {
+    if (!lista.data) return;
+    const terminados = detectarFinalizados(estados.current, lista.data);
+    if (terminados.length) {
+      setAvisos((actuales) => [...actuales, ...terminados]);
+      sonidoTrabajoTerminado();
+    }
+  }, [lista.data]);
+  React.useEffect(() => {
+    if (!aviso) return;
+    setAbierto(aviso.id);
+    // Incluye su proyecto para que el resultado nunca quede oculto por el filtro.
+    setProyecto(aviso.proyecto_id ?? "");
+    const frame = requestAnimationFrame(() => {
+      resultado.current?.scrollIntoView({ behavior: "instant", block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [aviso]);
   const enviar = useMutation({
     mutationFn: async () => {
       setError(null);
@@ -126,6 +151,8 @@ export function EstudioDesarrollo() {
       return r.data as { ejecucion: Encargo };
     },
     onSuccess: (r) => {
+      // Registra también encargos que terminan antes de la primera consulta de la lista.
+      estados.current.set(r.ejecucion.id, "en_cola");
       setAbierto(r.ejecucion.id);
       setTexto("");
       adjuntos.limpiar();
@@ -150,7 +177,7 @@ export function EstudioDesarrollo() {
       />
       <section className="panel overflow-hidden border-primary/25">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <label className="flex min-w-0 flex-1 items-center gap-3">
+          <label className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <span className="text-xs text-muted-foreground">PROYECTO</span>
             <select
               aria-label="Proyecto del encargo"
@@ -179,10 +206,11 @@ export function EstudioDesarrollo() {
           className="p-5"
           onSubmit={(e) => {
             e.preventDefault();
+            prepararSonido();
             enviar.mutate();
           }}
         >
-          <div className="mb-4 flex gap-2">
+          <div className="mb-4 flex flex-wrap gap-2">
             {[
               { valor: false, texto: "Desarrollar", icono: Code2 },
               { valor: true, texto: "Pedir consejo", icono: MessageSquare },
@@ -218,7 +246,10 @@ export function EstudioDesarrollo() {
             />
             <ListaAdjuntos adjuntos={adjuntos.adjuntos} onQuitar={(a) => void adjuntos.quitar(a)} />
           </ZonaAdjuntos>
-          <p className="mt-2 text-xs text-muted-foreground">Capturas: PNG, JPEG o WebP de hasta 2 MB. La lectura de imágenes se registra aparte en Consumo.</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Capturas: PNG, JPEG o WebP de hasta 2 MB. La lectura de imágenes se registra aparte en
+            Consumo.
+          </p>
           {error || adjuntos.error ? (
             <p role="alert" className="mt-3 text-sm text-destructive">
               {error || adjuntos.error}
@@ -267,33 +298,72 @@ export function EstudioDesarrollo() {
           </div>
         </form>
       </section>
-      <div className="mb-4 mt-9 flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">Tus trabajos</h2>
-        <span className="text-xs text-muted-foreground">Estado y consumo registrados</span>
-      </div>
-      {lista.isError ? (
-        <p role="alert" className="panel p-5 text-destructive">
-          No se pudo cargar el estado de los trabajos.{" "}
-          <button onClick={() => void lista.refetch()} className="underline">
-            Reintentar
-          </button>
-        </p>
-      ) : null}
-      {!lista.isPending && !lista.isError && !trabajos.length ? (
-        <div className="panel p-8 text-center text-sm text-muted-foreground">
-          Tu primer encargo aparecerá aquí. Podrás ver quién interviene y abrir su resultado.
+      <div ref={resultado} className="scroll-mt-6">
+        {aviso ? (
+          <section
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="nex-aviso-final mb-6 mt-8 rounded-2xl border-4 border-primary bg-card p-6 shadow-xl sm:p-8"
+          >
+            <div className="flex items-start gap-4">
+              <BellRing className="size-10 shrink-0 text-primary" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <h2 className="text-3xl font-bold sm:text-4xl">
+                  {tituloFinalizacion(aviso.estado)}
+                </h2>
+                <p className="mt-3 text-lg font-semibold">
+                  {proyectos.data?.find((p) => p.id === aviso.proyecto_id)?.nombre ?? "Tu proyecto"}
+                </p>
+                <p className="mt-2 break-words text-lg">
+                  {aviso.texto?.split("\n")[0] ?? "Tu encargo"}
+                </p>
+                <p className="mt-3 text-lg">
+                  {aviso.estado === "error"
+                    ? "Revisa el motivo en el trabajo desplegado debajo."
+                    : "Ya tienes el resultado desplegado debajo, en Tus trabajos."}
+                </p>
+                <Boton
+                  variante="suave"
+                  className="mt-5 text-lg"
+                  onClick={() => setAvisos((actuales) => actuales.slice(1))}
+                >
+                  Entendido{avisos.length > 1 ? ` · Ver siguiente (${avisos.length - 1})` : ""}
+                </Boton>
+              </div>
+            </div>
+          </section>
+        ) : null}
+        <div className="mb-4 mt-9 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-2xl font-semibold">Tus trabajos</h2>
+          <span className="text-xs text-muted-foreground">Estado y consumo registrados</span>
         </div>
-      ) : null}
-      <div className="space-y-3">
-        {trabajos.map((e) => (
-          <Trabajo
-            key={e.id}
-            e={e}
-            nombre={proyectos.data?.find((p) => p.id === e.proyecto_id)?.nombre ?? "Proyecto"}
-            abierto={abierto === e.id}
-            cambiar={() => setAbierto(abierto === e.id ? null : e.id)}
-          />
-        ))}
+        {lista.isError ? (
+          <p role="alert" className="panel p-5 text-destructive">
+            No se pudo cargar el estado de los trabajos.{" "}
+            <button onClick={() => void lista.refetch()} className="underline">
+              Reintentar
+            </button>
+          </p>
+        ) : null}
+        {!lista.isPending && !lista.isError && !trabajos.length ? (
+          <div className="panel p-8 text-center text-sm text-muted-foreground">
+            Tu primer encargo aparecerá aquí. Podrás ver quién interviene y abrir su resultado.
+          </div>
+        ) : null}
+        <div className="space-y-3">
+          {[...trabajos]
+            .sort((a, b) => Number(b.id === aviso?.id) - Number(a.id === aviso?.id))
+            .map((e) => (
+              <Trabajo
+                key={e.id}
+                e={e}
+                nombre={proyectos.data?.find((p) => p.id === e.proyecto_id)?.nombre ?? "Proyecto"}
+                abierto={abierto === e.id}
+                cambiar={() => setAbierto(abierto === e.id ? null : e.id)}
+              />
+            ))}
+        </div>
       </div>
     </div>
   );
@@ -331,7 +401,9 @@ function Trabajo({
           <Code2 size={18} className="mt-1 shrink-0 text-muted-foreground" />
         )}
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-medium">{e.texto?.split("\n")[0] ?? "Encargo"}</p>
+          <p className="break-words text-lg font-semibold">
+            {e.texto?.split("\n")[0] ?? "Encargo"}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {nombre} ·{" "}
             {fase
@@ -384,7 +456,7 @@ function Trabajo({
             </p>
           ) : null}
           {e.respuesta || e.resumen ? (
-            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+            <div className="whitespace-pre-wrap break-words text-lg leading-relaxed">
               {e.respuesta || e.resumen}
             </div>
           ) : null}
