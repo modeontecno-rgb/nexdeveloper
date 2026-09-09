@@ -26,6 +26,7 @@ import { CampoTextoConDictado } from "./dictado";
 import { BotonAdjuntar, ListaAdjuntos, ZonaAdjuntos, useAdjuntos } from "./adjuntos";
 import { Encabezado } from "./app-shell";
 import { prepararSonido, sonidoTrabajoTerminado } from "@/lib/nex/sonidos";
+import { textoDesarrolloDesdeConsejo } from "@/lib/nex/continuar-consejo";
 import { detectarFinalizados, tituloFinalizacion } from "@/lib/nex/finalizacion";
 import { formatoEuros } from "@/lib/nex/labels";
 
@@ -74,6 +75,8 @@ export function EstudioDesarrollo() {
     [texto, setTexto] = React.useState(""),
     [consejo, setConsejo] = React.useState(false),
     [abierto, setAbierto] = React.useState<string | null>(null);
+  const formulario = React.useRef<HTMLFormElement>(null);
+  const [desdeConsejo, setDesdeConsejo] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [avisos, setAvisos] = React.useState<Encargo[]>([]);
   const aviso = avisos[0];
@@ -113,8 +116,6 @@ export function EstudioDesarrollo() {
   React.useEffect(() => {
     if (!aviso) return;
     setAbierto(aviso.id);
-    // Incluye su proyecto para que el resultado nunca quede oculto por el filtro.
-    setProyecto(aviso.proyecto_id ?? "");
     const frame = requestAnimationFrame(() => {
       resultado.current?.scrollIntoView({ behavior: "instant", block: "start" });
     });
@@ -155,14 +156,39 @@ export function EstudioDesarrollo() {
       estados.current.set(r.ejecucion.id, "en_cola");
       setAbierto(r.ejecucion.id);
       setTexto("");
+      setDesdeConsejo(false);
       adjuntos.limpiar();
       solicitud.current = null;
       void qc.invalidateQueries({ queryKey: ["estudio-encargos"] });
     },
     onError: (e) => setError(e.message),
   });
-  const trabajos = (lista.data ?? []).filter((e) => !proyecto || e.proyecto_id === proyecto);
+  const trabajos = (lista.data ?? []).filter(
+    (e) => !proyecto || e.proyecto_id === proyecto || e.id === aviso?.id,
+  );
   const seleccionado = proyectos.data?.find((p) => p.id === proyecto);
+  const motivoBloqueo = enviar.isPending
+    ? "Guardando el encargo…"
+    : adjuntos.subiendo
+      ? "Espera a que terminen de subir los archivos."
+      : !proyecto
+        ? "Selecciona arriba el proyecto en el que quieres trabajar."
+        : !consejo && !seleccionado?.repositorio
+          ? "Conecta el repositorio del proyecto para poder desarrollar."
+          : !texto.trim() && !adjuntos.ids.length
+            ? "Escribe lo que necesitas o pulsa Desarrollar este consejo en una entrega anterior."
+            : null;
+  const continuarConsejo = (e: Encargo) => {
+    setProyecto(e.proyecto_id ?? "");
+    setConsejo(false);
+    setDesdeConsejo(true);
+    setError(null);
+    setTexto(textoDesarrolloDesdeConsejo(e, texto));
+    requestAnimationFrame(() => {
+      formulario.current?.scrollIntoView({ behavior: "instant", block: "start" });
+      formulario.current?.querySelector("textarea")?.focus({ preventScroll: true });
+    });
+  };
   return (
     <div className="mx-auto max-w-5xl pb-12">
       <Encabezado
@@ -176,12 +202,12 @@ export function EstudioDesarrollo() {
         }
       />
       <section className="panel overflow-hidden border-primary/25">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <label className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+        <div className="flex flex-col items-stretch justify-between gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center">
+          <label className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:flex-1 sm:flex-row sm:items-center">
             <span className="text-xs text-muted-foreground">PROYECTO</span>
             <select
               aria-label="Proyecto del encargo"
-              className={`${claseCampo} max-w-sm`}
+              className={`${claseCampo} min-w-0 sm:max-w-sm`}
               value={proyecto}
               onChange={(e) => {
                 setProyecto(e.target.value);
@@ -203,7 +229,8 @@ export function EstudioDesarrollo() {
           </Link>
         </div>
         <form
-          className="p-5"
+          ref={formulario}
+          className="scroll-mt-6 p-5"
           onSubmit={(e) => {
             e.preventDefault();
             prepararSonido();
@@ -227,6 +254,15 @@ export function EstudioDesarrollo() {
               </button>
             ))}
           </div>
+          {desdeConsejo ? (
+            <p
+              role="status"
+              className="mb-4 rounded-xl border-2 border-primary bg-primary/10 p-4 text-lg font-medium"
+            >
+              Desarrollo preparado a partir de tu consejo. Revisa el texto y pulsa «Encargar
+              desarrollo».
+            </p>
+          ) : null}
           <ZonaAdjuntos onFicheros={(f) => void adjuntos.anadir(f)}>
             <CampoTextoConDictado
               valor={texto}
@@ -277,12 +313,8 @@ export function EstudioDesarrollo() {
             </p>
             <Boton
               type="submit"
-              disabled={
-                enviar.isPending ||
-                adjuntos.subiendo ||
-                (!texto.trim() && !adjuntos.ids.length) ||
-                !proyecto
-              }
+              disabled={!!motivoBloqueo}
+              aria-describedby={motivoBloqueo ? "motivo-envio" : undefined}
             >
               {enviar.isPending ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -296,6 +328,11 @@ export function EstudioDesarrollo() {
                   : "Encargar desarrollo"}
             </Boton>
           </div>
+          {motivoBloqueo ? (
+            <p id="motivo-envio" className="mt-3 text-sm font-medium text-foreground">
+              {motivoBloqueo}
+            </p>
+          ) : null}
         </form>
       </section>
       <div ref={resultado} className="scroll-mt-6">
@@ -306,10 +343,10 @@ export function EstudioDesarrollo() {
             aria-atomic="true"
             className="nex-aviso-final mb-6 mt-8 rounded-2xl border-4 border-primary bg-card p-6 shadow-xl sm:p-8"
           >
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col items-start gap-4 sm:flex-row">
               <BellRing className="size-10 shrink-0 text-primary" aria-hidden="true" />
               <div className="min-w-0 flex-1">
-                <h2 className="text-3xl font-bold sm:text-4xl">
+                <h2 className="break-words text-3xl font-bold sm:text-4xl">
                   {tituloFinalizacion(aviso.estado)}
                 </h2>
                 <p className="mt-3 text-lg font-semibold">
@@ -361,6 +398,7 @@ export function EstudioDesarrollo() {
                 nombre={proyectos.data?.find((p) => p.id === e.proyecto_id)?.nombre ?? "Proyecto"}
                 abierto={abierto === e.id}
                 cambiar={() => setAbierto(abierto === e.id ? null : e.id)}
+                continuar={() => continuarConsejo(e)}
               />
             ))}
         </div>
@@ -373,11 +411,13 @@ function Trabajo({
   nombre,
   abierto,
   cambiar,
+  continuar,
 }: {
   e: Encargo;
   nombre: string;
   abierto: boolean;
   cambiar: () => void;
+  continuar: () => void;
 }) {
   const cancelar = useCancelarEjecucion(),
     publicar = useAprobarPublicar();
@@ -458,6 +498,20 @@ function Trabajo({
           {e.respuesta || e.resumen ? (
             <div className="whitespace-pre-wrap break-words text-lg leading-relaxed">
               {e.respuesta || e.resumen}
+            </div>
+          ) : null}
+          {e.estado === "completada" && fases.some((f) => f.papel === "consejo") ? (
+            <div className="rounded-xl border-2 border-primary bg-primary/10 p-4">
+              <p className="mb-3 text-lg font-semibold">
+                ¿Quieres que el equipo haga este trabajo?
+              </p>
+              <Boton onClick={continuar}>
+                <Code2 size={20} /> Desarrollar este consejo
+              </Boton>
+              <p className="mt-3 text-sm">
+                Prepararemos el encargo con tu petición y este consejo. Podrás revisarlo antes de
+                enviarlo.
+              </p>
             </div>
           ) : null}
           <div className="flex flex-wrap gap-3">
