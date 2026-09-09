@@ -116,8 +116,6 @@ export function EstudioDesarrollo() {
   React.useEffect(() => {
     if (!aviso) return;
     setAbierto(aviso.id);
-    // Incluye su proyecto para que el resultado nunca quede oculto por el filtro.
-    setProyecto(aviso.proyecto_id ?? "");
     const frame = requestAnimationFrame(() => {
       resultado.current?.scrollIntoView({ behavior: "instant", block: "start" });
     });
@@ -165,7 +163,9 @@ export function EstudioDesarrollo() {
     },
     onError: (e) => setError(e.message),
   });
-  const trabajos = (lista.data ?? []).filter((e) => !proyecto || e.proyecto_id === proyecto);
+  const trabajos = (lista.data ?? []).filter(
+    (e) => !proyecto || e.proyecto_id === proyecto || e.id === aviso?.id,
+  );
   const seleccionado = proyectos.data?.find((p) => p.id === proyecto);
   const motivoBloqueo = enviar.isPending
     ? "Guardando el encargo…"
