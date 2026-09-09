@@ -13,14 +13,22 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 vi.mock("@/lib/nex/supabase", () => ({ supabase: {} }));
 vi.mock("@/lib/nex/queries/datos", () => ({
-  useProyectos: () => ({ data: [{ id: "p", nombre: "Proyecto de prueba" }] }),
+  useProyectos: () => ({
+    data: [
+      { id: "p", nombre: "Proyecto de prueba", repositorio: "https://github.com/example/demo" },
+    ],
+  }),
 }));
 vi.mock("@/lib/nex/queries/ejecucion", () => ({
   useCancelarEjecucion: () => ({}),
   useAprobarPublicar: () => ({}),
   ETIQUETA_ESTADO_EJECUCION: {},
 }));
-vi.mock("./dictado", () => ({ CampoTextoConDictado: () => <textarea /> }));
+vi.mock("./dictado", () => ({
+  CampoTextoConDictado: ({ valor, onValor }: { valor: string; onValor: (v: string) => void }) => (
+    <textarea value={valor} onChange={(e) => onValor(e.target.value)} />
+  ),
+}));
 vi.mock("./adjuntos", () => ({
   BotonAdjuntar: () => null,
   ListaAdjuntos: () => null,
@@ -49,7 +57,21 @@ it("al terminar abre el resultado, avisa y baja a Tus trabajos una sola vez", as
   await act(async () => root.render(<EstudioDesarrollo />));
   expect(node.querySelector('[role="status"]')).toBeNull();
   datos.trabajos = [
-    { ...datos.trabajos[0], estado: "completada", respuesta: "Esta es la respuesta completa" },
+    {
+      ...datos.trabajos[0],
+      estado: "completada",
+      respuesta: "Esta es la respuesta completa",
+      estado_agente: {
+        equipo: [
+          {
+            papel: "consejo",
+            modelo: { proveedor: "openai", identificador: "prueba" },
+            estado: "completada",
+            motivo: "Prueba",
+          },
+        ],
+      },
+    },
   ];
   await act(async () => root.render(<EstudioDesarrollo />));
   expect(node.querySelector('[role="status"]')?.textContent).toContain("¡Trabajo terminado!");
@@ -67,6 +89,19 @@ it("al terminar abre el resultado, avisa y baja a Tus trabajos una sola vez", as
   );
   expect(node.querySelector('[role="status"]')).toBeNull();
   expect(node.querySelector('[aria-expanded="true"]')).not.toBeNull();
+  await act(async () =>
+    Array.from(node.querySelectorAll("button"))
+      .find((b) => b.textContent?.includes("Desarrollar este consejo"))!
+      .click(),
+  );
+  expect(node.querySelector("textarea")?.value).toContain("Mi consulta");
+  expect(node.querySelector("textarea")?.value).toContain("Esta es la respuesta completa");
+  expect(node.querySelector('[role="status"]')?.textContent).toContain("Desarrollo preparado");
+  expect(
+    Array.from(node.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Encargar desarrollo"),
+    )?.disabled,
+  ).toBe(false);
   await act(async () => root.unmount());
   node.remove();
 });
