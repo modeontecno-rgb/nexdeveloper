@@ -1,3 +1,4 @@
+import {prepararEquipo, solicitudModelo, respuestaModelo, instruccionesPapel, soloLectura, escrituraPermitida, PAPELES, PROVEEDORES_MOTOR} from "../_shared/equipo.ts";
 // NexDeveloper · Edge Function «ordenes-ejecutar» (0.20.0)
 // Ejecución real de las órdenes por la IA con dos motores:
 //  · Lovable: conexión OAuth (PKCE) con el servidor MCP de Lovable → send_message / get_message / deploy_project.
@@ -114,6 +115,30 @@ async function leerArchivoRepo(repo: string, ruta: string, ref: string) {
 }
 const IGNORAR = /^(node_modules|dist|build|\.git|\.lovable|public\/fonts|bun\.lockb|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)|\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|mp3|mp4|pdf|lock)$/i;
 
+async function candidatosEquipo(sb: SB,userId:string) {
+ const {data:proveedores,error:pe}=await sb.from('proveedores_ia').select('id,clave_slug').eq('user_id',userId).eq('activo',true).not('clave_cifrada','is',null).in('clave_slug',PROVEEDORES_MOTOR);
+ if(pe)throw Error('No se pudo comprobar la conexión de los proveedores');
+ const {data:modelos,error:me}=await sb.from('modelos_ia').select('id,proveedor_id,identificador,calidad,tareas_aconsejadas').eq('user_id',userId).eq('activo',true).eq('desarrollo_estado','disponible');
+ const {data:tarifas,error:te}=await sb.from('ia_tarifas').select('modelo_id,entrada_eur_millon,salida_eur_millon,verificada_hasta').eq('user_id',userId).gt('verificada_hasta',ahora());
+ if(me||te)throw Error('No se pudo comprobar los modelos y tarifas');
+ return (modelos??[]).flatMap((m:any)=>{const p=proveedores?.find((p:any)=>p.id===m.proveedor_id),t=tarifas?.find((t:any)=>t.modelo_id===m.id);return p&&t?[{...m,proveedor:p.clave_slug,coste:Number(t.entrada_eur_millon)+Number(t.salida_eur_millon)}]:[];});
+}
+async function llamarEquipo(sb:SB,e:any,fase:any,sistema:string,mensajes:any[],lectura:boolean,prueba=false){
+ const {data:p,error}=await sb.from('proveedores_ia').select('id').eq('id',fase.modelo.proveedor_id).eq('user_id',e.user_id).eq('activo',true).single();
+ if(error||!p)throw Error('La conexión del agente ya no está activa');
+ const {data:clave,error:ke}=await sb.rpc('descifrar_clave_proveedor',{p_proveedor_id:p.id});
+ if(ke||!clave)throw Error('Falta la clave del agente asignado');
+ const proveedor=fase.modelo.proveedor;
+ const req=solicitudModelo(proveedor,fase.modelo.identificador,sistema,mensajes,lectura?HERRAMIENTAS.filter(h=>!['escribir_archivo','borrar_archivo'].includes(h.name)):HERRAMIENTAS);
+ if(prueba){if(proveedor==='google')req.body.generationConfig.maxOutputTokens=1024;else if(proveedor==='openai')req.body.max_completion_tokens=1024;else req.body.max_tokens=1024;}
+ const headers:Record<string,string>={'content-type':'application/json'};
+ if(proveedor==='anthropic'){headers['x-api-key']=clave;headers['anthropic-version']='2023-06-01';}
+ else if(proveedor==='google')headers['x-goog-api-key']=clave;
+ else headers.Authorization=`Bearer ${clave}`;
+ let r:Response;try{r=await fetchIA(sb,{userId:e.user_id,modeloId:fase.modelo.id,ambito:e.proyecto_id?'proyecto':'cartera',proyectoId:e.proyecto_id,ejecucionId:e.id,bloqueoToken:e.bloqueo_token,operacion:`equipo:${fase.papel}`},req.url,{method:'POST',headers,body:JSON.stringify(req.body)});}catch(error){const detalle=String((error as Error).message);if(/HTTP (400|401|403|404|429)/.test(detalle))await sb.from('modelos_ia').update({desarrollo_estado:'bloqueado',desarrollo_detalle:detalle,desarrollo_comprobado_el:ahora()}).eq('id',fase.modelo.id).eq('user_id',e.user_id);throw error;}
+ return respuestaModelo(proveedor,await r.json());
+}
+
 // ---------- Anthropic ----------
 async function claveAnthropic(sb: SB, userId: string) {
   const { data: p } = await sb.from("proveedores_ia").select("id").eq("user_id", userId).eq("clave_slug", "anthropic").maybeSingle();
@@ -127,7 +152,7 @@ const HERRAMIENTAS = [
   { name: "buscar", description: "Busca un texto literal en los archivos del repositorio (máximo 30 coincidencias con su ruta y línea).", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
   { name: "escribir_archivo", description: "Crea o sustituye COMPLETAMENTE un archivo con el contenido indicado. Escribe siempre el archivo entero, nunca fragmentos.", input_schema: { type: "object", properties: { ruta: { type: "string" }, contenido: { type: "string" } }, required: ["ruta", "contenido"] } },
   { name: "borrar_archivo", description: "Elimina un archivo del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
-  { name: "terminar", description: "Da por terminado el trabajo. Indica un resumen en español (3-6 líneas: qué has cambiado y por qué, archivos tocados, cómo probarlo) y, si procede, la nueva versión.", input_schema: { type: "object", properties: { resumen: { type: "string" }, version: { type: "string", description: "Nueva versión X.Y.Z si el proyecto muestra versión" }, sin_cambios: { type: "boolean", description: "true si has decidido no tocar nada (explica por qué en el resumen)" } }, required: ["resumen"] } },
+  { name: "terminar", description: "Da por terminado el trabajo. Indica un resumen en español (3-6 líneas: qué has cambiado y por qué, archivos tocados, cómo probarlo) y, si procede, la nueva versión.", input_schema: { type: "object", properties: { resumen: { type: "string" }, entrega: {type:"string",description:"Consejo o diseño completo para el usuario y el siguiente agente: contenido concreto, alternativas y decisiones. No una frase diciendo que se ha elaborado."}, version: { type: "string", description: "Nueva versión X.Y.Z si el proyecto muestra versión" }, revision_ok: {type:"boolean",description:"Solo en revisión: true si no quedan problemas bloqueantes"}, hallazgos:{type:"array",items:{type:"string"}}, sin_cambios: { type: "boolean", description: "true si has decidido no tocar nada (explica por qué en el resumen)" } }, required: ["resumen"] } },
 ];
 async function llamarClaude(sb: SB, e: any, modeloId: string, clave: string, modelo: string, sistema: string, mensajes: any[], planificar = false) {
   const r = await fetchIA(sb, {userId:e.user_id,modeloId,ambito:"proyecto",proyectoId:e.proyecto_id,ejecucionId:e.id,bloqueoToken:e.bloqueo_token,operacion:"ordenes-ejecutar"}, "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: modelo, max_tokens: 8000, system: sistema, tools: planificar ? HERRAMIENTAS.filter(h => !["escribir_archivo", "borrar_archivo"].includes(h.name)) : HERRAMIENTAS, messages: mensajes }) });
@@ -272,35 +297,54 @@ Reglas fijas:
 }
 async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
   const INICIO = Date.now();
-  const clave = await claveAnthropic(sb, e.user_id);
-  if (!clave) throw new Error("Falta la clave de Anthropic en Ajustes → Proveedores (necesaria para el motor Claude).");
+  const clave = e.equipo_automatico ? null : await claveAnthropic(sb, e.user_id);
+  if (!clave && !e.equipo_automatico) throw new Error("Falta la clave de Anthropic en Ajustes → Proveedores (necesaria para el motor Claude).");
   const { data: permitido, error: errorPresupuesto } = await sb.rpc("gasto_ia_permitido", { p_user_id: e.user_id, p_proveedor: null, p_proyecto_id: e.proyecto_id });
   if (errorPresupuesto || permitido !== true) throw new Error("Presupuesto de IA superado con acción «bloquear». Revisa Gasto de IA → Presupuestos.");
   const repo = p.repositorio;
   let st = e.estado_agente ?? null;
   if (!st) {
-    const base = await ramaPorDefecto(repo);
-    const ref = await gh(`/repos/${repo}/git/ref/heads/${base}`);
-    st = { base, base_sha: ref.object.sha, mensajes: [{ role: "user", content: `ORDEN:\n${e.texto}\n\nEmpieza orientándote con listar_archivos.` }], arbol: null };
+    const base = repo ? await ramaPorDefecto(repo) : "sin-repositorio";
+    const ref = repo ? await gh(`/repos/${repo}/git/ref/heads/${base}`) : {object:{sha:null}};
+    st = { base, base_sha: ref.object.sha, mensajes: [{ role: "user", content: `ORDEN:\n${e.texto}\n\nEmpieza orientándote con listar_archivos.` }], arbol: repo ? null : [] };
   }
+  if(e.equipo_automatico && !st.equipo){const candidatos=await candidatosEquipo(sb,e.user_id);st.disponibles=candidatos;st.equipo=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{});st.fase=0;}
+  const fase=e.equipo_automatico?st.equipo[st.fase]:null;
+  if(fase){fase.estado='trabajando';fase.iniciada??=ahora();fase.coste_inicio??=Number(e.coste_ia??0);}
+  const lectura=e.modo==='planificar'||(fase&&soloLectura(fase.papel));
+  const costeInicialFase=Number(e.coste_ia??0);
   const cambios: Record<string, string | null> = e.cambios ?? {};
   let pasos = e.pasos ?? 0; let te = e.tokens_entrada ?? 0; let ts = e.tokens_salida ?? 0; let coste = Number(e.coste_ia ?? 0);
   const modelo = cfg.modelo_claude ?? "claude-sonnet-4-5";
   const { data: mod } = await sb.from("modelos_ia").select("id, coste_entrada, coste_salida").eq("user_id", e.user_id).eq("identificador", modelo).maybeSingle();
   const guardar = async (extra: Record<string, unknown> = {}) => actualizar(sb, e.id, { estado_agente: st, cambios, pasos, tokens_entrada: te, tokens_salida: ts, coste_ia: coste, ...extra }, e.bloqueo_token);
   const arbol = async () => { if (!st.arbol) st.arbol = (await arbolRepo(repo, st.base_sha)).filter((n) => !IGNORAR.test(n.ruta)).map((n) => n.ruta); return st.arbol as string[]; };
-  const leer = async (ruta: string) => { if (ruta in cambios) { const c = cambios[ruta]; if (c === null) throw new Error(`${ruta} fue borrado`); return c; } return await leerArchivoRepo(repo, ruta, st.base_sha); };
+  const leer = async (ruta: string) => { if (ruta in cambios) { const c = cambios[ruta]; if (c === null) throw new Error(`${ruta} fue borrado`); return c; } if(!repo)throw Error("Este proyecto aún no tiene archivos: aconseja sobre la descripción aportada."); return await leerArchivoRepo(repo, ruta, st.base_sha); };
 
+  if(fase)await guardar();
   while (Date.now() - INICIO < PRESUPUESTO_MS) {
     await comprobarActiva(sb,e);
     if (pasos >= (cfg.max_pasos ?? 40)) { await guardar(); throw new Error(`Se alcanzó el máximo de ${cfg.max_pasos ?? 40} pasos sin terminar. Divide la orden en partes más pequeñas.`); }
     if (coste > Number(cfg.max_coste_ia ?? 3)) { await guardar(); throw new Error(`La orden ha superado el coste máximo de IA (${cfg.max_coste_ia} €). Ajústalo en Órdenes → Ejecución → Configuración.`); }
     st.mensajes = recortarHistorial(st.mensajes);
-    const r = await llamarClaude(sb, e, mod?.id, clave, modelo, sistemaAgente(p, cfg) + (e.modo === "planificar" ? "\nMODO PLANIFICACIÓN: analiza y entrega un plan. No escribas ni borres archivos, no publiques ni cambies versiones." : ""), st.mensajes, e.modo === "planificar");
+    const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'');
+    let r:any;
+    try{r = fase ? await llamarEquipo(sb,e,fase,sistema,st.mensajes,lectura) : await llamarClaude(sb,e,mod?.id,clave,modelo,sistema,st.mensajes,lectura);}
+    catch(error){
+      if(!fase||fase.sustitucion||!/HTTP (429|503)/.test(String((error as Error).message)))throw error;
+      const candidatos=(await candidatosEquipo(sb,e.user_id)).filter((c:any)=>c.proveedor!==fase.modelo.proveedor);
+      if(!candidatos.length)throw error;
+      const alternativa=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{}).find((f:any)=>f.papel===fase.papel);
+      if(!alternativa)throw error;
+      fase.sustitucion={proveedor:fase.modelo.proveedor,modelo:fase.modelo.identificador,motivo:String((error as Error).message),fecha:ahora()};
+      fase.modelo=alternativa.modelo;fase.motivo='Sustitución por cuota o indisponibilidad del proveedor anterior. El consumo pendiente conserva su reserva.';
+      st.mensajes=[{role:'user',content:`ORDEN ORIGINAL:\n${e.texto}\nRetoma tu papel y comprueba los archivos acumulados antes de continuar. El proveedor anterior no pudo completar la llamada.`}];
+      await guardar();return null;
+    }
     pasos++;
     const ue = r.usage?.input_tokens ?? 0, us = r.usage?.output_tokens ?? 0; te += ue; ts += us;
     const c = Number(r._nex_coste_eur); coste += c;
-    st.mensajes.push({ role: "assistant", content: r.content });
+    st.mensajes.push({ role: "assistant", content: r.content, ...(r._native?{_native:r._native}:{}) });
     const usos = (r.content ?? []).filter((b: any) => b.type === "tool_use");
     if (!usos.length) {
       const texto = (r.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
@@ -315,7 +359,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
       let out = "";
       try {
         const a = u.input ?? {};
-        if (e.modo === "planificar" && ["escribir_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
+        if (lectura && ["escribir_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
         if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
         else if (u.name === "leer_archivo") { const t = await leer(String(a.ruta)); out = t.length > 60_000 ? t.slice(0, 60_000) + "\n…(archivo recortado a 60.000 caracteres)" : t; }
         else if (u.name === "buscar") {
@@ -324,15 +368,35 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
           for (const ruta of candidatos) { if (hits.length >= 30 || Date.now() - INICIO > PRESUPUESTO_MS - 15_000) break; try { const t = await leer(ruta); const lineas = t.split("\n"); lineas.forEach((l, i) => { if (hits.length < 30 && l.includes(q)) hits.push(`${ruta}:${i + 1}: ${l.trim().slice(0, 160)}`); }); } catch { /* seguir */ } }
           out = hits.join("\n") || "(sin coincidencias)";
         }
-        else if (u.name === "escribir_archivo") { const ruta = String(a.ruta).replace(/^\/+/, ""); if (!ruta || ruta.includes("..")) throw new Error("Ruta no válida"); const contenido = String(a.contenido ?? ""); const total = Object.values({ ...cambios, [ruta]: contenido }).reduce((s, v) => s + (v?.length ?? 0), 0); if (total > 900_000) throw new Error("Demasiados cambios acumulados (límite 900 KB); divide la orden."); cambios[ruta] = contenido; if (st.arbol && !st.arbol.includes(ruta)) st.arbol.push(ruta); out = `Guardado ${ruta} (${contenido.length} caracteres)`; }
-        else if (u.name === "borrar_archivo") { const ruta = String(a.ruta).replace(/^\/+/, ""); cambios[ruta] = null; out = `Marcado para borrar ${ruta}`; }
-        else if (u.name === "terminar") { terminado = a; out = "Trabajo registrado."; }
+        else if (u.name === "escribir_archivo") { const ruta = String(a.ruta); if (!escrituraPermitida(ruta)) throw new Error("Ruta protegida o no válida"); const contenido = String(a.contenido ?? ""); const total = Object.values({ ...cambios, [ruta]: contenido }).reduce((s, v) => s + (v?.length ?? 0), 0); if (total > 900_000) throw new Error("Demasiados cambios acumulados (límite 900 KB); divide la orden."); cambios[ruta] = contenido; if (st.arbol && !st.arbol.includes(ruta)) st.arbol.push(ruta); out = `Guardado ${ruta} (${contenido.length} caracteres)`; }
+        else if (u.name === "borrar_archivo") { const ruta = String(a.ruta); if(!escrituraPermitida(ruta))throw Error("Ruta protegida o no válida"); cambios[ruta] = null; out = `Marcado para borrar ${ruta}`; }
+        else if (u.name === "terminar") { if(fase&&["consejo","diseno"].includes(fase.papel)&&String(a.entrega??"").trim().length<40)throw Error("Incluye entrega con el consejo o diseño completo: decisiones, razones y pasos concretos. No basta un resumen de que lo has elaborado."); terminado = a; out = "Trabajo registrado."; }
         else out = `Herramienta desconocida ${u.name}`;
       } catch (err) { out = `ERROR: ${String(err?.message ?? err)}`; }
-      resultados.push({ type: "tool_result", tool_use_id: u.id, content: out });
+      resultados.push({ type: "tool_result", tool_use_id: u.id, name:u.name, content: out });
     }
     st.mensajes.push({ role: "user", content: resultados });
     await guardar();
+    if(fase)fase.coste=coste-Number(fase.coste_inicio??costeInicialFase);
+    if (terminado && fase) {
+      fase.resumen=String(terminado.entrega??terminado.resumen??'');fase.estado='completada';fase.terminada=ahora();
+      if(fase.papel==='revision' && terminado.revision_ok!==true){
+        if(!st.reparacion){
+          st.reparacion=true;
+          const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
+          if(anterior){
+            st.equipo.splice(st.fase+1,0,{...anterior,estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
+            fase.resumen+='\nProblemas: '+(terminado.hallazgos??[]).join(' · ');
+          }else throw Error('No hay desarrollador para corregir la revisión');
+        }else {await guardar();throw Error('La segunda revisión sigue encontrando problemas: '+(terminado.hallazgos??[fase.resumen]).join(' · '));}
+      }
+      if(st.fase<st.equipo.length-1){
+        st.fase++;st.mensajes=[{role:'user',content:`ORDEN ORIGINAL:\n${e.texto}\nContinúa con tu papel sobre los archivos acumulados. Lee las entregas anteriores y los archivos antes de escribir.`}];
+        await guardar();return null;
+      }
+      terminado.resumen=st.equipo.map((f:any)=>`${PAPELES[f.papel]} · ${f.modelo.proveedor}/${f.modelo.identificador}: ${f.resumen}`).join('\n\n');
+      await guardar();
+    }
     if (terminado) return { terminado, cambios, coste, pasos, st };
   }
   return null; // sin tiempo: se reanuda en la siguiente invocación
@@ -350,14 +414,14 @@ async function publicarRama(e: any, p: any, st: any, cambios: Record<string, str
   }
   const nuevoTree = await gh(`/repos/${repo}/git/trees`, { method: "POST", body: JSON.stringify({ base_tree: commitBase.tree.sha, tree }) });
   const titulo = `NexDeveloper${version ? ` v${version}` : ""}: ${e.texto.split("\n")[0].slice(0, 60)}`;
-  const commit = await gh(`/repos/${repo}/git/commits`, { method: "POST", body: JSON.stringify({ message: `${titulo}\n\n${resumen}\n\nOrden ${e.id} ejecutada por NexDeveloper (motor Claude).`, tree: nuevoTree.sha, parents: [baseSha] }) });
+  const commit = await gh(`/repos/${repo}/git/commits`, { method: "POST", body: JSON.stringify({ message: `${titulo}\n\n${resumen}\n\nOrden ${e.id} ejecutada por NexDeveloper.`, tree: nuevoTree.sha, parents: [baseSha] }) });
   try { await gh(`/repos/${repo}/git/refs`, { method: "POST", body: JSON.stringify({ ref: `refs/heads/${rama}`, sha: commit.sha }) }); }
   catch { throw new Error("La rama de esta ejecución ya existe. Revisa su contenido antes de reanudar; no se sobrescribe automáticamente."); }
-  const pr = await gh(`/repos/${repo}/pulls`, { method: "POST", body: JSON.stringify({ title: titulo, head: rama, base: st.base, body: `## Orden\n${e.texto}\n\n## Resumen de la IA\n${resumen}\n\n## Archivos\n${Object.keys(cambios).map((k) => `- ${cambios[k] === null ? "(borrado) " : ""}${k}`).join("\n")}\n\n_Generado por NexDeveloper · motor Claude. «Aprobar y publicar» desde NexDeveloper fusiona esta solicitud._` }) });
+  const pr = await gh(`/repos/${repo}/pulls`, { method: "POST", body: JSON.stringify({ title: titulo, head: rama, base: st.base, body: `## Orden\n${e.texto}\n\n## Resumen de la IA\n${resumen}\n\n## Archivos\n${Object.keys(cambios).map((k) => `- ${cambios[k] === null ? "(borrado) " : ""}${k}`).join("\n")}\n\n_Generado por NexDeveloper · equipo de desarrollo. «Aprobar y publicar» desde NexDeveloper fusiona esta solicitud._` }) });
   return { rama, commit: commit.sha, pr_url: pr.html_url, pr_numero: pr.number };
 }
 async function ejecutarClaude(sb: SB, e: any, p: any, cfg: any) {
-  if (!p.repositorio) throw new Error("El proyecto no tiene repositorio de GitHub en su ficha.");
+  if (!p.repositorio && !(e.equipo_automatico && e.modo === "planificar")) throw new Error("El proyecto no tiene repositorio de GitHub en su ficha.");
   const r = await pasoAgente(sb, e, p, cfg);
   if (!r) return; // continúa en el siguiente tic
   const { terminado, cambios, coste, pasos, st } = r;
@@ -378,7 +442,7 @@ async function ejecutarClaude(sb: SB, e: any, p: any, cfg: any) {
   await actualizar(sb, e.id, { estado: "comprobando", resumen, respuesta: resumen, rama: pub.rama, commit_sha: pub.commit, pr_url: pub.pr_url, pr_numero: pub.pr_numero, coste_ia: coste, pasos }, e.bloqueo_token);
   await mensajeChat(sb, e, `Cambios preparados en GitHub (${pub.pr_url}). ${resumen}`);
   const e2 = { ...e, motor: "claude", resumen, rama: pub.rama, commit_sha: pub.commit, pr_numero: pub.pr_numero, pr_url: pub.pr_url };
-  if (cfg.auto_publicar) { await publicar(sb, e2); return; }
+  if (cfg.auto_publicar && !e.equipo_automatico) { await publicar(sb, e2); return; }
   await pedirAprobacion(sb, e2, p, null, null, `${resumen}\nArchivos: ${archivos.join(", ")}`);
 }
 
@@ -406,7 +470,7 @@ async function publicar(sb: SB, e: any) {
     if (e.motor === "claude" && e.pr_numero && !e.fusionada_sha) {
       await verificarCI(p!.repositorio,e.pr_numero,e.commit_sha);
       await comprobarActiva(sb,e);
-      const m = await gh(`/repos/${p!.repositorio}/pulls/${e.pr_numero}/merge`, { method: "PUT", body: JSON.stringify({ sha:e.commit_sha, merge_method: "squash", commit_title: `NexDeveloper: ${String(e.texto).split("\n")[0].slice(0, 60)}` }) });
+      const m = await gh(`/repos/${p!.repositorio}/pulls/${e.pr_numero}/merge`, { method: "PUT", body: JSON.stringify({ sha:e.commit_sha, merge_method: "merge", commit_title: `NexDeveloper: ${String(e.texto).split("\n")[0].slice(0, 60)}` }) });
       if (!m?.merged || !m.sha) throw new Error("GitHub no confirmó la fusión");
       e.fusionada_sha=m.sha;
       await actualizar(sb, e.id, { fusionada_sha:m.sha }, e.bloqueo_token);
@@ -456,7 +520,7 @@ async function enviarReclamada(sb: SB, e: any) {
   await actualizar(sb, e.id, { estado: "enviando", motor, iniciada_el: e.iniciada_el ?? ahora(), intentos: (e.intentos ?? 0) + 1 }, e.bloqueo_token);
   try {
     if (motor === "lovable") await enviarLovable(sb, e, p, cfg);
-    else { await actualizar(sb, e.id, { estado: "construyendo" }, e.bloqueo_token); await sincronizarOrden(sb, e, "ejecutando", `En ejecución por Claude sobre ${p.repositorio}`); await mensajeChat(sb, e, `Orden en ejecución por Claude sobre ${p.repositorio}. Ejecución ${e.id.slice(0, 8)}.`); await ejecutarClaude(sb, { ...e, motor }, p, cfg); }
+    else { await actualizar(sb, e.id, { estado: "construyendo" }, e.bloqueo_token); await sincronizarOrden(sb, e, "ejecutando", `Desarrollo en marcha sobre ${p.repositorio}`); await mensajeChat(sb, e, `Desarrollo en marcha sobre ${p.repositorio}. Ejecución ${e.id.slice(0, 8)}.`); await ejecutarClaude(sb, { ...e, motor }, p, cfg); }
   } catch (err) { await fallo(sb, e, String(err?.message ?? err), `Error al ejecutar: ${String(err?.message ?? err).slice(0, 200)}`); }
 }
 async function sondear(sb: SB, e: any) { return conBloqueo(sb,e,locked=>sondearReclamada(sb,locked)); }
@@ -552,6 +616,23 @@ Deno.serve(async (req) => {
         if (!esServicio) return json({ ok: false, error: "Solo el servicio" }, 403);
         return json({ ok: true, ...(await programado(sb)) });
       }
+      case "equipo_probar": {
+        const {data:m}=await sb.from('modelos_ia').select('id,proveedor_id,identificador,desarrollo_comprobado_el').eq('id',String(cuerpo.modelo_id??'')).eq('user_id',userId).eq('activo',true).single();
+        if(!m)return json({ok:false,error:'Modelo no autorizado'},403);
+        if(m.desarrollo_comprobado_el&&Date.now()-Date.parse(m.desarrollo_comprobado_el)<60000)return json({ok:false,error:'Espera un minuto antes de repetir la comprobación.'},429);
+        const {data:p}=await sb.from('proveedores_ia').select('clave_slug').eq('id',m.proveedor_id).eq('user_id',userId).single();
+        if(!PROVEEDORES_MOTOR.includes(p?.clave_slug))return json({ok:false,error:'Proveedor pendiente de adaptador de desarrollo'},400);
+        const r=await llamarEquipo(sb,{user_id:userId},{papel:'comprobacion',modelo:{...m,proveedor:p.clave_slug}},'Prueba de conexión. Llama a terminar con resumen "Conexión verificada" y sin_cambios true. No leas ni escribas archivos.',[{role:'user',content:'Confirma la conexión con la herramienta terminar.'}],true,true);
+        if(!r.content?.some((c:any)=>c.type==='tool_use'&&c.name==='terminar'))throw Error('La respuesta no confirmó el uso de herramientas');
+        const {error}=await sb.from('modelos_ia').update({desarrollo_estado:'disponible',desarrollo_detalle:'Llamada real y herramienta verificadas; consumo registrado.',desarrollo_comprobado_el:ahora()}).eq('id',m.id).eq('user_id',userId);
+        if(error)throw Error('Prueba realizada, no se pudo guardar su estado');
+        return json({ok:true});
+      }
+      case "equipo_estado": {
+        const {data:modelos,error}=await sb.from('modelos_ia').select('id,nombre,identificador,proveedor_id,desarrollo_estado,desarrollo_detalle,desarrollo_comprobado_el').eq('user_id',userId).eq('activo',true);
+        const {data:tarifas}=await sb.from('ia_tarifas').select('modelo_id').eq('user_id',userId).gt('verificada_hasta',ahora());
+        return json({ok:!error,modelos:(modelos??[]).map((m:any)=>({...m,tarifa_vigente:!!tarifas?.some((t:any)=>t.modelo_id===m.id)}))});
+      }
       case "estado": {
         const { data: c } = await sb.from("lovable_conexion").select("estado, cuenta, ultimo_error, ultima_comprobacion, expira_el").eq("user_id", userId!).maybeSingle();
         const cfg = await config(sb, userId!);
@@ -560,25 +641,17 @@ Deno.serve(async (req) => {
         return json({ ok: true, conexion: c ?? { estado: "desconectada" }, config: cfg, proyectos_sin_lovable: sinId ?? 0, motor_claude_listo: anthropic && !!GITHUB_TOKEN, github_token: !!GITHUB_TOKEN, clave_anthropic: anthropic, url_callback: URL_CALLBACK, client_id: CLIENT_ID_DOC });
       }
       case "conectar": {
-        // 1) Registro dinámico (funciona si Lovable ha autorizado nuestra URI de retorno); 2) si no, documento de metadatos
-        const { data: con } = await sb.from("lovable_conexion").select("user_id, client_id").eq("user_id", userId!).maybeSingle();
+        // Lovable requires an allowlisted callback or a client metadata document for hosted clients.
+        const { data: con } = await sb.from("lovable_conexion").select("user_id").eq("user_id", userId!).maybeSingle();
         if (!con) await sb.from("lovable_conexion").insert({ user_id: userId! });
-        let clientId = con?.client_id && !String(con.client_id).startsWith("http") ? String(con.client_id) : null;
-        let aviso: string | null = null;
-        if (!clientId) {
-          try {
-            const r = await fetch(OAUTH.register, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ client_name: "NexDeveloper", redirect_uris: [URL_CALLBACK], grant_types: ["authorization_code", "refresh_token"], response_types: ["code"], token_endpoint_auth_method: "none", scope: SCOPES, client_uri: "https://nexdeveloper.lovable.app" }) });
-            if (r.ok) { const reg = await r.json(); clientId = reg.client_id; }
-            else aviso = `Lovable no admite todavía nuestra dirección de retorno en el registro (${r.status}). Se usará el identificador por documento de metadatos; si Lovable lo rechaza («Client Not Found»), pide en https://lovable.dev/support que autoricen la URI ${URL_CALLBACK}. Mientras tanto, las órdenes se ejecutan con el motor Claude + GitHub.`;
-          } catch (err) { aviso = String(err?.message ?? err); }
-        }
-        const idFinal = clientId ?? CLIENT_ID_DOC;
+        const idFinal = CLIENT_ID_DOC;
+        const aviso = null;
         await sb.from("lovable_conexion").update({ client_id: idFinal, actualizado_el: ahora() }).eq("user_id", userId!);
         const verifier = aleatorio(); const state = aleatorio(24);
         await sb.from("oauth_estados").delete().eq("user_id", userId!).eq("proveedor", "lovable");
         await sb.from("oauth_estados").insert({ state, user_id: userId!, proveedor: "lovable", verifier });
-        const p = new URLSearchParams({ response_type: "code", client_id: idFinal, redirect_uri: URL_CALLBACK, scope: SCOPES, state, code_challenge: await desafio(verifier), code_challenge_method: "S256" });
-        return json({ ok: true, url: `${OAUTH.authorize}?${p}`, aviso, registro_dinamico: !!clientId });
+        const p = new URLSearchParams({ response_type: "code", resource: "https://mcp.lovable.dev", client_id: idFinal, redirect_uri: URL_CALLBACK, scope: SCOPES, state, code_challenge: await desafio(verifier), code_challenge_method: "S256" });
+        return json({ ok: true, url: `${OAUTH.authorize}?${p}`, aviso, registro_dinamico: false });
       }
       case "desconectar": {
         await sb.rpc("guardar_secreto_lovable", { p_user_id: userId!, p_refresh: "", p_acceso: "", p_expira: null }).then(() => {}, () => {});

@@ -1,5 +1,14 @@
 # Historial de cambios
 
+## 0.43.0 — Un encargo y un equipo coordinado
+
+- Nueva entrada principal para desarrollar o pedir consejo con texto, dictado y adjuntos.
+- Diseño, backend, programación y revisión comparten sus entregas y los cambios del mismo proyecto.
+- Estado visible de los agentes, costes registrados y resultado en una rama revisable antes de integrar.
+- Catálogo de herramientas con su función y requisitos; una suscripción no se presenta como conexión automática.
+- Funciones anteriores conservadas en Más herramientas; intercambio con Proyectian conservado.
+- Comprobación de API desde Mi equipo y consejos para proyectos sin repositorio.
+
 ## 0.42.0 — Dictado fiable, adjuntos y trabajo visible
 
 - El micrófono ya no se queda mudo: el botón está siempre disponible y avisa cuando el navegador no permite dictar.
