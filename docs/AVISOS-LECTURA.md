@@ -16,3 +16,5 @@ Validación: 68 pruebas unitarias (incluida integración de aviso/sonido/apertur
 Se añade «Desarrollar este consejo» a las consultas completadas. Recupera petición, entrega y proyecto en un borrador revisable y conserva cualquier indicación escrita. El envío muestra el requisito pendiente cuando está desactivado. El selector de proyecto ocupa todo el ancho en móvil, separado del enlace de creación. Se comprueba la transición consejo → borrador habilitado sin ejecutar encargos reales.
 
 Validación ampliada: 69 pruebas, TypeScript y build correctos. No se han lanzado desarrollos ni publicaciones de Vetia durante el diagnóstico.
+
+El formulario y el aviso renderizados se comprobaron en 390, 820 y 1180 px (móvil e iPad en ambas orientaciones), sin desbordamiento horizontal. El aviso coloca el icono encima del título en pantallas estrechas.

@@ -343,10 +343,10 @@ export function EstudioDesarrollo() {
             aria-atomic="true"
             className="nex-aviso-final mb-6 mt-8 rounded-2xl border-4 border-primary bg-card p-6 shadow-xl sm:p-8"
           >
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col items-start gap-4 sm:flex-row">
               <BellRing className="size-10 shrink-0 text-primary" aria-hidden="true" />
               <div className="min-w-0 flex-1">
-                <h2 className="text-3xl font-bold sm:text-4xl">
+                <h2 className="break-words text-3xl font-bold sm:text-4xl">
                   {tituloFinalizacion(aviso.estado)}
                 </h2>
                 <p className="mt-3 text-lg font-semibold">
