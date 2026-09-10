@@ -1,4 +1,4 @@
-import { validarPlan, fasesDelPlan, parcheExacto, cubrirLectura } from "../_shared/cola.ts";
+import { validarPlan, fasesDelPlan, parcheExacto, cubrirLectura, fragmentoLectura } from "../_shared/cola.ts";
 import { esRevisionMejoras } from "../_shared/mejoras.ts";
 import {prepararEquipo, solicitudModelo, respuestaModelo, instruccionesPapel, soloLectura, escrituraPermitida, PAPELES, PROVEEDORES_MOTOR} from "../_shared/equipo.ts";
 // NexDeveloper · Edge Function «ordenes-ejecutar» (0.20.0)
@@ -383,14 +383,16 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     }
     const resultados: any[] = [];
     let terminado: any = null;
+    let bytesSalida=0;
     for (const u of usos) {
       await comprobarActiva(sb,e);
       let out = "";
       try {
         const a = u.input ?? {};
+        if(bytesSalida>63000)throw Error("Esta ronda ya alcanzó su capacidad de lectura. Continúa las operaciones pendientes en la siguiente respuesta.");
         if (lectura && ["escribir_archivo", "editar_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
         if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
-        else if (u.name === "leer_archivo") { const ruta=String(a.ruta),t=await leer(ruta),posicion=a.inicio??1; if(!Number.isInteger(posicion)||posicion<0)throw Error("La posición debe ser un entero desde 1; omítela para leer desde el principio");const inicio=Math.max(0,posicion-1); if(inicio>t.length)throw Error("Índice de lectura no válido");const fin=Math.min(t.length,inicio+60000);if(fase){fase.lecturas??={};const cobertura=cubrirLectura(fase.lecturas[ruta]??[],inicio,fin,t.length);fase.lecturas[ruta]=cobertura.rangos;if(cobertura.completa){fase.leidos??=[];if(!fase.leidos.includes(ruta))fase.leidos.push(ruta);}}out=t.slice(inicio,fin)+(fin<t.length?`\n…(lectura parcial ${inicio}-${fin} de ${t.length}; continúa con inicio:${fin+1})`:"\n(fin del archivo)"); }
+        else if (u.name === "leer_archivo") { const ruta=String(a.ruta),t=await leer(ruta);const {inicio,fin,total,contenido}=fragmentoLectura(t,a.inicio??1,Math.max(4,64000-bytesSalida-256));if(fase){fase.lecturas??={};const cobertura=cubrirLectura(fase.lecturas[ruta]??[],inicio,fin,total);fase.lecturas[ruta]=cobertura.rangos;if(cobertura.completa){fase.leidos??=[];if(!fase.leidos.includes(ruta))fase.leidos.push(ruta);}}out=`Lectura ${inicio+1}-${fin} de ${total}. ${fin<total?'Continúa con inicio:'+(fin+1):'Fin del archivo.'}\n`+contenido; }
         else if (u.name === "buscar") {
           const q = String(a.texto ?? ""); const hits: string[] = [];
           const candidatos = (await arbol()).filter((x) => /\.(tsx?|jsx?|css|json|md|sql|html|toml|ya?ml)$/i.test(x)).slice(0, 250);
@@ -405,12 +407,15 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
           if(fase?.papel==='revision'){
             const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
             const pendientes=(fase.tarea ? (anterior?.archivos??Object.keys(cambios)) : Object.keys(cambios)).filter((ruta:string)=>cambios[ruta]!==null&&!fase.leidos?.includes(ruta));
-            if(pendientes.length)throw Error('Falta cobertura desde el primer carácter. Repite leer_archivo con inicio:1 (posición de carácter, no línea) para completar estos archivos antes de terminar: '+pendientes.join(', '));
+            if(pendientes.length)throw Error('Falta cobertura desde el primer carácter. Repite leer_archivo con inicio:1 (posición de carácter, no línea) para completar estos archivos antes de terminar: '+pendientes.map((ruta:string)=>ruta+' (inicio:'+((fase.lecturas?.[ruta]?.[0]?.[0]===0?fase.lecturas[ruta][0][1]:0)+1)+')').join(', '));
             if(a.revision_ok===true && (!Array.isArray(a.hallazgos)||a.hallazgos.length))throw Error('Una revisión aprobada requiere hallazgos vacíos.');
           }
           terminado = a; out = "Entrega registrada; las pruebas automáticas requieren CI sobre el commit final."; }
         else out = `Herramienta desconocida ${u.name}`;
       } catch (err) { out = `ERROR: ${String(err?.message ?? err)}`; }
+      if(out.startsWith("ERROR:") && bytesSalida>63000)out="ERROR: Capacidad de la ronda agotada; reintenta en otra respuesta.";
+      if(!out.startsWith("ERROR:") && u.name!=="leer_archivo" && new TextEncoder().encode(out).byteLength>Math.max(4,64000-bytesSalida-256))out=fragmentoLectura(out,1,Math.max(4,64000-bytesSalida-256)).contenido+"\nSalida acotada: continúa en otra ronda.";
+      bytesSalida+=new TextEncoder().encode(out).byteLength;
       resultados.push({ type: "tool_result", tool_use_id: u.id, name:u.name, content: out });
     }
     st.mensajes.push({ role: "user", content: resultados });

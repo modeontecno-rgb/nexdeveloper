@@ -4,6 +4,7 @@ import {
   fasesDelPlan,
   parcheExacto,
   cubrirLectura,
+  fragmentoLectura,
 } from "../../../db/functions/_shared/cola";
 const tarea = (id: string, depende_de: string[] = []) => ({
   id,
@@ -89,5 +90,26 @@ describe("Lectura íntegra de archivos grandes", () => {
     );
     expect(c.completa).toBe(true);
     expect(c.rangos).toEqual([[0, 150000]]);
+  });
+});
+
+describe("Lecturas con límite real de bytes", () => {
+  it("recompone Unicode sin perder caracteres ni superar el límite", () => {
+    const texto = "é😀".repeat(10000);
+    let posicion = 1,
+      resultado = "";
+    while (resultado.length < texto.length) {
+      const p = fragmentoLectura(texto, posicion, 4096);
+      expect(new TextEncoder().encode(p.contenido).byteLength).toBeLessThanOrEqual(4096);
+      expect(p.fin).toBeGreaterThan(p.inicio);
+      resultado += p.contenido;
+      posicion = p.fin + 1;
+    }
+    expect(resultado).toBe(texto);
+  });
+  it("acepta cero como alias del principio y rechaza posiciones inválidas", () => {
+    expect(fragmentoLectura("abc", 0).contenido).toBe("abc");
+    expect(() => fragmentoLectura("abc", -1)).toThrow();
+    expect(() => fragmentoLectura("abc", 9)).toThrow();
   });
 });

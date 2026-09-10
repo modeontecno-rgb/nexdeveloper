@@ -112,3 +112,28 @@ export function cubrirLectura(
     completa: unidos.length === 1 && unidos[0]![0] === 0 && unidos[0]![1] >= total,
   };
 }
+
+/** A bounded UTF-8 page; position is one-based, with zero accepted for older calls. */
+export function fragmentoLectura(texto: string, posicion = 1, maxBytes = 64000) {
+  if (!Number.isInteger(posicion) || posicion < 0 || !Number.isInteger(maxBytes) || maxBytes < 4)
+    throw Error("Posición o capacidad de lectura no válida");
+  const inicio = Math.max(0, posicion - 1);
+  if (inicio > texto.length) throw Error("La posición supera el final del archivo");
+  const encoder = new TextEncoder();
+  let bajo = inicio,
+    alto = Math.min(texto.length, inicio + 60000);
+  while (bajo < alto) {
+    const medio = Math.ceil((bajo + alto) / 2);
+    if (encoder.encode(texto.slice(inicio, medio)).byteLength <= maxBytes) bajo = medio;
+    else alto = medio - 1;
+  }
+  let fin = bajo;
+  if (
+    fin < texto.length &&
+    fin > inicio &&
+    texto.charCodeAt(fin - 1) >= 0xd800 &&
+    texto.charCodeAt(fin - 1) <= 0xdbff
+  )
+    fin--;
+  return { inicio, fin, total: texto.length, contenido: texto.slice(inicio, fin) };
+}
