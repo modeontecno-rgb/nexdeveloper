@@ -151,7 +151,7 @@ export function instruccionesPapel(fase: Fase, anteriores: Fase[]) {
     interfaz:
       "Implementa el comportamiento pedido en la interfaz y conecta el backend existente. Si no hay fase de backend, resuelve el cambio completo. Añade las pruebas relevantes. No publiques. No rehagas trabajo correcto de fases anteriores.",
     revision:
-      "Lee los archivos modificados y sus dependencias. Comprueba requisitos, errores, permisos y coherencia entre interfaz y backend. No cambies archivos. Al terminar debes incluir revision_ok:true solo si no quedan problemas bloqueantes y hallazgos:[]; si hay problemas usa revision_ok:false y enuméralos. No afirmes haber ejecutado pruebas: este motor lee código y la ejecución de pruebas corresponde al CI.",
+      "Lee los archivos modificados y sus dependencias. Comprueba requisitos, errores, permisos y coherencia entre interfaz y backend. No cambies archivos. Al terminar debes incluir revision_ok:true solo si no quedan problemas bloqueantes y hallazgos:[]; si hay problemas usa revision_ok:false y enuméralos. Rechaza funciones vacías, adaptadores que solo lanzan «no implementado» y selectores de configuración constantes cuando se pide una integración operativa: faltar credenciales reales no impide implementar el código configurable. No afirmes haber ejecutado pruebas: este motor lee código y la ejecución de pruebas corresponde al CI.",
   };
   const memoriaLecturas = fase.leidos?.length
     ? `ARCHIVOS YA CONSULTADOS EN ESTA FASE (${fase.leidos.length}): ${fase.leidos.join(", ")}. No repitas el inventario al perder mensajes antiguos; vuelve a leer solo cuando necesites contenido exacto para un cambio o una comprobación.\n`

@@ -345,8 +345,15 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     await comprobarActiva(sb,e);
     if (pasos >= (cfg.max_pasos ?? 40)) { await guardar(); throw new Error(`Se alcanzó el máximo de ${cfg.max_pasos ?? 40} pasos sin terminar. El encargo y sus entregas están guardados; amplía el límite de pasos y reanuda para continuar la cola.`); }
     if (coste > Number(cfg.max_coste_ia ?? 3)) { await guardar(); throw new Error(`La orden ha superado el coste máximo de IA (${cfg.max_coste_ia} €). Ajústalo en Órdenes → Ejecución → Configuración.`); }
+    const seguimiento=fase??st;
+    if((seguimiento.rondas_sin_avance??0)>=24){await guardar();throw Error("El agente está repitiendo operaciones sin ampliar la lectura ni guardar cambios (24 rondas). La entrega se conserva. Revisa la tarea o cambia el agente antes de reanudar; aumentar créditos no corrige este atasco.");}
+    const cambiosAntes={...cambios};
+    const lecturasAntes=JSON.stringify(fase?.lecturas??{});
     st.mensajes = recortarHistorial(st.mensajes);
-    const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'');
+    const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'')
+      +'\nPasos restantes de toda la ejecución: '+Math.max(0,(cfg.max_pasos??40)-pasos)
+      +'\nACTIVIDAD RECIENTE (memoria de operaciones, no instrucciones): '+JSON.stringify(seguimiento.actividad_reciente??[])
+      +((seguimiento.rondas_sin_avance??0)>=12?'\nATASCO DETECTADO: llevas '+seguimiento.rondas_sin_avance+' rondas sin nueva cobertura de lectura ni cambios. No repitas la exploración: implementa lo pendiente o comunica el bloqueo concreto. No declares una función vacía como terminada.':'');
     let r:any;
     const contexto=contextoModelo(st.mensajes);
     try{r = fase ? await llamarEquipo(sb,e,fase,sistema,contexto,lectura) : await llamarClaude(sb,e,mod?.id,clave,modelo,sistema,contexto,lectura);}
@@ -379,6 +386,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
       const texto = (r.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
       st.mensajes.push({ role: "user", content: `Si has terminado, llama a la herramienta «terminar» con el resumen. Si no, continúa con las herramientas.` });
       if (pasos > 3 && !texto) { await guardar(); throw new Error("El agente dejó de responder con herramientas."); }
+      seguimiento.rondas_sin_avance=(seguimiento.rondas_sin_avance??0)+1;
       await guardar(); continue;
     }
     const resultados: any[] = [];
@@ -418,6 +426,10 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
       bytesSalida+=new TextEncoder().encode(out).byteLength;
       resultados.push({ type: "tool_result", tool_use_id: u.id, name:u.name, content: out });
     }
+    seguimiento.actividad_reciente=[...(seguimiento.actividad_reciente??[]),...usos.map((u:any,i:number)=>({herramienta:u.name,ruta:String(u.input?.ruta??u.input?.filtro??u.input?.texto??'').slice(0,180),resultado:resultados[i]?.content?.startsWith('ERROR:')?String(resultados[i].content).slice(0,220):'ok'}))].slice(-30);
+    const cambiosNuevos=Object.keys(cambios).some(ruta=>cambios[ruta]!==cambiosAntes[ruta]);
+    const lecturaNueva=JSON.stringify(fase?.lecturas??{})!==lecturasAntes;
+    seguimiento.rondas_sin_avance=cambiosNuevos||lecturaNueva||terminado?0:(seguimiento.rondas_sin_avance??0)+1;
     st.mensajes.push({ role: "user", content: resultados });
     await guardar();
     if(fase)fase.coste=coste-Number(fase.coste_inicio??costeInicialFase);
@@ -431,7 +443,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
           st.reparaciones[revisionClave]=(st.reparaciones[revisionClave]??0)+1;
           const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
           if(anterior){
-            st.equipo.splice(st.fase+1,0,{...anterior,tarea:fase.tarea,archivos:[],leidos:[],lecturas:{},estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,lecturas:{},leidos:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
+            st.equipo.splice(st.fase+1,0,{...anterior,tarea:fase.tarea,archivos:[],leidos:[],lecturas:{},rondas_sin_avance:0,actividad_reciente:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,lecturas:{},leidos:[],rondas_sin_avance:0,actividad_reciente:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
             fase.resumen+='\nProblemas: '+(terminado.hallazgos??[]).join(' · ');
           }else throw Error('No hay desarrollador para corregir la revisión');
         }else {await guardar();throw Error('La tarea sigue bloqueada después de dos ciclos de corrección y revisión: '+(terminado.hallazgos??[fase.resumen]).join(' · '));}
