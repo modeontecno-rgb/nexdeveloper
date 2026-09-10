@@ -1,3 +1,4 @@
+import { esRevisionMejoras } from "../_shared/mejoras.ts";
 import {prepararEquipo, solicitudModelo, respuestaModelo, instruccionesPapel, soloLectura, escrituraPermitida, PAPELES, PROVEEDORES_MOTOR} from "../_shared/equipo.ts";
 // NexDeveloper · Edge Function «ordenes-ejecutar» (0.20.0)
 // Ejecución real de las órdenes por la IA con dos motores:
@@ -121,7 +122,14 @@ async function candidatosEquipo(sb: SB,userId:string) {
  const {data:modelos,error:me}=await sb.from('modelos_ia').select('id,proveedor_id,identificador,calidad,tareas_aconsejadas').eq('user_id',userId).eq('activo',true).eq('desarrollo_estado','disponible');
  const {data:tarifas,error:te}=await sb.from('ia_tarifas').select('modelo_id,entrada_eur_millon,salida_eur_millon,verificada_hasta').eq('user_id',userId).gt('verificada_hasta',ahora());
  if(me||te)throw Error('No se pudo comprobar los modelos y tarifas');
- return (modelos??[]).flatMap((m:any)=>{const p=proveedores?.find((p:any)=>p.id===m.proveedor_id),t=tarifas?.find((t:any)=>t.modelo_id===m.id);return p&&t?[{...m,proveedor:p.clave_slug,coste:Number(t.entrada_eur_millon)+Number(t.salida_eur_millon)}]:[];});
+ // Count confirmed reservations, including uncertain calls, without pretending to know subscription balances.
+ const uso:Record<string,number>={};
+ for(const p of proveedores??[]){
+   const {count,error}=await sb.from('ia_reservas').select('id',{count:'exact',head:true}).eq('user_id',userId).eq('proveedor',p.clave_slug).gte('creada_el',new Date(Date.now()-7*86400000).toISOString());
+   if(error)throw Error('No se pudo comprobar el consumo para repartir el equipo');
+   uso[p.clave_slug]=count??0;
+ }
+ return (modelos??[]).flatMap((m:any)=>{const p=proveedores?.find((p:any)=>p.id===m.proveedor_id),t=tarifas?.find((t:any)=>t.modelo_id===m.id);return p&&t?[{...m,proveedor:p.clave_slug,llamadas_recientes:uso[p.clave_slug],coste:Number(t.entrada_eur_millon)+Number(t.salida_eur_millon)}]:[];});
 }
 async function llamarEquipo(sb:SB,e:any,fase:any,sistema:string,mensajes:any[],lectura:boolean,prueba=false){
  const {data:p,error}=await sb.from('proveedores_ia').select('id').eq('id',fase.modelo.proveedor_id).eq('user_id',e.user_id).eq('activo',true).single();
@@ -308,7 +316,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     const ref = repo ? await gh(`/repos/${repo}/git/ref/heads/${base}`) : {object:{sha:null}};
     st = { base, base_sha: ref.object.sha, mensajes: [{ role: "user", content: `ORDEN:\n${e.texto}\n\nEmpieza orientándote con listar_archivos.` }], arbol: repo ? null : [] };
   }
-  if(e.equipo_automatico && !st.equipo){const candidatos=await candidatosEquipo(sb,e.user_id);st.disponibles=candidatos;st.equipo=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{});st.fase=0;}
+  if(e.equipo_automatico && !st.equipo){const candidatos=await candidatosEquipo(sb,e.user_id);st.disponibles=candidatos;st.equipo=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{},esRevisionMejoras(e));st.fase=0;}
   const fase=e.equipo_automatico?st.equipo[st.fase]:null;
   if(fase){fase.estado='trabajando';fase.iniciada??=ahora();fase.coste_inicio??=Number(e.coste_ia??0);}
   const lectura=e.modo==='planificar'||(fase&&soloLectura(fase.papel));
@@ -334,7 +342,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
       if(!fase||fase.sustitucion||!/HTTP (429|503)/.test(String((error as Error).message)))throw error;
       const candidatos=(await candidatosEquipo(sb,e.user_id)).filter((c:any)=>c.proveedor!==fase.modelo.proveedor);
       if(!candidatos.length)throw error;
-      const alternativa=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{}).find((f:any)=>f.papel===fase.papel);
+      const alternativa=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{},esRevisionMejoras(e)).find((f:any)=>f.papel===fase.papel);
       if(!alternativa)throw error;
       fase.sustitucion={proveedor:fase.modelo.proveedor,modelo:fase.modelo.identificador,motivo:String((error as Error).message),fecha:ahora()};
       fase.modelo=alternativa.modelo;fase.motivo='Sustitución por cuota o indisponibilidad del proveedor anterior. El consumo pendiente conserva su reserva.';
@@ -370,7 +378,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
         }
         else if (u.name === "escribir_archivo") { const ruta = String(a.ruta); if (!escrituraPermitida(ruta)) throw new Error("Ruta protegida o no válida"); const contenido = String(a.contenido ?? ""); const total = Object.values({ ...cambios, [ruta]: contenido }).reduce((s, v) => s + (v?.length ?? 0), 0); if (total > 900_000) throw new Error("Demasiados cambios acumulados (límite 900 KB); divide la orden."); cambios[ruta] = contenido; if (st.arbol && !st.arbol.includes(ruta)) st.arbol.push(ruta); out = `Guardado ${ruta} (${contenido.length} caracteres)`; }
         else if (u.name === "borrar_archivo") { const ruta = String(a.ruta); if(!escrituraPermitida(ruta))throw Error("Ruta protegida o no válida"); cambios[ruta] = null; out = `Marcado para borrar ${ruta}`; }
-        else if (u.name === "terminar") { if(fase&&["consejo","diseno"].includes(fase.papel)&&String(a.entrega??"").trim().length<40)throw Error("Incluye entrega con el consejo o diseño completo: decisiones, razones y pasos concretos. No basta un resumen de que lo has elaborado."); terminado = a; out = "Trabajo registrado."; }
+        else if (u.name === "terminar") { if((fase&&(["consejo","diseno"].includes(fase.papel)||fase.papel.startsWith("mejoras_")))&&String(a.entrega??"").trim().length<40)throw Error("Incluye entrega con el consejo o diseño completo: decisiones, razones y pasos concretos. No basta un resumen de que lo has elaborado."); terminado = a; out = "Trabajo registrado."; }
         else out = `Herramienta desconocida ${u.name}`;
       } catch (err) { out = `ERROR: ${String(err?.message ?? err)}`; }
       resultados.push({ type: "tool_result", tool_use_id: u.id, name:u.name, content: out });

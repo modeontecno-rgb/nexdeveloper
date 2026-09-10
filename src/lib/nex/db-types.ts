@@ -2607,6 +2607,7 @@ export type Database = {
         Partial<SinUsuario<ModeloIaRow>> & { proveedor_id: string; identificador: string; nombre: string }
       >
       politica_enrutado: Tabla<PoliticaEnrutadoRow, Partial<SinUsuario<PoliticaEnrutadoRow>> & { tarea: string }>
+      ia_reservas: Tabla<{id:string; user_id:string; ejecucion_id:string|null; proveedor:string; estado:string; reservado:number; coste:number|null; creada_el:string; operacion:string}>
       consumos_ia: Tabla<ConsumoIaRow>
       expertos: Tabla<ExpertoRow, Partial<SinUsuario<ExpertoRow>> & { slug: string; nombre: string }>
       controles_calidad: Tabla<ControlCalidadRow, Partial<ControlCalidadRow> & { codigo: string; nombre: string }>
