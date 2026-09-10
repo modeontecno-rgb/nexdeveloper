@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## 0.45.1 — Continuidad de tareas y errores de dictado
+
+El agente conserva una memoria de trabajo y más intercambios completos dentro del presupuesto de contexto. Se detectan las rondas repetidas sin avance. Las respuestas truncadas y las lecturas grandes conservan contabilidad y cobertura. El dictado identifica fallos de arranque o del servicio y admite nuevas frases tras un reinicio automático. Estas mejoras no acreditan todavía una ejecución integral de proyectos grandes ni una prueba física de voz en todos los dispositivos.
+
+
 ## 0.45.0 — Cola de desarrollo con revisión por tarea
 
 - El coordinador transforma el encargo completo en tareas con dependencias y criterios de aceptación.

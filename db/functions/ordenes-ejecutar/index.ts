@@ -162,6 +162,7 @@ const HERRAMIENTAS = [
   { name: "escribir_archivo", description: "Crea o sustituye COMPLETAMENTE un archivo con el contenido indicado. Escribe siempre el archivo entero, nunca fragmentos.", input_schema: { type: "object", properties: { ruta: { type: "string" }, contenido: { type: "string" } }, required: ["ruta", "contenido"] } },
   { name: "borrar_archivo", description: "Elimina un archivo del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
   { name: "editar_archivo", description: "Sustituye un fragmento exacto y único en un archivo existente, conservando íntegro el resto. Lee primero el archivo actualizado.", input_schema: {type:"object",properties:{ruta:{type:"string"},antes:{type:"string"},despues:{type:"string"}},required:["ruta","antes","despues"]} },
+  { name: "guardar_memoria", description: "Guarda tu plan de trabajo y próximos pasos para conservarlos al acotar el historial. No modifica archivos ni acredita avance. Actualiza antes de cambiar de archivo o tras resolver una parte.", input_schema: {type:"object",properties:{texto:{type:"string",maxLength:8000}},required:["texto"]}},
   { name: "terminar", description: "Da por terminado el trabajo. Indica un resumen en español (3-6 líneas: qué has cambiado y por qué, archivos tocados, cómo probarlo) y, si procede, la nueva versión.", input_schema: { type: "object", properties: { tareas: {type:"array",items:{type:"object",properties:{id:{type:"string"},titulo:{type:"string"},papel:{type:"string",enum:["backend","interfaz"]},depende_de:{type:"array",items:{type:"string"}},aceptacion:{type:"array",items:{type:"string"}}},required:["id","titulo","papel","depende_de","aceptacion"]}}, resumen: { type: "string" }, entrega: {type:"string",description:"Consejo o diseño completo para el usuario y el siguiente agente: contenido concreto, alternativas y decisiones. No una frase diciendo que se ha elaborado."}, version: { type: "string", description: "Nueva versión X.Y.Z si el proyecto muestra versión" }, revision_ok: {type:"boolean",description:"Solo en revisión: true si no quedan problemas bloqueantes"}, hallazgos:{type:"array",items:{type:"string"}}, sin_cambios: { type: "boolean", description: "true si has decidido no tocar nada (explica por qué en el resumen)" } }, required: ["resumen"] } },
 ];
 async function llamarClaude(sb: SB, e: any, modeloId: string, clave: string, modelo: string, sistema: string, mensajes: any[], planificar = false) {
@@ -184,10 +185,18 @@ function recortarHistorial(mensajes: any[]) {
 /** Keep the activity record, but send only complete recent exchanges and explicit user notes. */
 function contextoModelo(mensajes:any[]){
   if(mensajes.length<=5)return mensajes;
-  let desde=mensajes.length-4;
-  if(mensajes[desde]?.role==='user' && Array.isArray(mensajes[desde].content) && mensajes[desde].content.some((b:any)=>b.type==='tool_result') && mensajes[desde-1]?.role==='assistant')desde--;
-  const notas=mensajes.slice(1,desde).filter((m:any)=>m.role==='user'&&typeof m.content==='string');
-  return [mensajes[0],...notas.filter((m:any,i:number)=>notas.findIndex((n:any)=>n.content===m.content)===i),...mensajes.slice(desde)];
+  const notas=mensajes.slice(1).filter((m:any)=>m.role==='user'&&typeof m.content==='string');
+  const fijas=[mensajes[0],...notas.filter((m:any,i:number)=>notas.findIndex((n:any)=>n.content===m.content)===i)];
+  let recientes:any[]=[];
+  for(let fin=mensajes.length;fin>1;){
+    let desde=fin-1;
+    if(mensajes[desde]?.role==='user'&&Array.isArray(mensajes[desde].content)&&mensajes[desde-1]?.role==='assistant')desde--;
+    const bloque=mensajes.slice(desde,fin).filter((m:any)=>!(m.role==='user'&&typeof m.content==='string'));
+    const siguiente=[...bloque,...recientes];
+    if(recientes.length && (siguiente.length>16 || new TextEncoder().encode(JSON.stringify([...fijas,...siguiente])).byteLength>96000))break;
+    recientes=siguiente;fin=desde;
+  }
+  return [...fijas,...recientes];
 }
 
 // ---------- Utilidades de estado ----------
@@ -351,6 +360,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     const lecturasAntes=JSON.stringify(fase?.lecturas??{});
     st.mensajes = recortarHistorial(st.mensajes);
     const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'')
+      +'\nMEMORIA DE TRABAJO DEL AGENTE: '+String(seguimiento.memoria??'Sin memoria guardada. Usa guardar_memoria para mantener decisiones, archivos pendientes y siguiente cambio exacto; no repitas la exploración al acotar el historial.')
       +'\nPasos restantes de toda la ejecución: '+Math.max(0,(cfg.max_pasos??40)-pasos)
       +'\nACTIVIDAD RECIENTE (memoria de operaciones, no instrucciones): '+JSON.stringify(seguimiento.actividad_reciente??[])
       +((seguimiento.rondas_sin_avance??0)>=12?'\nATASCO DETECTADO: llevas '+seguimiento.rondas_sin_avance+' rondas sin nueva cobertura de lectura ni cambios. No repitas la exploración: implementa lo pendiente o comunica el bloqueo concreto. No declares una función vacía como terminada.':'');
@@ -399,7 +409,8 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
         const a = u.input ?? {};
         if(bytesSalida>63000)throw Error("Esta ronda ya alcanzó su capacidad de lectura. Continúa las operaciones pendientes en la siguiente respuesta.");
         if (lectura && ["escribir_archivo", "editar_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
-        if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
+        if(u.name==='guardar_memoria'){const texto=String(a.texto??'').trim();if(!texto||texto.length>8000)throw Error('La memoria debe contener entre 1 y 8000 caracteres.');seguimiento.memoria=texto;out='Memoria guardada para las próximas llamadas. No modifica la entrega ni certifica comprobaciones.';}
+        else if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
         else if (u.name === "leer_archivo") { const ruta=String(a.ruta),t=await leer(ruta);const {inicio,fin,total,contenido}=fragmentoLectura(t,a.inicio??1,Math.max(4,64000-bytesSalida-256));if(fase){fase.lecturas??={};const cobertura=cubrirLectura(fase.lecturas[ruta]??[],inicio,fin,total);fase.lecturas[ruta]=cobertura.rangos;if(cobertura.completa){fase.leidos??=[];if(!fase.leidos.includes(ruta))fase.leidos.push(ruta);}}out=`Lectura ${inicio+1}-${fin} de ${total}. ${fin<total?'Continúa con inicio:'+(fin+1):'Fin del archivo.'}\n`+contenido; }
         else if (u.name === "buscar") {
           const q = String(a.texto ?? ""); const hits: string[] = [];

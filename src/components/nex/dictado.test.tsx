@@ -59,10 +59,28 @@ describe('dictado y micrófono',()=>{
   expect(recognizer.start).toHaveBeenCalled();expect(latest.escuchando).toBe(true);
   vi.useRealTimers();
  });
+ it('tras un reinicio acepta otro resultado con índice cero',async()=>{
+  vi.useFakeTimers();const received=vi.fn();await act(async()=>root.render(<Harness received={received}/>));
+  await act(async()=>latest.alternar());
+  const final=Object.assign([{transcript:'Primera frase'}],{isFinal:true});
+  await act(async()=>{recognizer.onresult?.({resultIndex:0,results:[final]});recognizer.onend?.();await vi.advanceTimersByTimeAsync(200);});
+  await act(async()=>recognizer.onresult?.({resultIndex:0,results:[Object.assign([{transcript:'Segunda frase'}],{isFinal:true})]}));
+  expect(received.mock.calls).toEqual([['Primera frase'],['Segunda frase']]);vi.useRealTimers();
+ });
+ it('si el servicio falla cierra el audio y no muestra que escucha',async()=>{
+  await act(async()=>root.render(<Harness received={()=>{}}/>));await act(async()=>latest.alternar());
+  await act(async()=>{(recognizer.onerror as unknown as (e:{error:string})=>void)?.({error:'network'})});
+  expect(latest.escuchando).toBe(false);expect(recognizer.abort).toHaveBeenCalled();expect(stop).toHaveBeenCalled();
+ });
+ it('un arranque que nunca responde sale del estado iniciando',async()=>{
+  vi.useFakeTimers();await act(async()=>root.render(<Harness received={()=>{}}/>));recognizer.start.mockImplementation(()=>{});
+  await act(async()=>latest.alternar());expect(latest.iniciando).toBe(true);
+  await act(async()=>vi.advanceTimersByTimeAsync(10001));expect(latest.iniciando).toBe(false);expect(stop).toHaveBeenCalled();vi.useRealTimers();
+ });
  it('los errores pasajeros no paran el dictado y los graves sí',async()=>{
   await act(async()=>root.render(<Harness received={()=>{}}/>));
   await act(async()=>latest.alternar());
-  await act(async()=>{(recognizer.onerror as unknown as (e:{error:string})=>void)?.({error:'network'})});
+  await act(async()=>{(recognizer.onerror as unknown as (e:{error:string})=>void)?.({error:'no-speech'})});
   expect(latest.escuchando).toBe(true);
   await act(async()=>{(recognizer.onerror as unknown as (e:{error:string})=>void)?.({error:'not-allowed'})});
   expect(latest.escuchando).toBe(false);
