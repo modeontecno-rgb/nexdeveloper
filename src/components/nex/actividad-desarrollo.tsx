@@ -163,7 +163,9 @@ export function ActividadDesarrollo({
                         ? "La operación devolvió un error"
                         : a.estado === "hecho"
                           ? "Registrado"
-                          : "Solicitado; esperando resultado"}
+                          : enCurso
+                            ? "Solicitado; esperando resultado"
+                            : "Sin resultado registrado"}
                     </p>
                   </div>
                 </li>
@@ -181,7 +183,7 @@ export function ActividadDesarrollo({
           </p>
         </div>
         <div className="min-w-0">
-          <h4 className="mb-3 text-lg font-semibold">Archivos que está preparando</h4>
+          <h4 className="mb-3 text-lg font-semibold">Archivos preparados</h4>
           {archivos.length ? (
             <ul className="max-h-80 space-y-2 overflow-y-auto">
               {archivos.map(([ruta, valor]) => (
