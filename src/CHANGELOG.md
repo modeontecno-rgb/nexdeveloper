@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## 0.44.1 — Consumo con céntimos
+
+- Los importes de los encargos y reservas muestran céntimos; las fracciones menores de un céntimo no se presentan como cero.
+
 ## 0.44.0 — Trabajo visible, mejoras y ahorro
 
 - Panel de actividad con progreso estimado por fases, operaciones registradas y código preparado, adaptado a móvil e iPad.

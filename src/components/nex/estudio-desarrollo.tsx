@@ -33,7 +33,7 @@ import { prepararSonido, sonidoTrabajoTerminado } from "@/lib/nex/sonidos";
 import { textoDesarrolloDesdeConsejo } from "@/lib/nex/continuar-consejo";
 import { detectarFinalizados, tituloFinalizacion } from "@/lib/nex/finalizacion";
 import { AREAS_MEJORAS } from "../../../db/functions/_shared/mejoras";
-import { formatoEuros } from "@/lib/nex/labels";
+import { formatoCosteIA } from "@/lib/nex/coste-ia";
 
 type Fase = {
   papel: string;
@@ -532,7 +532,7 @@ function Trabajo({
             {fase
               ? `${papeles[fase.papel] ?? fase.papel}: ${nombres[fase.modelo.proveedor] ?? fase.modelo.proveedor}`
               : ETIQUETA_ESTADO_EJECUCION[e.estado]}{" "}
-            · {formatoEuros(Number(e.coste_ia ?? 0))} registrados
+            · {formatoCosteIA(Number(e.coste_ia ?? 0))} registrados
           </p>
         </div>
         <ChevronDown size={16} className={abierto ? "rotate-180" : ""} />
