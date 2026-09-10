@@ -402,7 +402,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
       fase.revision_ok=fase.papel==='revision'?terminado.revision_ok:undefined;
       fase.resumen=String(terminado.entrega??terminado.resumen??'');fase.estado='completada';fase.terminada=ahora();
       if(fase.papel==='revision' && terminado.revision_ok!==true){
-        const revisionClave=fase.tarea?.id??'general';st.reparaciones??={};
+        const revisionClave=fase.tarea?'tarea:'+fase.tarea.id:'revision-integral';st.reparaciones??={};
         if((st.reparaciones[revisionClave]??0)<2){
           st.reparaciones[revisionClave]=(st.reparaciones[revisionClave]??0)+1;
           const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));

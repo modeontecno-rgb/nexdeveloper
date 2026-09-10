@@ -12,6 +12,7 @@ export function validarPlan(entrada: unknown): TareaCola[] {
   const tareas = entrada.map((t: any) => {
     if (
       !t ||
+      typeof t.id !== "string" ||
       !/^[a-zA-Z0-9_-]{1,60}$/.test(t.id) ||
       typeof t.titulo !== "string" ||
       !t.titulo.trim() ||
