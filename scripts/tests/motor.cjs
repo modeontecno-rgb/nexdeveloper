@@ -46,5 +46,8 @@ function load(o={}){
  add('Q07 First page alone cannot certify a large file',a.e.estado_agente.equipo[0].estado!=='completada'&&!a.e.estado_agente.equipo[0].leidos?.includes('big.ts'));
  a=load({response:()=>[tool('escribir_archivo',{ruta:'big.ts',contenido:'partial'}),tool('terminar',{resumen:'Cambio'})]});auto(a,[phase('backend',task)]);a.e.cambios={'big.ts':'x'.repeat(10000)};try{await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:1,max_coste_ia:1})}catch{}
  add('Q08 Truncated full replacement preserves original file',a.e.cambios['big.ts'].length===10000&&a.e.estado_agente.equipo[0].estado!=='completada');
+
+ a=load({response:()=>[tool('terminar',{resumen:'Todavía sin entrega'})]});auto(a,[{...phase('interfaz',task),leidos:Array.from({length:20},(_,i)=>`src/already-read-${i}.ts`)}]);try{await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:1,max_coste_ia:1})}catch{}
+ add('Q09 Provider retains read-file memory after conversation history is lost',a.providerCalls[0].system.includes('src/already-read-0.ts')&&a.providerCalls[0].system.includes('No repitas el inventario')&&a.providerCalls[0].system.includes('entrega concreta'));
  console.log(JSON.stringify(tests,null,2));if(tests.some(x=>!x.passed))process.exitCode=1;
 })();

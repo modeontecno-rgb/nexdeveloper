@@ -24,6 +24,7 @@ export type Candidato = {
 };
 export type Fase = {
   papel: Papel;
+  leidos?: string[];
   tarea?: { id: string; titulo: string; depende_de: string[]; aceptacion: string[] };
   modelo: Candidato;
   motivo: string;
@@ -144,7 +145,7 @@ export function instruccionesPapel(fase: Fase, anteriores: Fase[]) {
     consejo:
       "Analiza el proyecto y responde al usuario con una recomendación concreta, alternativas y razones. No cambies archivos. No te limites a anunciar un plan. Devuelve la recomendación completa en el campo entrega de terminar; el usuario debe poder leerla ahí.",
     diseno:
-      "Lee el proyecto y entrega un diseño de implementación breve: comportamiento, componentes, contrato de datos y criterios de aceptación. No cambies archivos. Evita cambios innecesarios. El equipo posterior implementará tu entrega. Incluye el diseño en entrega y un plan completo en tareas de terminar: id estable, titulo, papel backend o interfaz, depende_de (ids), aceptacion (criterios verificables). Cubre el encargo entero con tareas coherentes por funcionalidad y sus pruebas. No pidas al usuario que lo divida. Se ejecutarán en orden de dependencias y cada entrega tendrá revisión independiente.",
+      "Lee el proyecto y entrega un diseño de implementación breve: comportamiento, componentes, contrato de datos y criterios de aceptación. No cambies archivos. Evita cambios innecesarios. El equipo posterior implementará tu entrega. Incluye el diseño en entrega y un plan completo en tareas de terminar: id estable, titulo, papel backend o interfaz, depende_de (ids), aceptacion (criterios verificables). Cubre el encargo entero con tareas de implementación por funcionalidad y pruebas ejecutables. La exploración y el diseño inicial corresponden a esta fase: no crees otra tarea genérica para releer o inventariar todo el repositorio. Documentar casos de prueba no sustituye a implementarlos. No pidas al usuario que lo divida. Se ejecutarán en orden de dependencias y cada entrega tendrá revisión independiente.",
     backend:
       "Implementa solamente el servidor, datos, validaciones y pruebas de backend necesarios. Conserva la compatibilidad con la interfaz. Puedes escribir migraciones aditivas; no ejecutes migraciones ni borres datos.",
     interfaz:
@@ -152,7 +153,14 @@ export function instruccionesPapel(fase: Fase, anteriores: Fase[]) {
     revision:
       "Lee los archivos modificados y sus dependencias. Comprueba requisitos, errores, permisos y coherencia entre interfaz y backend. No cambies archivos. Al terminar debes incluir revision_ok:true solo si no quedan problemas bloqueantes y hallazgos:[]; si hay problemas usa revision_ok:false y enuméralos. No afirmes haber ejecutado pruebas: este motor lee código y la ejecución de pruebas corresponde al CI.",
   };
-  return `${fase.tarea ? "TAREA EN COLA: " + JSON.stringify(fase.tarea) + "\nResuelve exclusivamente esta tarea y sus criterios; conserva el resto del encargo para su turno.\n" : ""}PAPEL ACTUAL: ${PAPELES[fase.papel]}. ${instrucciones[fase.papel]}\nEntrega como máximo una escritura de archivo por respuesta y espera su resultado antes de la siguiente. Mantén cada respuesta por debajo de 6000 tokens para no truncar JSON ni archivos. Para cambiar archivos existentes utiliza editar_archivo con un fragmento exacto y único: el motor conserva el resto. Nunca sustituyas un archivo por fragmentos, omisiones o comentarios de contenido pendiente. Las credenciales o los datos legales pendientes no impiden implementar y comprobar las partes independientes: conserva la demo si falta configuración y enumera qué falta para producción, sin inventar datos ni afirmar que ya está conectado o publicado.\nENTREGAS ANTERIORES:\n${anteriores
+  const memoriaLecturas = fase.leidos?.length
+    ? `ARCHIVOS YA CONSULTADOS EN ESTA FASE (${fase.leidos.length}): ${fase.leidos.join(", ")}. No repitas el inventario al perder mensajes antiguos; vuelve a leer solo cuando necesites contenido exacto para un cambio o una comprobación.\n`
+    : "";
+  const enfocar =
+    !soloLectura(fase.papel) && (fase.leidos?.length ?? 0) >= 15
+      ? "Ya has explorado bastantes archivos: trabaja sobre la entrega concreta de esta tarea. No recorras componentes genéricos ni todos los archivos por inercia. Si la tarea es documental, entrega un documento preciso con el alcance realmente revisado; no inventes lecturas. Si es implementación, guarda los cambios y pruebas pertinentes antes de terminar.\n"
+      : "";
+  return `${memoriaLecturas}${enfocar}${fase.tarea ? "TAREA EN COLA: " + JSON.stringify(fase.tarea) + "\nResuelve exclusivamente esta tarea y sus criterios; conserva el resto del encargo para su turno.\n" : ""}PAPEL ACTUAL: ${PAPELES[fase.papel]}. ${instrucciones[fase.papel]}\nEntrega como máximo una escritura de archivo por respuesta y espera su resultado antes de la siguiente. Mantén cada respuesta por debajo de 6000 tokens para no truncar JSON ni archivos. Para cambiar archivos existentes utiliza editar_archivo con un fragmento exacto y único: el motor conserva el resto. Nunca sustituyas un archivo por fragmentos, omisiones o comentarios de contenido pendiente. Las credenciales o los datos legales pendientes no impiden implementar y comprobar las partes independientes: conserva la demo si falta configuración y enumera qué falta para producción, sin inventar datos ni afirmar que ya está conectado o publicado.\nENTREGAS ANTERIORES:\n${anteriores
     .filter(
       (f, i) =>
         i >= anteriores.length - 4 || (f.tarea && fase.tarea?.depende_de.includes(f.tarea.id)),
