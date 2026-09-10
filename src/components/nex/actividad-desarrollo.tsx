@@ -88,7 +88,8 @@ export function ActividadDesarrollo({
       </p>
       {trabajo.estado === "esperando_aprobacion" ? (
         <p className="mt-3 text-lg font-medium">
-          El 100 % indica que la entrega está preparada. Todavía requiere tu revisión.
+          El 100 % indica que la entrega está preparada. No certifica pruebas superadas ni
+          publicación; la publicación exige CI correcto sobre el commit final.
         </p>
       ) : null}
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -123,11 +124,26 @@ export function ActividadDesarrollo({
               className={`rounded-xl border p-3 ${fase.estado === "trabajando" && enCurso ? "border-primary bg-primary/10" : "border-border"}`}
             >
               <p className="font-semibold">
-                {i + 1}. {nombresFases[fase.papel] ?? fase.papel}
+                {i + 1}. {fase.titulo ?? nombresFases[fase.papel] ?? fase.papel}
               </p>
+              {fase.tarea ? (
+                <details className="my-2 text-base">
+                  <summary className="cursor-pointer">Criterios y dependencias</summary>
+                  <p>Depende de: {fase.tarea.depende_de.join(", ") || "Sin dependencias"}</p>
+                  <ul className="list-disc pl-5">
+                    {fase.tarea.aceptacion.map((c, i) => (
+                      <li key={i}>{c}</li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
               <p className="text-sm">
                 {fase.estado === "completada"
-                  ? "Hecho"
+                  ? fase.papel === "revision"
+                    ? fase.revision_ok === true
+                      ? "Código revisado; CI pendiente"
+                      : "Revisión con incidencias"
+                    : "Entrega guardada"
                   : fase.estado === "trabajando"
                     ? enCurso
                       ? "En curso"

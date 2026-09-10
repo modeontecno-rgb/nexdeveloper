@@ -1,3 +1,4 @@
+import { validarPlan, fasesDelPlan, parcheExacto, cubrirLectura } from "../_shared/cola.ts";
 import { esRevisionMejoras } from "../_shared/mejoras.ts";
 import {prepararEquipo, solicitudModelo, respuestaModelo, instruccionesPapel, soloLectura, escrituraPermitida, PAPELES, PROVEEDORES_MOTOR} from "../_shared/equipo.ts";
 // NexDeveloper · Edge Function «ordenes-ejecutar» (0.20.0)
@@ -137,7 +138,7 @@ async function llamarEquipo(sb:SB,e:any,fase:any,sistema:string,mensajes:any[],l
  const {data:clave,error:ke}=await sb.rpc('descifrar_clave_proveedor',{p_proveedor_id:p.id});
  if(ke||!clave)throw Error('Falta la clave del agente asignado');
  const proveedor=fase.modelo.proveedor;
- const req=solicitudModelo(proveedor,fase.modelo.identificador,sistema,mensajes,lectura?HERRAMIENTAS.filter(h=>!['escribir_archivo','borrar_archivo'].includes(h.name)):HERRAMIENTAS);
+ const req=solicitudModelo(proveedor,fase.modelo.identificador,sistema,mensajes,lectura?HERRAMIENTAS.filter(h=>!['escribir_archivo','editar_archivo','borrar_archivo'].includes(h.name)):HERRAMIENTAS);
  if(prueba){if(proveedor==='google')req.body.generationConfig.maxOutputTokens=1024;else if(proveedor==='openai')req.body.max_completion_tokens=1024;else req.body.max_tokens=1024;}
  const headers:Record<string,string>={'content-type':'application/json'};
  if(proveedor==='anthropic'){headers['x-api-key']=clave;headers['anthropic-version']='2023-06-01';}
@@ -156,14 +157,15 @@ async function claveAnthropic(sb: SB, userId: string) {
 }
 const HERRAMIENTAS = [
   { name: "listar_archivos", description: "Lista las rutas de los archivos del repositorio (opcionalmente filtradas por prefijo o texto en la ruta). Úsala primero para orientarte.", input_schema: { type: "object", properties: { filtro: { type: "string", description: "Prefijo o fragmento de ruta, p. ej. src/routes o Ajustes" } } } },
-  { name: "leer_archivo", description: "Devuelve el contenido completo de un archivo de texto del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
+  { name: "leer_archivo", description: "Lee hasta 60000 caracteres. Para archivos grandes continúa con inicio indicado hasta cubrir todo el archivo.", input_schema: { type: "object", properties: { ruta: { type: "string" }, inicio: {type:"integer",minimum:0,description:"Índice de carácter desde 0; omitir en la primera lectura"} }, required: ["ruta"] } },
   { name: "buscar", description: "Busca un texto literal en los archivos del repositorio (máximo 30 coincidencias con su ruta y línea).", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
   { name: "escribir_archivo", description: "Crea o sustituye COMPLETAMENTE un archivo con el contenido indicado. Escribe siempre el archivo entero, nunca fragmentos.", input_schema: { type: "object", properties: { ruta: { type: "string" }, contenido: { type: "string" } }, required: ["ruta", "contenido"] } },
   { name: "borrar_archivo", description: "Elimina un archivo del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
-  { name: "terminar", description: "Da por terminado el trabajo. Indica un resumen en español (3-6 líneas: qué has cambiado y por qué, archivos tocados, cómo probarlo) y, si procede, la nueva versión.", input_schema: { type: "object", properties: { resumen: { type: "string" }, entrega: {type:"string",description:"Consejo o diseño completo para el usuario y el siguiente agente: contenido concreto, alternativas y decisiones. No una frase diciendo que se ha elaborado."}, version: { type: "string", description: "Nueva versión X.Y.Z si el proyecto muestra versión" }, revision_ok: {type:"boolean",description:"Solo en revisión: true si no quedan problemas bloqueantes"}, hallazgos:{type:"array",items:{type:"string"}}, sin_cambios: { type: "boolean", description: "true si has decidido no tocar nada (explica por qué en el resumen)" } }, required: ["resumen"] } },
+  { name: "editar_archivo", description: "Sustituye un fragmento exacto y único en un archivo existente, conservando íntegro el resto. Lee primero el archivo actualizado.", input_schema: {type:"object",properties:{ruta:{type:"string"},antes:{type:"string"},despues:{type:"string"}},required:["ruta","antes","despues"]} },
+  { name: "terminar", description: "Da por terminado el trabajo. Indica un resumen en español (3-6 líneas: qué has cambiado y por qué, archivos tocados, cómo probarlo) y, si procede, la nueva versión.", input_schema: { type: "object", properties: { tareas: {type:"array",items:{type:"object",properties:{id:{type:"string"},titulo:{type:"string"},papel:{type:"string",enum:["backend","interfaz"]},depende_de:{type:"array",items:{type:"string"}},aceptacion:{type:"array",items:{type:"string"}}},required:["id","titulo","papel","depende_de","aceptacion"]}}, resumen: { type: "string" }, entrega: {type:"string",description:"Consejo o diseño completo para el usuario y el siguiente agente: contenido concreto, alternativas y decisiones. No una frase diciendo que se ha elaborado."}, version: { type: "string", description: "Nueva versión X.Y.Z si el proyecto muestra versión" }, revision_ok: {type:"boolean",description:"Solo en revisión: true si no quedan problemas bloqueantes"}, hallazgos:{type:"array",items:{type:"string"}}, sin_cambios: { type: "boolean", description: "true si has decidido no tocar nada (explica por qué en el resumen)" } }, required: ["resumen"] } },
 ];
 async function llamarClaude(sb: SB, e: any, modeloId: string, clave: string, modelo: string, sistema: string, mensajes: any[], planificar = false) {
-  const r = await fetchIA(sb, {userId:e.user_id,modeloId,ambito:"proyecto",proyectoId:e.proyecto_id,ejecucionId:e.id,bloqueoToken:e.bloqueo_token,operacion:"ordenes-ejecutar"}, "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: modelo, max_tokens: 8000, system: sistema, tools: planificar ? HERRAMIENTAS.filter(h => !["escribir_archivo", "borrar_archivo"].includes(h.name)) : HERRAMIENTAS, messages: mensajes }) });
+  const r = await fetchIA(sb, {userId:e.user_id,modeloId,ambito:"proyecto",proyectoId:e.proyecto_id,ejecucionId:e.id,bloqueoToken:e.bloqueo_token,operacion:"ordenes-ejecutar"}, "https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": clave, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify({ model: modelo, max_tokens: 8000, system: sistema, tools: planificar ? HERRAMIENTAS.filter(h => !["escribir_archivo", "editar_archivo", "borrar_archivo"].includes(h.name)) : HERRAMIENTAS, messages: mensajes }) });
   const j = await r.json();
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${String(j?.error?.message ?? JSON.stringify(j)).slice(0, 300)}`);
   return j;
@@ -316,7 +318,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     const ref = repo ? await gh(`/repos/${repo}/git/ref/heads/${base}`) : {object:{sha:null}};
     st = { base, base_sha: ref.object.sha, mensajes: [{ role: "user", content: `ORDEN:\n${e.texto}\n\nEmpieza orientándote con listar_archivos.` }], arbol: repo ? null : [] };
   }
-  if(e.equipo_automatico && !st.equipo){const candidatos=await candidatosEquipo(sb,e.user_id);st.disponibles=candidatos;st.equipo=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{},esRevisionMejoras(e));st.fase=0;}
+  if(e.equipo_automatico && !st.equipo){const candidatos=await candidatosEquipo(sb,e.user_id);st.disponibles=candidatos;st.equipo=prepararEquipo(candidatos,e.texto??'',e.modo==='planificar',cfg.equipo_modelos??{},esRevisionMejoras(e));st.fase=0;st.cola_version=1;}
   const fase=e.equipo_automatico?st.equipo[st.fase]:null;
   if(fase){fase.estado='trabajando';fase.iniciada??=ahora();fase.coste_inicio??=Number(e.coste_ia??0);}
   const lectura=e.modo==='planificar'||(fase&&soloLectura(fase.papel));
@@ -332,7 +334,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
   if(fase)await guardar();
   while (Date.now() - INICIO < PRESUPUESTO_MS) {
     await comprobarActiva(sb,e);
-    if (pasos >= (cfg.max_pasos ?? 40)) { await guardar(); throw new Error(`Se alcanzó el máximo de ${cfg.max_pasos ?? 40} pasos sin terminar. Divide la orden en partes más pequeñas.`); }
+    if (pasos >= (cfg.max_pasos ?? 40)) { await guardar(); throw new Error(`Se alcanzó el máximo de ${cfg.max_pasos ?? 40} pasos sin terminar. El encargo y sus entregas están guardados; amplía el límite de pasos y reanuda para continuar la cola.`); }
     if (coste > Number(cfg.max_coste_ia ?? 3)) { await guardar(); throw new Error(`La orden ha superado el coste máximo de IA (${cfg.max_coste_ia} €). Ajústalo en Órdenes → Ejecución → Configuración.`); }
     st.mensajes = recortarHistorial(st.mensajes);
     const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'');
@@ -367,18 +369,27 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
       let out = "";
       try {
         const a = u.input ?? {};
-        if (lectura && ["escribir_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
+        if (lectura && ["escribir_archivo", "editar_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
         if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
-        else if (u.name === "leer_archivo") { const t = await leer(String(a.ruta)); out = t.length > 60_000 ? t.slice(0, 60_000) + "\n…(archivo recortado a 60.000 caracteres)" : t; }
+        else if (u.name === "leer_archivo") { const ruta=String(a.ruta),t=await leer(ruta),inicio=a.inicio??0; if(!Number.isInteger(inicio)||inicio<0||inicio>t.length)throw Error("Índice de lectura no válido");const fin=Math.min(t.length,inicio+60000);if(fase){fase.lecturas??={};const cobertura=cubrirLectura(fase.lecturas[ruta]??[],inicio,fin,t.length);fase.lecturas[ruta]=cobertura.rangos;if(cobertura.completa){fase.leidos??=[];if(!fase.leidos.includes(ruta))fase.leidos.push(ruta);}}out=t.slice(inicio,fin)+(fin<t.length?`\n…(lectura parcial ${inicio}-${fin} de ${t.length}; continúa con inicio:${fin})`:"\n(fin del archivo)"); }
         else if (u.name === "buscar") {
           const q = String(a.texto ?? ""); const hits: string[] = [];
           const candidatos = (await arbol()).filter((x) => /\.(tsx?|jsx?|css|json|md|sql|html|toml|ya?ml)$/i.test(x)).slice(0, 250);
           for (const ruta of candidatos) { if (hits.length >= 30 || Date.now() - INICIO > PRESUPUESTO_MS - 15_000) break; try { const t = await leer(ruta); const lineas = t.split("\n"); lineas.forEach((l, i) => { if (hits.length < 30 && l.includes(q)) hits.push(`${ruta}:${i + 1}: ${l.trim().slice(0, 160)}`); }); } catch { /* seguir */ } }
           out = hits.join("\n") || "(sin coincidencias)";
         }
-        else if (u.name === "escribir_archivo") { const ruta = String(a.ruta); if (!escrituraPermitida(ruta)) throw new Error("Ruta protegida o no válida"); const contenido = String(a.contenido ?? ""); const total = Object.values({ ...cambios, [ruta]: contenido }).reduce((s, v) => s + (v?.length ?? 0), 0); if (total > 900_000) throw new Error("Demasiados cambios acumulados (límite 900 KB); divide la orden."); cambios[ruta] = contenido; if (st.arbol && !st.arbol.includes(ruta)) st.arbol.push(ruta); out = `Guardado ${ruta} (${contenido.length} caracteres)`; }
-        else if (u.name === "borrar_archivo") { const ruta = String(a.ruta); if(!escrituraPermitida(ruta))throw Error("Ruta protegida o no válida"); cambios[ruta] = null; out = `Marcado para borrar ${ruta}`; }
-        else if (u.name === "terminar") { if((fase&&(["consejo","diseno"].includes(fase.papel)||fase.papel.startsWith("mejoras_")))&&String(a.entrega??"").trim().length<40)throw Error("Incluye entrega con el consejo o diseño completo: decisiones, razones y pasos concretos. No basta un resumen de que lo has elaborado."); terminado = a; out = "Trabajo registrado."; }
+        else if (u.name === "escribir_archivo") { const ruta = String(a.ruta); if (!escrituraPermitida(ruta)) throw new Error("Ruta protegida o no válida"); const contenido = String(a.contenido ?? ""); const previo = ruta in cambios ? cambios[ruta] : (await arbol()).includes(ruta) ? await leer(ruta) : null; if(previo && previo.length>2000 && contenido.length<previo.length*0.7)throw Error("La sustitución eliminaría gran parte del archivo. Usa editar_archivo para cambios exactos y conserva el resto."); const total = Object.values({ ...cambios, [ruta]: contenido }).reduce((s, v) => s + (v?.length ?? 0), 0); if (total > 900_000) throw new Error("Se alcanzó la capacidad de cambios de esta ejecución (900 KB). La entrega se conserva; requiere ampliar el almacenamiento del motor."); if(fase && contenido !== previo){fase.archivos??=[];if(!fase.archivos.includes(ruta))fase.archivos.push(ruta);} cambios[ruta] = contenido; if (st.arbol && !st.arbol.includes(ruta)) st.arbol.push(ruta); out = `Guardado ${ruta} (${contenido.length} caracteres)`; }
+        else if (u.name === "editar_archivo") { const ruta=String(a.ruta);if(!escrituraPermitida(ruta))throw Error("Ruta protegida o no válida");const contenido=parcheExacto(await leer(ruta),a.antes,a.despues);const total=Object.values({...cambios,[ruta]:contenido}).reduce((s,v)=>s+(v?.length??0),0);if(total>900_000)throw Error("Capacidad de cambios alcanzada; se conserva la entrega anterior.");cambios[ruta]=contenido;if(fase){fase.archivos??=[];if(!fase.archivos.includes(ruta))fase.archivos.push(ruta);}out=`Parche guardado en ${ruta}; resto del archivo conservado.`; }
+        else if (u.name === "borrar_archivo") { const ruta = String(a.ruta); if(!escrituraPermitida(ruta))throw Error("Ruta protegida o no válida"); await leer(ruta); cambios[ruta] = null; if(fase){fase.archivos??=[];if(!fase.archivos.includes(ruta))fase.archivos.push(ruta);} out = `Marcado para borrar ${ruta}`; }
+        else if (u.name === "terminar") { if((fase&&(["consejo","diseno"].includes(fase.papel)||fase.papel.startsWith("mejoras_")))&&String(a.entrega??"").trim().length<40)throw Error("Incluye entrega con el consejo o diseño completo: decisiones, razones y pasos concretos. No basta un resumen de que lo has elaborado."); if(st.cola_version && fase?.papel==='diseno') a.tareas=validarPlan(a.tareas);
+          if(fase?.tarea && !soloLectura(fase.papel) && !fase.archivos?.length)throw Error("Esta tarea necesita cambios reales guardados; una descripción de trabajo pendiente no es una implementación.");
+          if(fase?.papel==='revision'){
+            const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
+            const pendientes=(fase.tarea ? (anterior?.archivos??Object.keys(cambios)) : Object.keys(cambios)).filter((ruta:string)=>cambios[ruta]!==null&&!fase.leidos?.includes(ruta));
+            if(pendientes.length)throw Error('Lee los archivos cambiados antes de cerrar la revisión: '+pendientes.join(', '));
+            if(a.revision_ok===true && (!Array.isArray(a.hallazgos)||a.hallazgos.length))throw Error('Una revisión aprobada requiere hallazgos vacíos.');
+          }
+          terminado = a; out = "Entrega registrada; las pruebas automáticas requieren CI sobre el commit final."; }
         else out = `Herramienta desconocida ${u.name}`;
       } catch (err) { out = `ERROR: ${String(err?.message ?? err)}`; }
       resultados.push({ type: "tool_result", tool_use_id: u.id, name:u.name, content: out });
@@ -387,16 +398,19 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     await guardar();
     if(fase)fase.coste=coste-Number(fase.coste_inicio??costeInicialFase);
     if (terminado && fase) {
+      if(st.cola_version && fase.papel==='diseno' && !st.plan){st.plan=terminado.tareas;st.equipo.splice(st.fase+1,st.equipo.length-st.fase-1,...fasesDelPlan(st.plan,st.equipo));}
+      fase.revision_ok=fase.papel==='revision'?terminado.revision_ok:undefined;
       fase.resumen=String(terminado.entrega??terminado.resumen??'');fase.estado='completada';fase.terminada=ahora();
       if(fase.papel==='revision' && terminado.revision_ok!==true){
-        if(!st.reparacion){
-          st.reparacion=true;
+        const revisionClave=fase.tarea?'tarea:'+fase.tarea.id:'revision-integral';st.reparaciones??={};
+        if((st.reparaciones[revisionClave]??0)<2){
+          st.reparaciones[revisionClave]=(st.reparaciones[revisionClave]??0)+1;
           const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
           if(anterior){
-            st.equipo.splice(st.fase+1,0,{...anterior,estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
+            st.equipo.splice(st.fase+1,0,{...anterior,tarea:fase.tarea,archivos:[],leidos:[],lecturas:{},estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,lecturas:{},leidos:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
             fase.resumen+='\nProblemas: '+(terminado.hallazgos??[]).join(' · ');
           }else throw Error('No hay desarrollador para corregir la revisión');
-        }else {await guardar();throw Error('La segunda revisión sigue encontrando problemas: '+(terminado.hallazgos??[fase.resumen]).join(' · '));}
+        }else {await guardar();throw Error('La tarea sigue bloqueada después de dos ciclos de corrección y revisión: '+(terminado.hallazgos??[fase.resumen]).join(' · '));}
       }
       if(st.fase<st.equipo.length-1){
         st.fase++;st.mensajes=[{role:'user',content:`ORDEN ORIGINAL:\n${e.texto}\nContinúa con tu papel sobre los archivos acumulados. Lee las entregas anteriores y los archivos antes de escribir.`}];

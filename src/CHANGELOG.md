@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 0.45.0 — Cola de desarrollo con revisión por tarea
+
+- El coordinador transforma el encargo completo en tareas con dependencias y criterios de aceptación.
+- Cada tarea entrega sus archivos al revisor antes de avanzar; al final se revisa el conjunto.
+- Los cambios exactos conservan el resto de archivos grandes. Se rechazan sustituciones que eliminarían gran parte del contenido.
+- La actividad muestra tareas y criterios. La revisión de código se distingue de las pruebas de CI y de la publicación.
+- Primera capacidad acotada: 200 tareas por plan y 900 KB de cambios acumulados; no acredita todavía cargas masivas.
+
 ## 0.44.1 — Consumo con céntimos
 
 - Los importes de los encargos y reservas muestran céntimos; las fracciones menores de un céntimo no se presentan como cero.
