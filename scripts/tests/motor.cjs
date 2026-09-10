@@ -41,5 +41,10 @@ function load(o={}){
  a=load({response:()=>[tool('editar_archivo',{ruta:'x.ts',antes:'old',despues:'new'}),tool('terminar',{resumen:'Plan sin cambios'})]});a.e.cambios={'x.ts':'old'};
  r=await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:4,max_coste_ia:1});
  add('Q06 Read-only runtime also blocks exact edits',a.e.cambios['x.ts']==='old'&&a.providerCalls[0].tools.every(t=>t.name!=='editar_archivo'));
+
+ a=load({response:()=>[tool('leer_archivo',{ruta:'big.ts'}),tool('terminar',{resumen:'Revisado',revision_ok:true,hallazgos:[]})]});auto(a,[phase('revision',task)]);a.e.cambios={'big.ts':'x'.repeat(100000)};try{await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:1,max_coste_ia:1})}catch{}
+ add('Q07 First page alone cannot certify a large file',a.e.estado_agente.equipo[0].estado!=='completada'&&!a.e.estado_agente.equipo[0].leidos?.includes('big.ts'));
+ a=load({response:()=>[tool('escribir_archivo',{ruta:'big.ts',contenido:'partial'}),tool('terminar',{resumen:'Cambio'})]});auto(a,[phase('backend',task)]);a.e.cambios={'big.ts':'x'.repeat(10000)};try{await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:1,max_coste_ia:1})}catch{}
+ add('Q08 Truncated full replacement preserves original file',a.e.cambios['big.ts'].length===10000&&a.e.estado_agente.equipo[0].estado!=='completada');
  console.log(JSON.stringify(tests,null,2));if(tests.some(x=>!x.passed))process.exitCode=1;
 })();
