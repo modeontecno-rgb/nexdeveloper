@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { validarPlan, fasesDelPlan, parcheExacto } from "../../../db/functions/_shared/cola";
+import {
+  validarPlan,
+  fasesDelPlan,
+  parcheExacto,
+  cubrirLectura,
+} from "../../../db/functions/_shared/cola";
 const tarea = (id: string, depende_de: string[] = []) => ({
   id,
   titulo: "Implementar " + id,
@@ -65,4 +70,24 @@ describe("Cambios exactos", () => {
   ])("rechaza cambios ambiguos, obsoletos o vacíos", (original, antes, despues) =>
     expect(() => parcheExacto(original, antes, despues)).toThrow(),
   );
+});
+
+describe("Lectura íntegra de archivos grandes", () => {
+  it("no certifica una primera página ni rangos con huecos", () => {
+    expect(cubrirLectura([], 0, 60000, 150000).completa).toBe(false);
+    expect(cubrirLectura([[0, 60000]], 120000, 150000, 150000).completa).toBe(false);
+  });
+  it("certifica solo al cubrir todas las páginas, aunque lleguen desordenadas", () => {
+    const c = cubrirLectura(
+      [
+        [120000, 150000],
+        [0, 60000],
+      ],
+      60000,
+      120000,
+      150000,
+    );
+    expect(c.completa).toBe(true);
+    expect(c.rangos).toEqual([[0, 150000]]);
+  });
 });

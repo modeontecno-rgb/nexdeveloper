@@ -92,3 +92,22 @@ export function fasesDelPlan(tareas: TareaCola[], equipo: any[]) {
     },
   ];
 }
+
+/** Merge observed ranges so reading only the first page cannot certify a large file. */
+export function cubrirLectura(
+  rangos: [number, number][],
+  inicio: number,
+  fin: number,
+  total: number,
+) {
+  const unidos: [number, number][] = [];
+  for (const [a, b] of [...rangos, [inicio, fin] as [number, number]].sort((a, b) => a[0] - b[0])) {
+    const ultimo = unidos[unidos.length - 1];
+    if (ultimo && a <= ultimo[1]) ultimo[1] = Math.max(ultimo[1], b);
+    else unidos.push([a, b]);
+  }
+  return {
+    rangos: unidos,
+    completa: unidos.length === 1 && unidos[0]![0] === 0 && unidos[0]![1] >= total,
+  };
+}

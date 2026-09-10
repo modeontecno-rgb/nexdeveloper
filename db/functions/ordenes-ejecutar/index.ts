@@ -1,4 +1,4 @@
-import { validarPlan, fasesDelPlan, parcheExacto } from "../_shared/cola.ts";
+import { validarPlan, fasesDelPlan, parcheExacto, cubrirLectura } from "../_shared/cola.ts";
 import { esRevisionMejoras } from "../_shared/mejoras.ts";
 import {prepararEquipo, solicitudModelo, respuestaModelo, instruccionesPapel, soloLectura, escrituraPermitida, PAPELES, PROVEEDORES_MOTOR} from "../_shared/equipo.ts";
 // NexDeveloper · Edge Function «ordenes-ejecutar» (0.20.0)
@@ -157,7 +157,7 @@ async function claveAnthropic(sb: SB, userId: string) {
 }
 const HERRAMIENTAS = [
   { name: "listar_archivos", description: "Lista las rutas de los archivos del repositorio (opcionalmente filtradas por prefijo o texto en la ruta). Úsala primero para orientarte.", input_schema: { type: "object", properties: { filtro: { type: "string", description: "Prefijo o fragmento de ruta, p. ej. src/routes o Ajustes" } } } },
-  { name: "leer_archivo", description: "Devuelve el contenido completo de un archivo de texto del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
+  { name: "leer_archivo", description: "Lee hasta 60000 caracteres. Para archivos grandes continúa con inicio indicado hasta cubrir todo el archivo.", input_schema: { type: "object", properties: { ruta: { type: "string" }, inicio: {type:"integer",minimum:0,description:"Índice de carácter desde 0; omitir en la primera lectura"} }, required: ["ruta"] } },
   { name: "buscar", description: "Busca un texto literal en los archivos del repositorio (máximo 30 coincidencias con su ruta y línea).", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
   { name: "escribir_archivo", description: "Crea o sustituye COMPLETAMENTE un archivo con el contenido indicado. Escribe siempre el archivo entero, nunca fragmentos.", input_schema: { type: "object", properties: { ruta: { type: "string" }, contenido: { type: "string" } }, required: ["ruta", "contenido"] } },
   { name: "borrar_archivo", description: "Elimina un archivo del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
@@ -371,7 +371,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
         const a = u.input ?? {};
         if (lectura && ["escribir_archivo", "editar_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
         if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
-        else if (u.name === "leer_archivo") { const t = await leer(String(a.ruta)); if(fase){fase.leidos??=[];if(!fase.leidos.includes(String(a.ruta)))fase.leidos.push(String(a.ruta));} out = t.length > 60_000 ? t.slice(0, 60_000) + "\n…(archivo recortado a 60.000 caracteres)" : t; }
+        else if (u.name === "leer_archivo") { const ruta=String(a.ruta),t=await leer(ruta),inicio=a.inicio??0; if(!Number.isInteger(inicio)||inicio<0||inicio>t.length)throw Error("Índice de lectura no válido");const fin=Math.min(t.length,inicio+60000);if(fase){fase.lecturas??={};const cobertura=cubrirLectura(fase.lecturas[ruta]??[],inicio,fin,t.length);fase.lecturas[ruta]=cobertura.rangos;if(cobertura.completa){fase.leidos??=[];if(!fase.leidos.includes(ruta))fase.leidos.push(ruta);}}out=t.slice(inicio,fin)+(fin<t.length?`\n…(lectura parcial ${inicio}-${fin} de ${t.length}; continúa con inicio:${fin})`:"\n(fin del archivo)"); }
         else if (u.name === "buscar") {
           const q = String(a.texto ?? ""); const hits: string[] = [];
           const candidatos = (await arbol()).filter((x) => /\.(tsx?|jsx?|css|json|md|sql|html|toml|ya?ml)$/i.test(x)).slice(0, 250);
@@ -407,7 +407,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
           st.reparaciones[revisionClave]=(st.reparaciones[revisionClave]??0)+1;
           const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
           if(anterior){
-            st.equipo.splice(st.fase+1,0,{...anterior,tarea:fase.tarea,archivos:[],leidos:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,leidos:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
+            st.equipo.splice(st.fase+1,0,{...anterior,tarea:fase.tarea,archivos:[],leidos:[],lecturas:{},estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,lecturas:{},leidos:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
             fase.resumen+='\nProblemas: '+(terminado.hallazgos??[]).join(' · ');
           }else throw Error('No hay desarrollador para corregir la revisión');
         }else {await guardar();throw Error('La tarea sigue bloqueada después de dos ciclos de corrección y revisión: '+(terminado.hallazgos??[fase.resumen]).join(' · '));}
