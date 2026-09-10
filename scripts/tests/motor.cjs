@@ -1,5 +1,5 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
-let source=fs.readFileSync(path.join(__dirname,'../../db/functions/ordenes-ejecutar/index.ts'),'utf8');source+='\nglobalThis.engineTests={pasoAgente,publicarRama,verificarCI,conBloqueo};';
+let source=fs.readFileSync(path.join(__dirname,'../../db/functions/ordenes-ejecutar/index.ts'),'utf8');source+='\nglobalThis.engineTests={pasoAgente,publicarRama,verificarCI,conBloqueo,contextoModelo};';
 const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
 function load(o={}){
  let calls=[],providerCalls=[],rpcCalls=[],updates=[],now=0;
@@ -57,5 +57,8 @@ function load(o={}){
 
  a=load({response:()=>[{...tool('leer_archivo',{ruta:'big.ts',inicio:1}),id:'page1'},{...tool('leer_archivo',{ruta:'big.ts',inicio:60001}),id:'page2'},tool('terminar',{resumen:'Revisión completa',revision_ok:true,hallazgos:[]})]});auto(a,[phase('revision',task)]);a.e.cambios={'big.ts':'x'.repeat(100000)};r=await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:4,max_coste_ia:1});
  add('Q12 One-based pages cover the first character and allow a complete review',r?.terminado?.revision_ok===true&&a.e.estado_agente.equipo[0].lecturas['big.ts'][0][0]===0&&a.e.estado_agente.equipo[0].leidos.includes('big.ts'));
+
+ a=load();const historial=[{role:'user',content:'Encargo completo original'},{role:'user',content:'QA externa: corregir orden SQL'}];for(let i=0;i<20;i++){historial.push({role:'assistant',content:[{type:'tool_use',id:'call'+i,name:'leer_archivo',input:{ruta:'f'+i}}],_native:{role:'assistant',tool_calls:[{id:'call'+i}]}});historial.push({role:'user',content:[{type:'tool_result',tool_use_id:'call'+i,content:'x'.repeat(10000)}]});}const reducido=a.f.contextoModelo(historial);
+ add('Q13 Context stays bounded while retaining full order, QA and paired native tool exchanges',reducido.length===6&&reducido[0].content==='Encargo completo original'&&reducido[1].content.includes('QA externa')&&reducido[2]._native.tool_calls[0].id===reducido[3].content[0].tool_use_id&&JSON.stringify(reducido).length<25000&&historial.length===42);
  console.log(JSON.stringify(tests,null,2));if(tests.some(x=>!x.passed))process.exitCode=1;
 })();

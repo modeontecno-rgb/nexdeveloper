@@ -181,6 +181,15 @@ function recortarHistorial(mensajes: any[]) {
   return [...inicio, ...antiguos, ...resto.slice(resto.length - 8)];
 }
 
+/** Keep the activity record, but send only complete recent exchanges and explicit user notes. */
+function contextoModelo(mensajes:any[]){
+  if(mensajes.length<=5)return mensajes;
+  let desde=mensajes.length-4;
+  if(mensajes[desde]?.role==='user' && Array.isArray(mensajes[desde].content) && mensajes[desde].content.some((b:any)=>b.type==='tool_result') && mensajes[desde-1]?.role==='assistant')desde--;
+  const notas=mensajes.slice(1,desde).filter((m:any)=>m.role==='user'&&typeof m.content==='string');
+  return [mensajes[0],...notas.filter((m:any,i:number)=>notas.findIndex((n:any)=>n.content===m.content)===i),...mensajes.slice(desde)];
+}
+
 // ---------- Utilidades de estado ----------
 async function config(sb: SB, userId: string) {
   const { data } = await sb.from("ejecucion_config").select("*").eq("user_id", userId).maybeSingle();
@@ -339,7 +348,8 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     st.mensajes = recortarHistorial(st.mensajes);
     const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'');
     let r:any;
-    try{r = fase ? await llamarEquipo(sb,e,fase,sistema,st.mensajes,lectura) : await llamarClaude(sb,e,mod?.id,clave,modelo,sistema,st.mensajes,lectura);}
+    const contexto=contextoModelo(st.mensajes);
+    try{r = fase ? await llamarEquipo(sb,e,fase,sistema,contexto,lectura) : await llamarClaude(sb,e,mod?.id,clave,modelo,sistema,contexto,lectura);}
     catch(error){
       const detalle=error as any;
       if(fase && detalle.codigo==='SALIDA_TRUNCADA_CONTABILIZADA'){
@@ -395,7 +405,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
           if(fase?.papel==='revision'){
             const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
             const pendientes=(fase.tarea ? (anterior?.archivos??Object.keys(cambios)) : Object.keys(cambios)).filter((ruta:string)=>cambios[ruta]!==null&&!fase.leidos?.includes(ruta));
-            if(pendientes.length)throw Error('Lee los archivos cambiados antes de cerrar la revisión: '+pendientes.join(', '));
+            if(pendientes.length)throw Error('Falta cobertura desde el primer carácter. Repite leer_archivo con inicio:1 (posición de carácter, no línea) para completar estos archivos antes de terminar: '+pendientes.join(', '));
             if(a.revision_ok===true && (!Array.isArray(a.hallazgos)||a.hallazgos.length))throw Error('Una revisión aprobada requiere hallazgos vacíos.');
           }
           terminado = a; out = "Entrega registrada; las pruebas automáticas requieren CI sobre el commit final."; }
