@@ -54,5 +54,8 @@ function load(o={}){
  add('Q10 Paid truncated response schedules only one recovery and preserves files',r===null&&a.e.cambios['saved.ts']==='preserved'&&a.updates.at(-1).coste_ia===.01&&a.updates.at(-1).pasos===1&&a.e.estado_agente.equipo[0].recortes===1);
  a.e.coste_ia=.01;a.e.pasos=1;rejected=false;try{await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:4,max_coste_ia:1})}catch{rejected=true}
  add('Q11 Repeated truncation stops and still records confirmed cost',rejected&&a.updates.at(-1).coste_ia===.02&&a.updates.at(-1).pasos===2&&a.e.cambios['saved.ts']==='preserved');
+
+ a=load({response:()=>[{...tool('leer_archivo',{ruta:'big.ts',inicio:1}),id:'page1'},{...tool('leer_archivo',{ruta:'big.ts',inicio:60001}),id:'page2'},tool('terminar',{resumen:'Revisión completa',revision_ok:true,hallazgos:[]})]});auto(a,[phase('revision',task)]);a.e.cambios={'big.ts':'x'.repeat(100000)};r=await a.f.pasoAgente(a.db,a.e,{repositorio:'fixture/repo'},{max_pasos:4,max_coste_ia:1});
+ add('Q12 One-based pages cover the first character and allow a complete review',r?.terminado?.revision_ok===true&&a.e.estado_agente.equipo[0].lecturas['big.ts'][0][0]===0&&a.e.estado_agente.equipo[0].leidos.includes('big.ts'));
  console.log(JSON.stringify(tests,null,2));if(tests.some(x=>!x.passed))process.exitCode=1;
 })();
