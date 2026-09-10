@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/nex/supabase";
-import { formatoEuros } from "@/lib/nex/labels";
+import { formatoCosteIA } from "@/lib/nex/coste-ia";
 export function ReservaPendiente({ id }: { id: string }) {
   const q = useQuery({
     queryKey: ["reserva-pendiente", id],
@@ -32,8 +32,8 @@ export function ReservaPendiente({ id }: { id: string }) {
           </p>
           <p>
             {q.data.coste === null
-              ? `${formatoEuros(q.data.reservado)} retenidos como previsión; no es un cobro confirmado.`
-              : `Consumo contabilizado: ${formatoEuros(q.data.coste)}.`}
+              ? `${formatoCosteIA(q.data.reservado)} retenidos como previsión; no es un cobro confirmado.`
+              : `Consumo contabilizado: ${formatoCosteIA(q.data.coste)}.`}
           </p>
         </>
       ) : (
