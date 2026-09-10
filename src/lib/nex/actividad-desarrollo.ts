@@ -1,6 +1,9 @@
 import { AREAS_MEJORAS } from "../../../db/functions/_shared/mejoras";
 export type FaseActividad = {
   papel: string;
+  titulo?: string;
+  revision_ok?: boolean;
+  tarea?: { id: string; depende_de: string[]; aceptacion: string[] };
   estado: string;
   modelo: { proveedor: string; identificador: string };
 };
@@ -26,6 +29,7 @@ const acciones: Record<string, string> = {
   leer_archivo: "Leer archivo",
   buscar: "Buscar en el código",
   escribir_archivo: "Preparar cambios",
+  editar_archivo: "Aplicar un cambio conservando el resto",
   borrar_archivo: "Preparar eliminación",
   terminar: "Entregar esta fase",
 };
