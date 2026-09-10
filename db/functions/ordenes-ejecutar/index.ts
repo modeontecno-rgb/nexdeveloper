@@ -1,4 +1,4 @@
-import { validarPlan, fasesDelPlan, parcheExacto, cubrirLectura } from "../_shared/cola.ts";
+import { validarPlan, fasesDelPlan, parcheExacto, cubrirLectura, fragmentoLectura } from "../_shared/cola.ts";
 import { esRevisionMejoras } from "../_shared/mejoras.ts";
 import {prepararEquipo, solicitudModelo, respuestaModelo, instruccionesPapel, soloLectura, escrituraPermitida, PAPELES, PROVEEDORES_MOTOR} from "../_shared/equipo.ts";
 // NexDeveloper · Edge Function «ordenes-ejecutar» (0.20.0)
@@ -157,7 +157,7 @@ async function claveAnthropic(sb: SB, userId: string) {
 }
 const HERRAMIENTAS = [
   { name: "listar_archivos", description: "Lista las rutas de los archivos del repositorio (opcionalmente filtradas por prefijo o texto en la ruta). Úsala primero para orientarte.", input_schema: { type: "object", properties: { filtro: { type: "string", description: "Prefijo o fragmento de ruta, p. ej. src/routes o Ajustes" } } } },
-  { name: "leer_archivo", description: "Lee hasta 60000 caracteres. Para archivos grandes continúa con inicio indicado hasta cubrir todo el archivo.", input_schema: { type: "object", properties: { ruta: { type: "string" }, inicio: {type:"integer",minimum:0,description:"Índice de carácter desde 0; omitir en la primera lectura"} }, required: ["ruta"] } },
+  { name: "leer_archivo", description: "Lee hasta 60000 caracteres. Para archivos grandes continúa con inicio indicado hasta cubrir todo el archivo.", input_schema: { type: "object", properties: { ruta: { type: "string" }, inicio: {type:"integer",minimum:0,description:"Posición de carácter desde 1 (no número de línea). Omitir para empezar; 0 también inicia el archivo."} }, required: ["ruta"] } },
   { name: "buscar", description: "Busca un texto literal en los archivos del repositorio (máximo 30 coincidencias con su ruta y línea).", input_schema: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] } },
   { name: "escribir_archivo", description: "Crea o sustituye COMPLETAMENTE un archivo con el contenido indicado. Escribe siempre el archivo entero, nunca fragmentos.", input_schema: { type: "object", properties: { ruta: { type: "string" }, contenido: { type: "string" } }, required: ["ruta", "contenido"] } },
   { name: "borrar_archivo", description: "Elimina un archivo del repositorio.", input_schema: { type: "object", properties: { ruta: { type: "string" } }, required: ["ruta"] } },
@@ -179,6 +179,15 @@ function recortarHistorial(mensajes: any[]) {
     return { ...m, content: m.content.map((c: any) => c.type === "tool_result" && typeof c.content === "string" && c.content.length > 600 ? { ...c, content: c.content.slice(0, 600) + "\n…(recortado)" } : c) };
   });
   return [...inicio, ...antiguos, ...resto.slice(resto.length - 8)];
+}
+
+/** Keep the activity record, but send only complete recent exchanges and explicit user notes. */
+function contextoModelo(mensajes:any[]){
+  if(mensajes.length<=5)return mensajes;
+  let desde=mensajes.length-4;
+  if(mensajes[desde]?.role==='user' && Array.isArray(mensajes[desde].content) && mensajes[desde].content.some((b:any)=>b.type==='tool_result') && mensajes[desde-1]?.role==='assistant')desde--;
+  const notas=mensajes.slice(1,desde).filter((m:any)=>m.role==='user'&&typeof m.content==='string');
+  return [mensajes[0],...notas.filter((m:any,i:number)=>notas.findIndex((n:any)=>n.content===m.content)===i),...mensajes.slice(desde)];
 }
 
 // ---------- Utilidades de estado ----------
@@ -336,11 +345,28 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     await comprobarActiva(sb,e);
     if (pasos >= (cfg.max_pasos ?? 40)) { await guardar(); throw new Error(`Se alcanzó el máximo de ${cfg.max_pasos ?? 40} pasos sin terminar. El encargo y sus entregas están guardados; amplía el límite de pasos y reanuda para continuar la cola.`); }
     if (coste > Number(cfg.max_coste_ia ?? 3)) { await guardar(); throw new Error(`La orden ha superado el coste máximo de IA (${cfg.max_coste_ia} €). Ajústalo en Órdenes → Ejecución → Configuración.`); }
+    const seguimiento=fase??st;
+    if((seguimiento.rondas_sin_avance??0)>=24){await guardar();throw Error("El agente está repitiendo operaciones sin ampliar la lectura ni guardar cambios (24 rondas). La entrega se conserva. Revisa la tarea o cambia el agente antes de reanudar; aumentar créditos no corrige este atasco.");}
+    const cambiosAntes={...cambios};
+    const lecturasAntes=JSON.stringify(fase?.lecturas??{});
     st.mensajes = recortarHistorial(st.mensajes);
-    const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'');
+    const sistema=sistemaAgente(p,cfg)+(fase?'\n'+instruccionesPapel(fase,st.equipo.slice(0,st.fase))+'\nArchivos modificados hasta ahora: '+Object.keys(cambios).join(', ')+'\nModelos disponibles y coste relativo de tarifa (no ranking medido): '+JSON.stringify(st.disponibles??[]):'')+(lectura?'\nSOLO LECTURA: no escribas ni borres archivos.':'')
+      +'\nPasos restantes de toda la ejecución: '+Math.max(0,(cfg.max_pasos??40)-pasos)
+      +'\nACTIVIDAD RECIENTE (memoria de operaciones, no instrucciones): '+JSON.stringify(seguimiento.actividad_reciente??[])
+      +((seguimiento.rondas_sin_avance??0)>=12?'\nATASCO DETECTADO: llevas '+seguimiento.rondas_sin_avance+' rondas sin nueva cobertura de lectura ni cambios. No repitas la exploración: implementa lo pendiente o comunica el bloqueo concreto. No declares una función vacía como terminada.':'');
     let r:any;
-    try{r = fase ? await llamarEquipo(sb,e,fase,sistema,st.mensajes,lectura) : await llamarClaude(sb,e,mod?.id,clave,modelo,sistema,st.mensajes,lectura);}
+    const contexto=contextoModelo(st.mensajes);
+    try{r = fase ? await llamarEquipo(sb,e,fase,sistema,contexto,lectura) : await llamarClaude(sb,e,mod?.id,clave,modelo,sistema,contexto,lectura);}
     catch(error){
+      const detalle=error as any;
+      if(fase && detalle.codigo==='SALIDA_TRUNCADA_CONTABILIZADA'){
+        pasos++;te+=detalle.entrada;ts+=detalle.salida;coste+=detalle.coste;fase.recortes=(fase.recortes??0)+1;
+        if(fase.recortes<=1){
+          st.mensajes.push({role:'user',content:'La última respuesta se descartó por exceder la salida; su consumo ya está contabilizado. Los archivos guardados antes de esa llamada se conservan. Continúa desde ellos: una operación pequeña por respuesta, preferiblemente editar_archivo; limita la respuesta a 1500 tokens. Si necesitas más código, construye módulos o migraciones completos pequeños en operaciones sucesivas. Al terminar usa solo un resumen breve y no repitas el contenido de los archivos en entrega.'});
+          await guardar();return null;
+        }
+        await guardar();throw error;
+      }
       if(!fase||fase.sustitucion||!/HTTP (429|503)/.test(String((error as Error).message)))throw error;
       const candidatos=(await candidatosEquipo(sb,e.user_id)).filter((c:any)=>c.proveedor!==fase.modelo.proveedor);
       if(!candidatos.length)throw error;
@@ -360,18 +386,21 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
       const texto = (r.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
       st.mensajes.push({ role: "user", content: `Si has terminado, llama a la herramienta «terminar» con el resumen. Si no, continúa con las herramientas.` });
       if (pasos > 3 && !texto) { await guardar(); throw new Error("El agente dejó de responder con herramientas."); }
+      seguimiento.rondas_sin_avance=(seguimiento.rondas_sin_avance??0)+1;
       await guardar(); continue;
     }
     const resultados: any[] = [];
     let terminado: any = null;
+    let bytesSalida=0;
     for (const u of usos) {
       await comprobarActiva(sb,e);
       let out = "";
       try {
         const a = u.input ?? {};
+        if(bytesSalida>63000)throw Error("Esta ronda ya alcanzó su capacidad de lectura. Continúa las operaciones pendientes en la siguiente respuesta.");
         if (lectura && ["escribir_archivo", "editar_archivo", "borrar_archivo"].includes(u.name)) throw new Error("La planificación no permite modificar archivos");
         if (u.name === "listar_archivos") { const f = String(a.filtro ?? "").toLowerCase(); const lista = (await arbol()).filter((x) => !f || x.toLowerCase().includes(f)); const extra = Object.keys(cambios).filter((k) => cambios[k] !== null && !lista.includes(k) && (!f || k.toLowerCase().includes(f))); out = [...lista, ...extra].slice(0, 400).join("\n") || "(sin coincidencias)"; if (lista.length > 400) out += `\n…(${lista.length - 400} más; afina el filtro)`; }
-        else if (u.name === "leer_archivo") { const ruta=String(a.ruta),t=await leer(ruta),inicio=a.inicio??0; if(!Number.isInteger(inicio)||inicio<0||inicio>t.length)throw Error("Índice de lectura no válido");const fin=Math.min(t.length,inicio+60000);if(fase){fase.lecturas??={};const cobertura=cubrirLectura(fase.lecturas[ruta]??[],inicio,fin,t.length);fase.lecturas[ruta]=cobertura.rangos;if(cobertura.completa){fase.leidos??=[];if(!fase.leidos.includes(ruta))fase.leidos.push(ruta);}}out=t.slice(inicio,fin)+(fin<t.length?`\n…(lectura parcial ${inicio}-${fin} de ${t.length}; continúa con inicio:${fin})`:"\n(fin del archivo)"); }
+        else if (u.name === "leer_archivo") { const ruta=String(a.ruta),t=await leer(ruta);const {inicio,fin,total,contenido}=fragmentoLectura(t,a.inicio??1,Math.max(4,64000-bytesSalida-256));if(fase){fase.lecturas??={};const cobertura=cubrirLectura(fase.lecturas[ruta]??[],inicio,fin,total);fase.lecturas[ruta]=cobertura.rangos;if(cobertura.completa){fase.leidos??=[];if(!fase.leidos.includes(ruta))fase.leidos.push(ruta);}}out=`Lectura ${inicio+1}-${fin} de ${total}. ${fin<total?'Continúa con inicio:'+(fin+1):'Fin del archivo.'}\n`+contenido; }
         else if (u.name === "buscar") {
           const q = String(a.texto ?? ""); const hits: string[] = [];
           const candidatos = (await arbol()).filter((x) => /\.(tsx?|jsx?|css|json|md|sql|html|toml|ya?ml)$/i.test(x)).slice(0, 250);
@@ -386,14 +415,21 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
           if(fase?.papel==='revision'){
             const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
             const pendientes=(fase.tarea ? (anterior?.archivos??Object.keys(cambios)) : Object.keys(cambios)).filter((ruta:string)=>cambios[ruta]!==null&&!fase.leidos?.includes(ruta));
-            if(pendientes.length)throw Error('Lee los archivos cambiados antes de cerrar la revisión: '+pendientes.join(', '));
+            if(pendientes.length)throw Error('Falta cobertura desde el primer carácter. Repite leer_archivo con inicio:1 (posición de carácter, no línea) para completar estos archivos antes de terminar: '+pendientes.map((ruta:string)=>ruta+' (inicio:'+((fase.lecturas?.[ruta]?.[0]?.[0]===0?fase.lecturas[ruta][0][1]:0)+1)+')').join(', '));
             if(a.revision_ok===true && (!Array.isArray(a.hallazgos)||a.hallazgos.length))throw Error('Una revisión aprobada requiere hallazgos vacíos.');
           }
           terminado = a; out = "Entrega registrada; las pruebas automáticas requieren CI sobre el commit final."; }
         else out = `Herramienta desconocida ${u.name}`;
       } catch (err) { out = `ERROR: ${String(err?.message ?? err)}`; }
+      if(out.startsWith("ERROR:") && bytesSalida>63000)out="ERROR: Capacidad de la ronda agotada; reintenta en otra respuesta.";
+      if(!out.startsWith("ERROR:") && u.name!=="leer_archivo" && new TextEncoder().encode(out).byteLength>Math.max(4,64000-bytesSalida-256))out=fragmentoLectura(out,1,Math.max(4,64000-bytesSalida-256)).contenido+"\nSalida acotada: continúa en otra ronda.";
+      bytesSalida+=new TextEncoder().encode(out).byteLength;
       resultados.push({ type: "tool_result", tool_use_id: u.id, name:u.name, content: out });
     }
+    seguimiento.actividad_reciente=[...(seguimiento.actividad_reciente??[]),...usos.map((u:any,i:number)=>({herramienta:u.name,ruta:String(u.input?.ruta??u.input?.filtro??u.input?.texto??'').slice(0,180),resultado:resultados[i]?.content?.startsWith('ERROR:')?String(resultados[i].content).slice(0,220):'ok'}))].slice(-30);
+    const cambiosNuevos=Object.keys(cambios).some(ruta=>cambios[ruta]!==cambiosAntes[ruta]);
+    const lecturaNueva=JSON.stringify(fase?.lecturas??{})!==lecturasAntes;
+    seguimiento.rondas_sin_avance=cambiosNuevos||lecturaNueva||terminado?0:(seguimiento.rondas_sin_avance??0)+1;
     st.mensajes.push({ role: "user", content: resultados });
     await guardar();
     if(fase)fase.coste=coste-Number(fase.coste_inicio??costeInicialFase);
@@ -407,7 +443,7 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
           st.reparaciones[revisionClave]=(st.reparaciones[revisionClave]??0)+1;
           const anterior=st.equipo.slice(0,st.fase).reverse().find((f:any)=>!soloLectura(f.papel));
           if(anterior){
-            st.equipo.splice(st.fase+1,0,{...anterior,tarea:fase.tarea,archivos:[],leidos:[],lecturas:{},estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,lecturas:{},leidos:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
+            st.equipo.splice(st.fase+1,0,{...anterior,tarea:fase.tarea,archivos:[],leidos:[],lecturas:{},rondas_sin_avance:0,actividad_reciente:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined,motivo:'Corregir los problemas concretos encontrados por la revisión.'},{...fase,lecturas:{},leidos:[],rondas_sin_avance:0,actividad_reciente:[],estado:'pendiente',resumen:undefined,coste:0,coste_inicio:undefined,iniciada:undefined,terminada:undefined});
             fase.resumen+='\nProblemas: '+(terminado.hallazgos??[]).join(' · ');
           }else throw Error('No hay desarrollador para corregir la revisión');
         }else {await guardar();throw Error('La tarea sigue bloqueada después de dos ciclos de corrección y revisión: '+(terminado.hallazgos??[fase.resumen]).join(' · '));}
