@@ -71,7 +71,7 @@ export async function fetchIA(sb: DB, ctx: ContextoIA, url: string, init: Reques
  } catch (error) {
    // Unknown transport outcome is not a refund: the provider may have processed it.
    await sb.rpc('ia_liquidar',{p_id:id,p_user_id:ctx.userId,p_entrada:emitida?null:0,p_salida:emitida?null:0});
-   const motivoSeguro=/Respuesta incompleta|consumo queda pendiente|Proveedor sin uso verificable|ejecución ya no está activa/.test(String((error as Error)?.message))?String((error as Error).message):"";
+   const motivoSeguro=(error as Error)?.name === "TimeoutError" ? "El proveedor no respondió dentro del límite de espera de 60 segundos" : /Respuesta incompleta|consumo queda pendiente|Proveedor sin uso verificable|ejecución ya no está activa/.test(String((error as Error)?.message))?String((error as Error).message):"";
    throw new Error(`${motivoSeguro?motivoSeguro+". ":""}La llamada no pudo confirmarse${httpEstado?` (HTTP ${httpEstado}${detalleSeguro?": "+detalleSeguro:""})`:""}. Revisa el consumo o reserva ${id} antes de repetirla.`);
  }
 }

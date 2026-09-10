@@ -1,6 +1,11 @@
+import { AREAS_MEJORAS, instruccionesMejora, type PapelMejora } from "./mejoras.ts";
 /** Motor compartido: proveedores reales, entregas por papel y un solo conjunto de cambios. */
-export type Papel = "consejo" | "diseno" | "backend" | "interfaz" | "revision";
+export type Papel = PapelMejora | "consejo" | "diseno" | "backend" | "interfaz" | "revision";
 export const PAPELES: Record<Papel, string> = {
+  ...(Object.fromEntries(Object.entries(AREAS_MEJORAS).map(([k, v]) => [k, v[0]])) as Record<
+    PapelMejora,
+    string
+  >),
   consejo: "Consejo técnico",
   diseno: "Diseño y arquitectura",
   backend: "Backend y datos",
@@ -15,6 +20,7 @@ export type Candidato = {
   calidad: number;
   tareas_aconsejadas: string[];
   coste: number | null;
+  llamadas_recientes?: number;
 };
 export type Fase = {
   papel: Papel;
@@ -41,6 +47,7 @@ export function prepararEquipo(
   texto: string,
   consejo = false,
   asignados: Record<string, string> = {},
+  mejoras = false,
 ): Fase[] {
   const elegibles = candidatos.filter(
     (c) =>
@@ -51,19 +58,27 @@ export function prepararEquipo(
     throw Error(
       "No hay modelos de desarrollo activos con conexión y tarifa vigente. Revisa Conexiones.",
     );
-  const roles: Papel[] = consejo
-    ? ["consejo"]
-    : [
-        "diseno",
-        ...(/backend|base de datos|supabase|sql|servidor|api|usuario|login|autentic|pago|permiso/i.test(
-          texto,
-        )
-          ? ["backend" as Papel]
-          : []),
-        "interfaz",
-        "revision",
-      ];
+  const roles: Papel[] = mejoras
+    ? (Object.keys(AREAS_MEJORAS) as PapelMejora[])
+    : consejo
+      ? ["consejo"]
+      : [
+          "diseno",
+          ...(/backend|base de datos|supabase|sql|servidor|api|usuario|login|autentic|pago|permiso/i.test(
+            texto,
+          )
+            ? ["backend" as Papel]
+            : []),
+          "interfaz",
+          "revision",
+        ];
   const preferidos: Record<Papel, string[]> = {
+    mejoras_diseno: ["google", "anthropic", "openai"],
+    mejoras_funciones: ["openai", "anthropic", "google"],
+    mejoras_accesibilidad: ["anthropic", "google", "openai"],
+    mejoras_comunicacion: ["openai", "google", "anthropic"],
+    mejoras_calidad: ["anthropic", "openai", "google"],
+    mejoras_sintesis: ["google", "openai", "anthropic"],
     consejo: ["openai", "anthropic", "google"],
     diseno: ["google", "anthropic", "openai"],
     backend: ["anthropic", "openai", "deepseek"],
@@ -71,6 +86,7 @@ export function prepararEquipo(
     revision: ["xai", "google", "anthropic", "openai", "deepseek"],
   };
   let ultimo = "";
+  const asignaciones = new Map<string, number>();
   return roles.map((papel) => {
     const lista = [...elegibles].sort((a, b) => {
       // Roles are a starting policy, not a benchmark claim. Never call all accounts just to use them.
@@ -82,6 +98,15 @@ export function prepararEquipo(
         ib = preferidos[papel].indexOf(b.proveedor);
       const pa = ia < 0 ? 99 : ia,
         pb = ib < 0 ? 99 : ib;
+      // Quality is configured, not a benchmark inferred from a provider name.
+      const calidad = b.calidad - a.calidad;
+      if (calidad) return calidad;
+      const uso =
+        (a.llamadas_recientes ?? 0) +
+        (asignaciones.get(a.proveedor) ?? 0) -
+        (b.llamadas_recientes ?? 0) -
+        (asignaciones.get(b.proveedor) ?? 0);
+      if (uso) return uso;
       if (papel === "revision" && a.proveedor !== b.proveedor) {
         if (a.proveedor === ultimo) return 1;
         if (b.proveedor === ultimo) return -1;
@@ -95,13 +120,14 @@ export function prepararEquipo(
     });
     const modelo = lista[0]!;
     ultimo = modelo.proveedor;
+    asignaciones.set(ultimo, (asignaciones.get(ultimo) ?? 0) + 1);
     return {
       papel,
       modelo,
       motivo:
-        papel === "revision"
-          ? "Segunda revisión del código acumulado; se prioriza otro proveedor si está disponible."
-          : "Asignación inicial por especialidad configurada y disponibilidad. No es una clasificación de calidad medida.",
+        asignados[papel] === modelo.id
+          ? "Modelo elegido expresamente para este departamento."
+          : `Calidad configurada primero (${modelo.calidad}); a igualdad, menor número de llamadas API registradas en los últimos 7 días y reparto dentro del equipo. No representa saldo externo ni una evaluación de calidad medida.`,
       estado: "pendiente",
     };
   });
@@ -116,10 +142,13 @@ export function escrituraPermitida(ruta: string) {
   );
 }
 export function soloLectura(papel: Papel) {
-  return ["consejo", "diseno", "revision"].includes(papel);
+  return papel.startsWith("mejoras_") || ["consejo", "diseno", "revision"].includes(papel);
 }
 export function instruccionesPapel(fase: Fase, anteriores: Fase[]) {
   const instrucciones: Record<Papel, string> = {
+    ...(Object.fromEntries(
+      Object.keys(AREAS_MEJORAS).map((k) => [k, instruccionesMejora(k as PapelMejora)]),
+    ) as Record<PapelMejora, string>),
     consejo:
       "Analiza el proyecto y responde al usuario con una recomendación concreta, alternativas y razones. No cambies archivos. No te limites a anunciar un plan. Devuelve la recomendación completa en el campo entrega de terminar; el usuario debe poder leerla ahí.",
     diseno:

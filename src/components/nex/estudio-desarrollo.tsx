@@ -9,6 +9,7 @@ import {
   Code2,
   Loader2,
   MessageSquare,
+  Sparkles,
   Send,
   Square,
   Users,
@@ -21,6 +22,9 @@ import {
   ETIQUETA_ESTADO_EJECUCION,
 } from "@/lib/nex/queries/ejecucion";
 import type { EjecucionOrdenRow } from "@/lib/nex/db-types";
+import { ReservaPendiente } from "./reserva-pendiente";
+import { ContinuarFuera } from "./continuar-fuera";
+import { ActividadDesarrollo } from "./actividad-desarrollo";
 import { Boton, claseCampo } from "./campos";
 import { CampoTextoConDictado } from "./dictado";
 import { BotonAdjuntar, ListaAdjuntos, ZonaAdjuntos, useAdjuntos } from "./adjuntos";
@@ -28,6 +32,7 @@ import { Encabezado } from "./app-shell";
 import { prepararSonido, sonidoTrabajoTerminado } from "@/lib/nex/sonidos";
 import { textoDesarrolloDesdeConsejo } from "@/lib/nex/continuar-consejo";
 import { detectarFinalizados, tituloFinalizacion } from "@/lib/nex/finalizacion";
+import { AREAS_MEJORAS } from "../../../db/functions/_shared/mejoras";
 import { formatoEuros } from "@/lib/nex/labels";
 
 type Fase = {
@@ -40,9 +45,11 @@ type Fase = {
 };
 type Encargo = EjecucionOrdenRow & {
   equipo_automatico: boolean;
-  estado_agente?: { equipo?: Fase[]; fase?: number } | null;
+  estado_agente?: { equipo?: Fase[]; fase?: number; mensajes?: unknown[] } | null;
+  cambios?: Record<string, string | null> | null;
 };
 const papeles: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(AREAS_MEJORAS).map(([k, v]) => [k, v[0]])),
   consejo: "Consejo",
   diseno: "Diseño",
   backend: "Backend",
@@ -77,11 +84,14 @@ export function EstudioDesarrollo() {
     [abierto, setAbierto] = React.useState<string | null>(null);
   const formulario = React.useRef<HTMLFormElement>(null);
   const [desdeConsejo, setDesdeConsejo] = React.useState(false);
+  const [mejoras, setMejoras] = React.useState(false);
+  const [contextoMejoras, setContextoMejoras] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [avisos, setAvisos] = React.useState<Encargo[]>([]);
   const aviso = avisos[0];
   const estados = React.useRef(new Map<string, string>());
   const resultado = React.useRef<HTMLDivElement>(null);
+  const proyectosAbiertos = React.useRef(new Set<string>());
   const solicitud = React.useRef<{ firma: string; id: string } | null>(null);
   const adjuntos = useAdjuntos();
   React.useEffect(() => {
@@ -121,15 +131,27 @@ export function EstudioDesarrollo() {
     });
     return () => cancelAnimationFrame(frame);
   }, [aviso]);
+  React.useEffect(() => {
+    if (!lista.data || proyectosAbiertos.current.has(proyecto)) return;
+    proyectosAbiertos.current.add(proyecto);
+    const activo = lista.data.find(
+      (e) => activos.includes(e.estado) && (!proyecto || e.proyecto_id === proyecto),
+    );
+    if (activo) setAbierto(activo.id);
+  }, [lista.data, proyecto]);
   const enviar = useMutation({
     mutationFn: async () => {
       setError(null);
-      const contenido =
+      let contenido =
         texto.trim() ||
         (adjuntos.ids.length ? "Desarrolla el proyecto descrito en los archivos adjuntos." : "");
+      if (contextoMejoras && !consejo)
+        contenido +=
+          "\n\nPropuestas de referencia. Aplica SOLO las seleccionadas arriba; conserva el resto del comportamiento:\n" +
+          contextoMejoras;
       if (!proyecto) throw Error("Selecciona el proyecto para guardar este encargo.");
       if (adjuntos.subiendo) throw Error("Espera a que termine la subida.");
-      const firma = JSON.stringify({ contenido, proyecto, consejo, ids: adjuntos.ids });
+      const firma = JSON.stringify({ contenido, proyecto, consejo, mejoras, ids: adjuntos.ids });
       if (solicitud.current?.firma !== firma)
         solicitud.current = { firma, id: crypto.randomUUID() };
       const r = await supabase.functions.invoke("pideme", {
@@ -139,6 +161,7 @@ export function EstudioDesarrollo() {
           proyecto_id: proyecto,
           texto: contenido,
           consejo,
+          mejoras,
           adjunto_ids: adjuntos.ids,
         },
       });
@@ -157,6 +180,7 @@ export function EstudioDesarrollo() {
       setAbierto(r.ejecucion.id);
       setTexto("");
       setDesdeConsejo(false);
+      setContextoMejoras("");
       adjuntos.limpiar();
       solicitud.current = null;
       void qc.invalidateQueries({ queryKey: ["estudio-encargos"] });
@@ -181,13 +205,39 @@ export function EstudioDesarrollo() {
   const continuarConsejo = (e: Encargo) => {
     setProyecto(e.proyecto_id ?? "");
     setConsejo(false);
+    setMejoras(false);
     setDesdeConsejo(true);
     setError(null);
-    setTexto(textoDesarrolloDesdeConsejo(e, texto));
+    if (e.estado_agente?.equipo?.some((f) => f.papel.startsWith("mejoras_"))) {
+      setContextoMejoras(e.respuesta || e.resumen || "");
+      // El usuario escribe la selección; no se aplica la lista completa por defecto.
+      setTexto("");
+    } else {
+      setContextoMejoras("");
+      setTexto(textoDesarrolloDesdeConsejo(e, texto));
+    }
     requestAnimationFrame(() => {
       formulario.current?.scrollIntoView({ behavior: "instant", block: "start" });
       formulario.current?.querySelector("textarea")?.focus({ preventScroll: true });
     });
+  };
+  const prepararMejoras = (e?: Encargo) => {
+    if (e) setProyecto(e.proyecto_id ?? "");
+    setConsejo(true);
+    setMejoras(true);
+    setDesdeConsejo(false);
+    setContextoMejoras("");
+    setTexto(
+      "Revisa el proyecto y propón mejoras de diseño, funcionalidades, accesibilidad, móvil e iPad, voz, sonido, textos, rendimiento, fiabilidad, privacidad, seguridad, facilidad de uso y coste de IA. Prioriza las mejoras útiles y preserva lo que ya funciona. No implementes cambios." +
+        (e
+          ? "\n\nÚltimo encargo como contexto:\n" + (e.texto ?? "")
+          : texto.trim()
+            ? "\n\nMis indicaciones:\n" + texto
+            : ""),
+    );
+    requestAnimationFrame(() =>
+      formulario.current?.scrollIntoView({ behavior: "instant", block: "start" }),
+    );
   };
   return (
     <div className="mx-auto max-w-5xl pb-12">
@@ -239,15 +289,22 @@ export function EstudioDesarrollo() {
         >
           <div className="mb-4 flex flex-wrap gap-2">
             {[
-              { valor: false, texto: "Desarrollar", icono: Code2 },
-              { valor: true, texto: "Pedir consejo", icono: MessageSquare },
+              { valor: false, texto: "Desarrollar", icono: Code2, mejoras: false },
+              { valor: true, texto: "Pedir consejo", icono: MessageSquare, mejoras: false },
+              { valor: true, texto: "Proponer mejoras", icono: Sparkles, mejoras: true },
             ].map((m) => (
               <button
                 key={m.texto}
                 type="button"
-                aria-pressed={consejo === m.valor}
-                onClick={() => setConsejo(m.valor)}
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm ${consejo === m.valor ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                aria-pressed={consejo === m.valor && mejoras === m.mejoras}
+                onClick={() => {
+                  if (m.mejoras) prepararMejoras();
+                  else {
+                    setConsejo(m.valor);
+                    setMejoras(false);
+                  }
+                }}
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm ${consejo === m.valor && mejoras === m.mejoras ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
               >
                 <m.icono size={15} />
                 {m.texto}
@@ -259,8 +316,9 @@ export function EstudioDesarrollo() {
               role="status"
               className="mb-4 rounded-xl border-2 border-primary bg-primary/10 p-4 text-lg font-medium"
             >
-              Desarrollo preparado a partir de tu consejo. Revisa el texto y pulsa «Encargar
-              desarrollo».
+              {contextoMejoras
+                ? "Escribe qué mejoras quieres aplicar (números o descripción). El equipo solo desarrollará tu selección."
+                : "Desarrollo preparado a partir de tu consejo. Revisa el texto y pulsa «Encargar desarrollo»."}
             </p>
           ) : null}
           <ZonaAdjuntos onFicheros={(f) => void adjuntos.anadir(f)}>
@@ -307,9 +365,11 @@ export function EstudioDesarrollo() {
           ) : null}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="max-w-lg text-xs text-muted-foreground">
-              {consejo
-                ? "El equipo estudia tu idea y el código disponible y te aconseja sin modificarlo."
-                : "El equipo trabaja en una versión separada. Verás el resultado antes de publicarlo."}
+              {mejoras
+                ? "Revisión de seis especialidades. Propone mejoras sin cambiar el programa; su consumo se registra y respeta el presupuesto configurado."
+                : consejo
+                  ? "El equipo estudia tu idea y el código disponible y te aconseja sin modificarlo."
+                  : "El equipo trabaja en una versión separada. Verás el resultado antes de publicarlo."}
             </p>
             <Boton
               type="submit"
@@ -323,9 +383,11 @@ export function EstudioDesarrollo() {
               )}{" "}
               {enviar.isPending
                 ? "Guardando encargo…"
-                : consejo
-                  ? "Consultar al equipo"
-                  : "Encargar desarrollo"}
+                : mejoras
+                  ? "Consultar mejoras al equipo"
+                  : consejo
+                    ? "Consultar al equipo"
+                    : "Encargar desarrollo"}
             </Boton>
           </div>
           {motivoBloqueo ? (
@@ -371,6 +433,11 @@ export function EstudioDesarrollo() {
             </div>
           </section>
         ) : null}
+        <ContinuarFuera
+          e={{ texto, estado: "borrador" }}
+          nombre={seleccionado?.nombre ?? "Proyecto"}
+          repo={seleccionado?.repositorio ?? null}
+        />
         <div className="mb-4 mt-9 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-2xl font-semibold">Tus trabajos</h2>
           <span className="text-xs text-muted-foreground">Estado y consumo registrados</span>
@@ -395,10 +462,16 @@ export function EstudioDesarrollo() {
               <Trabajo
                 key={e.id}
                 e={e}
+                repo={proyectos.data?.find((p) => p.id === e.proyecto_id)?.repositorio ?? null}
                 nombre={proyectos.data?.find((p) => p.id === e.proyecto_id)?.nombre ?? "Proyecto"}
                 abierto={abierto === e.id}
                 cambiar={() => setAbierto(abierto === e.id ? null : e.id)}
                 continuar={() => continuarConsejo(e)}
+                actualizar={() => {
+                  void lista.refetch();
+                }}
+                actualizando={lista.isFetching}
+                proponerMejoras={() => prepararMejoras(e)}
               />
             ))}
         </div>
@@ -408,21 +481,31 @@ export function EstudioDesarrollo() {
 }
 function Trabajo({
   e,
+  repo,
   nombre,
   abierto,
   cambiar,
   continuar,
+  actualizar,
+  actualizando,
+  proponerMejoras,
 }: {
   e: Encargo;
+  repo: string | null;
   nombre: string;
   abierto: boolean;
   cambiar: () => void;
   continuar: () => void;
+  actualizar: () => void;
+  actualizando: boolean;
+  proponerMejoras: () => void;
 }) {
   const cancelar = useCancelarEjecucion(),
     publicar = useAprobarPublicar();
   const fases = e.estado_agente?.equipo ?? [];
-  const fase = fases.find((f) => f.estado === "trabajando"),
+  const fase = activos.includes(e.estado)
+      ? fases.find((f) => f.estado === "trabajando")
+      : undefined,
     activo = activos.includes(e.estado);
   const pr = enlaceSeguro(e.pr_url),
     url = enlaceSeguro(e.publicado_url ?? e.preview_url);
@@ -455,10 +538,12 @@ function Trabajo({
         <ChevronDown size={16} className={abierto ? "rotate-180" : ""} />
       </button>
       {abierto ? (
-        <div className="space-y-4 border-t border-border p-5">
+        <div className="space-y-4 border-t border-border p-4 sm:p-5">
+          <ActividadDesarrollo trabajo={e} actualizar={actualizar} actualizando={actualizando} />
           {e.estado === "en_cola" ? (
             <p className="text-sm text-muted-foreground">
-              Guardado. Esperando al coordinador del servidor; puedes cerrar esta pantalla.
+              Petición guardada. La barra arrancará cuando el servidor registre el inicio del
+              trabajo.
             </p>
           ) : null}
           {fases.length ? (
@@ -470,8 +555,12 @@ function Trabajo({
                     {f.estado === "completada"
                       ? "Hecho"
                       : f.estado === "trabajando"
-                        ? "Trabajando"
-                        : "Pendiente"}
+                        ? activo
+                          ? "Trabajando"
+                          : "Interrumpida"
+                        : activo
+                          ? "Pendiente"
+                          : "No realizada"}
                   </p>
                   <p className="mt-1 text-sm font-medium">
                     {nombres[f.modelo.proveedor] ?? f.modelo.proveedor}{" "}
@@ -495,18 +584,25 @@ function Trabajo({
               {e.error}
             </p>
           ) : null}
+          {e.error?.match(/reserva ([0-9a-f-]{36})/i)?.[1] ? (
+            <ReservaPendiente id={e.error.match(/reserva ([0-9a-f-]{36})/i)![1]!} />
+          ) : null}
           {e.respuesta || e.resumen ? (
             <div className="whitespace-pre-wrap break-words text-lg leading-relaxed">
               {e.respuesta || e.resumen}
             </div>
           ) : null}
-          {e.estado === "completada" && fases.some((f) => f.papel === "consejo") ? (
+          {e.estado === "completada" &&
+          fases.some((f) => f.papel === "consejo" || f.papel.startsWith("mejoras_")) ? (
             <div className="rounded-xl border-2 border-primary bg-primary/10 p-4">
               <p className="mb-3 text-lg font-semibold">
                 ¿Quieres que el equipo haga este trabajo?
               </p>
               <Boton onClick={continuar}>
-                <Code2 size={20} /> Desarrollar este consejo
+                <Code2 size={20} />{" "}
+                {fases.some((f) => f.papel.startsWith("mejoras_"))
+                  ? "Elegir mejoras para desarrollar"
+                  : "Desarrollar este consejo"}
               </Boton>
               <p className="mt-3 text-sm">
                 Prepararemos el encargo con tu petición y este consejo. Podrás revisarlo antes de
@@ -515,6 +611,9 @@ function Trabajo({
             </div>
           ) : null}
           <div className="flex flex-wrap gap-3">
+            <Boton variante="suave" onClick={proponerMejoras}>
+              <Sparkles size={20} /> Proponer mejoras
+            </Boton>
             {pr ? (
               <a
                 href={pr}
@@ -551,6 +650,7 @@ function Trabajo({
               </Boton>
             ) : null}
           </div>
+          <ContinuarFuera e={e} nombre={nombre} repo={repo} />
           {e.estado === "error" ? (
             <p className="text-xs text-muted-foreground">
               La entrega parcial se conserva. Revisa el motivo antes de repetir el encargo para

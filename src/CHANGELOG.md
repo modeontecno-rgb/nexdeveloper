@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 0.44.0 — Trabajo visible, mejoras y ahorro
+
+- Panel de actividad con progreso estimado por fases, operaciones registradas y código preparado, adaptado a móvil e iPad.
+- Revisión de mejoras en seis especialidades, sin cambios automáticos. El usuario elige qué desarrollar.
+- Calidad configurada antes que coste; a igualdad, reparto por llamadas API registradas de los últimos siete días. Se respetan asignaciones explícitas y presupuestos.
+- Traspaso mediante texto a Codex u otra IA: detención comprobada del trabajo activo, contexto GitHub y descarga de cambios parciales. No abre una tarea de Codex automáticamente.
+- Los errores dejan de figurar como fases trabajando; se muestra el detalle de la reserva económica y se explican las futuras esperas agotadas.
+
 ## 0.43.1 — Resultados visibles y lectura cómoda
 
 - Aviso grande con sonido y pulso visual al terminar una consulta o desarrollo; abre automáticamente el resultado en Tus trabajos.
