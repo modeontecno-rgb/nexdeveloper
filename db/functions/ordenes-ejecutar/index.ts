@@ -341,6 +341,15 @@ async function pasoAgente(sb: SB, e: any, p: any, cfg: any) {
     let r:any;
     try{r = fase ? await llamarEquipo(sb,e,fase,sistema,st.mensajes,lectura) : await llamarClaude(sb,e,mod?.id,clave,modelo,sistema,st.mensajes,lectura);}
     catch(error){
+      const detalle=error as any;
+      if(fase && detalle.codigo==='SALIDA_TRUNCADA_CONTABILIZADA'){
+        pasos++;te+=detalle.entrada;ts+=detalle.salida;coste+=detalle.coste;fase.recortes=(fase.recortes??0)+1;
+        if(fase.recortes<=1){
+          st.mensajes.push({role:'user',content:'La última respuesta se descartó por exceder la salida; su consumo ya está contabilizado. Los archivos guardados antes de esa llamada se conservan. Continúa desde ellos: una operación pequeña por respuesta, preferiblemente editar_archivo; limita la respuesta a 1500 tokens. Si necesitas más código, construye módulos o migraciones completos pequeños en operaciones sucesivas. Al terminar usa solo un resumen breve y no repitas el contenido de los archivos en entrega.'});
+          await guardar();return null;
+        }
+        await guardar();throw error;
+      }
       if(!fase||fase.sustitucion||!/HTTP (429|503)/.test(String((error as Error).message)))throw error;
       const candidatos=(await candidatosEquipo(sb,e.user_id)).filter((c:any)=>c.proveedor!==fase.modelo.proveedor);
       if(!candidatos.length)throw error;
