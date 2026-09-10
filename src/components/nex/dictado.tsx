@@ -21,7 +21,7 @@ type Reconocimiento = {
 };
 
 /** Errores que sí obligan a parar del todo: el resto se reintenta solo. */
-export const ERRORES_FATALES = ["not-allowed", "audio-capture", "service-not-allowed"] as const;
+export const ERRORES_FATALES = ["not-allowed", "audio-capture", "service-not-allowed", "network"] as const;
 
 export function esErrorFatal(error: string | undefined | null): boolean {
   return ERRORES_FATALES.includes(String(error ?? "") as (typeof ERRORES_FATALES)[number]);
@@ -65,6 +65,7 @@ export function useDictado(alTexto: (texto: string) => void) {
     montado = React.useRef(false),
     reinicios = React.useRef(0),
     temporizador = React.useRef<ReturnType<typeof setTimeout> | null>(null),
+    inicioTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null),
     indices = React.useRef(new Set<number>());
 
   /** Cierra micrófono y onda; el reconocimiento se gestiona aparte. */
@@ -82,6 +83,8 @@ export function useDictado(alTexto: (texto: string) => void) {
     sesion.current++;
     if (temporizador.current) clearTimeout(temporizador.current);
     temporizador.current = null;
+    if (inicioTimer.current) clearTimeout(inicioTimer.current);
+    inicioTimer.current = null;
     cerrarAudio();
     if (montado.current) {
       setEscuchando(false);
@@ -105,6 +108,9 @@ export function useDictado(alTexto: (texto: string) => void) {
       r.continuous = true;
       r.interimResults = true;
       r.onstart = () => {
+        if (inicioTimer.current) clearTimeout(inicioTimer.current);
+        inicioTimer.current = null;
+        indices.current.clear();
         if (montado.current && activo.current) {
           setEscuchando(true);
           setIniciando(false);
@@ -129,9 +135,12 @@ export function useDictado(alTexto: (texto: string) => void) {
       r.onerror = (e) => {
         if (esErrorFatal(e.error)) {
           limpiar();
+          r.abort();
           if (montado.current)
             toast.error(
-              e.error === "not-allowed"
+              e.error === "network"
+                ? "El servicio de dictado del navegador no responde. El permiso del micrófono puede estar activo; puedes usar el dictado del teclado o escribir mientras se recupera."
+                : e.error === "not-allowed"
                 ? "No se concedió acceso al micrófono. Puedes escribir el texto."
                 : "El micrófono no está disponible. Puedes escribir el texto.",
             );
@@ -240,10 +249,18 @@ export function useDictado(alTexto: (texto: string) => void) {
     setIniciando(true);
     const version = ++sesion.current;
     sonidoTic();
+    inicioTimer.current = setTimeout(() => {
+      if (!activo.current || sesion.current !== version) return;
+      limpiar();
+      rec.current?.abort();
+      toast.error("El navegador no ha iniciado el dictado. Usa el micrófono del teclado o escribe; el reconocimiento no está respondiendo.");
+    }, 10000);
     try {
       rec.current.start();
     } catch {
-      /* el navegador ya lo tenía arrancado */
+      limpiar();
+      toast.error("No se pudo iniciar el dictado. Puedes volver a intentarlo o usar el dictado del teclado.");
+      return;
     }
     await abrirOnda(version);
   };
